@@ -451,8 +451,10 @@ struct HabitRowView: View {
                     .frame(width: 20, alignment: .center)
                 Text(habit.name)
                     .font(isInkwell ? .system(.body, design: .serif) : .body)
-                    .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : .white)
-                    .strikethrough(isCompleted, color: isInkwell ? InkwellTheme.inkTertiary : .white.opacity(0.5))
+                    .foregroundStyle(isCompleted
+                        ? (isInkwell ? InkwellTheme.inkTertiary : Color(hex: "#BF5AF2").opacity(0.4))
+                        : (isInkwell ? InkwellTheme.inkPrimary : .white))
+                    .strikethrough(isCompleted, color: isInkwell ? InkwellTheme.inkTertiary : Color(hex: "#BF5AF2").opacity(0.4))
                 Spacer()
             }
             .padding(.vertical, 4)

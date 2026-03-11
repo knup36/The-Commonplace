@@ -6,8 +6,8 @@ struct DailyNoteRowView: View {
     @Query var journalEntries: [JournalEntry]
     @Query(sort: \Habit.order) var habits: [Habit]
     
-    let purple = Color(hex: "#BF5AF2")
-    
+    @EnvironmentObject var themeManager: ThemeManager
+    var purple: Color { themeManager.current == .inkwell ? InkwellTheme.journalAccent : Color(hex: "#BF5AF2") }
     var journalEntry: JournalEntry? {
         journalEntries.first {
             Calendar.current.isDate($0.date, inSameDayAs: entry.createdAt)
@@ -43,22 +43,22 @@ struct DailyNoteRowView: View {
             }
             
             // Note text
-                        if !entry.text.isEmpty {
-                            let lineLimit = 6
-                            let lines = entry.text.components(separatedBy: "\n")
-                            let truncated = entry.text.count > 300 || lines.count > lineLimit
-
-                            Text(entry.text)
-                                .font(.body)
-                                .lineLimit(lineLimit)
-                                .foregroundStyle(.primary)
-
-                            if truncated {
-                                Text("more...")
-                                    .font(.caption)
-                                    .foregroundStyle(purple.opacity(0.7))
-                            }
-                        }
+            if !entry.text.isEmpty {
+                let lineLimit = 6
+                let lines = entry.text.components(separatedBy: "\n")
+                let truncated = entry.text.count > 300 || lines.count > lineLimit
+                
+                Text(entry.text)
+                    .font(.body)
+                    .lineLimit(lineLimit)
+                    .foregroundStyle(.primary)
+                
+                if truncated {
+                    Text("more...")
+                        .font(.caption)
+                        .foregroundStyle(purple.opacity(0.7))
+                }
+            }
             
             // Habit summary — uses snapshots so deleted habits don't affect past entries
             if let je = journalEntry, (!je.completedHabitSnapshots.isEmpty || je.totalHabitsAtTime > 0) {

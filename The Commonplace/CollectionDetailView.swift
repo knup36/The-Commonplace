@@ -7,21 +7,21 @@ struct CollectionDetailView: View {
     @Query var entries: [Entry]
     @EnvironmentObject var themeManager: ThemeManager
     @State private var searchText = ""
-
+    
     var isInkwell: Bool { themeManager.current == .inkwell }
     var accentColor: Color {
         isInkwell
-            ? InkwellTheme.collectionAccentColor(for: collection.colorHex)
-            : Color(hex: collection.colorHex)
+        ? InkwellTheme.collectionAccentColor(for: collection.colorHex)
+        : Color(hex: collection.colorHex)
     }
-
+    
     var hasNonTypeFilters: Bool {
         !collection.filterTags.isEmpty ||
         collection.filterSearchText != nil ||
         collection.filterLocationName != nil ||
         (DateFilterRange(rawValue: collection.filterDateRange) ?? .allTime) != .allTime
     }
-
+    
     var filteredEntries: [Entry] {
         let matched = entries
             .filter { collectionMatches(entry: $0, collection: collection) }
@@ -29,21 +29,35 @@ struct CollectionDetailView: View {
         if searchText.isEmpty { return matched }
         return matched.filter { entryMatchesSearch($0, searchText: searchText) }
     }
-
+    
     var body: some View {
         List {
             collectionHeader
-            entryRows
-        }
+            if filteredEntries.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                        .font(.system(size: 40))
+                        .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : Color(uiColor: .tertiaryLabel))
+                    Text("Nothing matches these filters")
+                        .font(isInkwell ? .system(.subheadline, design: .serif) : .subheadline)
+                        .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : Color(uiColor: .tertiaryLabel))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 60)
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+            } else {
+                entryRows
+            }        }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(isInkwell ? InkwellTheme.background : Color(uiColor: .systemBackground))
         .searchable(text: $searchText, prompt: "Search collection...")
         .navigationBarTitleDisplayMode(.inline)
     }
-
+    
     // MARK: - Sub-views
-
+    
     var collectionHeader: some View {
         HStack(spacing: 12) {
             // Icon
@@ -64,20 +78,20 @@ struct CollectionDetailView: View {
                     .font(.title2)
                     .foregroundStyle(isInkwell ? Color(hex: collection.colorHex) : accentColor)
             }
-
+            
             VStack(alignment: .leading, spacing: 4) {
                 Text(collection.name)
                     .font(isInkwell ? .system(.title2, design: .serif) : .title2)
                     .fontWeight(.bold)
                     .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : accentColor)
-
+                
                 if hasNonTypeFilters {
                     filterChips
                 }
             }
-
+            
             Spacer()
-
+            
             Text("\(filteredEntries.count)")
                 .font(.title)
                 .fontWeight(.bold)
@@ -88,12 +102,12 @@ struct CollectionDetailView: View {
         .listRowBackground(Color.clear)
         .listRowSeparator(.hidden)
     }
-
+    
     var filterChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
                 filterChip(icon: nil, label: "Collection")
-
+                
                 if !collection.filterTypes.isEmpty {
                     ForEach(collection.filterTypes, id: \.self) { type in
                         filterChip(icon: iconForEntryType(type), label: type.capitalized)
@@ -119,7 +133,7 @@ struct CollectionDetailView: View {
             }
         }
     }
-
+    
     func filterChip(icon: String?, label: String) -> some View {
         HStack(spacing: 3) {
             if let icon {
@@ -129,7 +143,7 @@ struct CollectionDetailView: View {
         }
         .foregroundStyle(isInkwell ? InkwellTheme.inkSecondary : .secondary)
     }
-
+    
     @ViewBuilder
     var entryRows: some View {
         ForEach(filteredEntries) { entry in
@@ -145,9 +159,9 @@ struct CollectionDetailView: View {
             .listRowBackground(Color.clear)
         }
     }
-
+    
     // MARK: - Helpers
-
+    
     @ViewBuilder
     func destinationView(for entry: Entry) -> some View {
         switch entry.type {
@@ -156,7 +170,7 @@ struct CollectionDetailView: View {
         default:        EntryDetailView(entry: entry)
         }
     }
-
+    
     func iconForEntryType(_ type: String) -> String {
         switch type {
         case "text":     return "text.alignleft"

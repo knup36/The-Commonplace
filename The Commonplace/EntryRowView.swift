@@ -3,9 +3,9 @@ import SwiftUI
 struct EntryRowView: View {
     let entry: Entry
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     var isInkwell: Bool { themeManager.current == .inkwell }
-
+    
     var entryColor: Color {
         if isInkwell { return InkwellTheme.cardBackground(for: entry.type) }
         switch entry.type {
@@ -18,7 +18,7 @@ struct EntryRowView: View {
         case .sticky:   return Color(hex: "#FFD60A").opacity(0.15)
         }
     }
-
+    
     var entryAccentColor: Color {
         if isInkwell { return InkwellTheme.accentColor(for: entry.type) }
         switch entry.type {
@@ -31,7 +31,7 @@ struct EntryRowView: View {
         case .sticky:   return Color(hex: "#FFD60A")
         }
     }
-
+    
     var iconForType: String {
         switch entry.type {
         case .text:     return "text.alignleft"
@@ -43,7 +43,7 @@ struct EntryRowView: View {
         case .sticky:   return "checklist"
         }
     }
-
+    
     var typeName: String {
         switch entry.type {
         case .text:     return "Note"
@@ -55,9 +55,9 @@ struct EntryRowView: View {
         case .sticky:   return "List"
         }
     }
-
+    
     // MARK: - Sub-views
-
+    
     @ViewBuilder
     var typeLabel: some View {
         if isInkwell {
@@ -72,15 +72,15 @@ struct EntryRowView: View {
             }
         }
     }
-
+    
     var metadataColumn: some View {
         HStack(spacing: 6) {
             Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
-                            .font(.caption)
-                            .foregroundStyle(isInkwell ? entryAccentColor.opacity(0.5) : entryAccentColor.opacity(0.5))
-                        Text(entry.createdAt.formatted(date: .abbreviated, time: .omitted))
-                            .font(.caption)
-                            .foregroundStyle(isInkwell ? entryAccentColor.opacity(0.5) : entryAccentColor.opacity(0.5))
+                .font(.caption)
+                .foregroundStyle(isInkwell ? entryAccentColor.opacity(0.5) : entryAccentColor.opacity(0.5))
+            Text(entry.createdAt.formatted(date: .abbreviated, time: .omitted))
+                .font(.caption)
+                .foregroundStyle(isInkwell ? entryAccentColor.opacity(0.5) : entryAccentColor.opacity(0.5))
             if !isInkwell {
                 ZStack {
                     Circle()
@@ -94,48 +94,65 @@ struct EntryRowView: View {
         }
         .fixedSize()
     }
-
+    
     @ViewBuilder
     var cardContent: some View {
-        if let imageData = entry.imageData {
-            AnimatedImageView(data: imageData, isAnimated: AnimatedImageView.isGIF(data: imageData), crop: false)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-        }
-        if entry.type == .link {
-            LinkPreviewView(entry: entry)
-        }
-        if entry.type == .location {
-            LocationRowView(entry: entry)
-        }
-        if entry.type == .journal {
+        switch entry.type {
+        case .photo:
+            if let imageData = entry.imageData {
+                AnimatedImageView(data: imageData, isAnimated: AnimatedImageView.isGIF(data: imageData), crop: false)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            if !entry.text.isEmpty {
+                noteText(italic: false)
+            }
+        case .link:
+            VStack(alignment: .leading, spacing: 6) {
+                LinkPreviewView(entry: entry)
+                if !entry.text.isEmpty {
+                    noteText(italic: true)
+                }
+            }
+        case .location:
+            VStack(alignment: .leading, spacing: 6) {
+                LocationRowView(entry: entry)
+                if !entry.text.isEmpty {
+                    noteText(italic: true)
+                }
+            }
+        case .journal:
             DailyNoteRowView(entry: entry)
-        } else if entry.type == .sticky {
-                        StickyEntryView(entry: entry, isPreview: true)
-        } else {
-            let displayText = entry.type == .audio && entry.text.isEmpty
-                ? (entry.transcript ?? "")
-                : entry.text
+        case .sticky:
+            StickyEntryView(entry: entry, isPreview: true)
+        case .audio:
+            let displayText = entry.text.isEmpty ? (entry.transcript ?? "") : entry.text
             if !displayText.isEmpty {
                 Text(displayText)
-                    .font(isInkwell && (entry.type == .text || entry.type == .audio)
-                          ? .system(.body, design: .serif)
-                          : .body)
-                    .italic(entry.type == .link || entry.type == .photo || entry.type == .location)
+                    .font(isInkwell ? .system(.body, design: .serif) : .body)
                     .lineLimit(4)
-                    .foregroundStyle(
-                        isInkwell
-                            ? (entry.type == .text || entry.type == .audio
-                               ? InkwellTheme.inkPrimary
-                               : InkwellTheme.inkSecondary)
-                            : (entry.type == .text || entry.type == .audio
-                               ? Color.primary
-                               : Color.secondary)
-                    )
+                    .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : Color.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        case .text:
+            if !entry.text.isEmpty {
+                Text(entry.text)
+                    .font(isInkwell ? .system(.body, design: .serif) : .body)
+                    .lineLimit(4)
+                    .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : Color.primary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
-
+    
+    func noteText(italic: Bool) -> some View {
+        Text(entry.text)
+            .font(.body)
+            .italic(italic)
+            .lineLimit(4)
+            .foregroundStyle(isInkwell ? InkwellTheme.inkSecondary : Color.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
     @ViewBuilder
     var tagsRow: some View {
         HStack(alignment: .bottom, spacing: 8) {
@@ -147,40 +164,43 @@ struct EntryRowView: View {
                 }
                 if !entry.tags.isEmpty {
                     HStack(spacing: 4) {
-                                            ForEach(entry.tags.prefix(3), id: \.self) { tag in
-                                                Text(tag)
-                                                    .font(.caption)
-                                                    .italic(isInkwell)
-                                                    .padding(.horizontal, 8)
-                                                    .padding(.vertical, 4)
-                                                    .background(entryAccentColor.opacity(isInkwell ? 0.15 : 0.12))
-                                                    .foregroundStyle(entryAccentColor.opacity(isInkwell ? 0.9 : 0.5))
-                                                    .clipShape(Capsule())
-                                                    .overlay(
-                                                        isInkwell
-                                                        ? Capsule().strokeBorder(entryAccentColor.opacity(0.3), lineWidth: 0.5)
-                                                        : nil
-                                                    )
-                                            }
-                                            if entry.tags.count > 3 {
-                                                Text("+\(entry.tags.count - 3)")
-                                                    .font(.caption)
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                        }
+                        ForEach(entry.tags.prefix(3), id: \.self) { tag in
+                            Text(tag)
+                                .font(.caption)
+                                .italic(isInkwell)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(entryAccentColor.opacity(isInkwell ? 0.15 : 0.12))
+                                .foregroundStyle(entryAccentColor.opacity(isInkwell ? 0.9 : 0.5))
+                                .clipShape(Capsule())
+                                .overlay(
+                                    isInkwell
+                                    ? Capsule().strokeBorder(entryAccentColor.opacity(0.3), lineWidth: 0.5)
+                                    : nil
+                                )
+                        }
+                        if entry.tags.count > 3 {
+                            Text("+\(entry.tags.count - 3)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 Spacer()
             }
             metadataColumn
         }
     }
-
+    
     // MARK: - Body
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            typeLabel
-            cardContent
+            ZStack(alignment: .topTrailing) {
+                cardContent
+                    .padding(.top, entry.type == .journal ? 0 : 18)
+                typeLabel
+            }
             Divider()
                 .overlay(isInkwell ? InkwellTheme.cardBorderTop : Color(uiColor: .separator))
                 .opacity(isInkwell ? 0.6 : 1)
