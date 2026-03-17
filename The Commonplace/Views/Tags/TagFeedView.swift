@@ -1,13 +1,18 @@
 import SwiftUI
 import SwiftData
 
+// MARK: - TagFeedView
+// Shows all entries that have a specific tag applied.
+// Supports search within the tagged entries.
+// Screen: Tags tab → tap any tag
+
 struct TagFeedView: View {
     let tag: String
     @Query var entries: [Entry]
     @EnvironmentObject var themeManager: ThemeManager
     @State private var searchText = ""
 
-    var isInkwell: Bool { themeManager.current == .inkwell }
+    var style: any AppThemeStyle { themeManager.style }
 
     var filteredEntries: [Entry] {
         let tagged = entries
@@ -34,19 +39,19 @@ struct TagFeedView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .background(isInkwell ? InkwellTheme.background : Color(uiColor: .systemBackground))
-        .navigationTitle(isInkwell ? "" : tag)
-        .navigationBarTitleDisplayMode(isInkwell ? .inline : .large)
+        .background(style.background)
+        .navigationTitle(style.usesSerifFonts ? "" : tag)
+        .navigationBarTitleDisplayMode(style.usesSerifFonts ? .inline : .large)
         .toolbar {
-            if isInkwell {
+            if style.usesSerifFonts {
                 ToolbarItem(placement: .principal) {
                     HStack(spacing: 6) {
                         Image(systemName: "number")
                             .font(.caption)
-                            .foregroundStyle(InkwellTheme.amber)
+                            .foregroundStyle(style.accent)
                         Text(tag)
                             .font(.system(.headline, design: .serif))
-                            .foregroundStyle(InkwellTheme.inkPrimary)
+                            .foregroundStyle(style.primaryText)
                     }
                 }
             }
@@ -57,12 +62,9 @@ struct TagFeedView: View {
     @ViewBuilder
     func destinationView(for entry: Entry) -> some View {
         switch entry.type {
-        case .location:
-            LocationDetailView(entry: entry)
-        case .sticky:
-            StickyDetailView(entry: entry)
-        default:
-            EntryDetailView(entry: entry)
+        case .location: LocationDetailView(entry: entry)
+        case .sticky:   StickyDetailView(entry: entry)
+        default:        EntryDetailView(entry: entry)
         }
     }
 }

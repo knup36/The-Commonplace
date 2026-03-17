@@ -1,6 +1,12 @@
 import SwiftUI
 import MapKit
 
+// MARK: - LocationDetailView
+// Detail view for location entries.
+// Shows a map, place info, Open in Maps button, note editor, and tags.
+// If no location is set yet, shows LocationSearchView to pick one.
+// Screen: Entry Detail (tap any location entry in the Feed or Collections tab)
+
 struct LocationDetailView: View {
     @Bindable var entry: Entry
     @Environment(\.modelContext) var modelContext
@@ -11,9 +17,10 @@ struct LocationDetailView: View {
     @State private var isEditing = false
     @FocusState private var textFieldFocused: Bool
 
-    var isInkwell: Bool { themeManager.current == .inkwell }
-    var accentColor: Color { isInkwell ? InkwellTheme.collectionAccentColor(for: "#30D158") : .green }
-    var bgColor: Color { isInkwell ? InkwellTheme.locationCard : Color.green.opacity(0.15) }
+    var style: any AppThemeStyle { themeManager.style }
+    var accentColor: Color { InkwellTheme.collectionAccentColor(for: "#30D158") }
+    var bgColor: Color { InkwellTheme.locationCard }
+
     var coordinate: CLLocationCoordinate2D? {
         guard let lat = entry.locationLatitude,
               let lon = entry.locationLongitude else { return nil }
@@ -58,18 +65,18 @@ struct LocationDetailView: View {
                         VStack(alignment: .leading, spacing: 6) {
                             if let name = entry.locationName {
                                 Text(name)
-                                    .font(isInkwell ? .system(.title2, design: .serif) : .title2)
+                                    .font(style.title)
                                     .fontWeight(.bold)
-                                    .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : .primary)
+                                    .foregroundStyle(style.primaryText)
                             }
                             if let address = entry.locationAddress {
                                 Text(address)
-                                    .font(.subheadline)
-                                    .foregroundStyle(isInkwell ? InkwellTheme.inkSecondary : .secondary)
+                                    .font(style.subheadline)
+                                    .foregroundStyle(style.secondaryText)
                             }
                             if let category = entry.locationCategory {
                                 Text(category)
-                                    .font(.caption)
+                                    .font(style.caption)
                                     .foregroundStyle(accentColor)
                             }
                         }
@@ -83,21 +90,19 @@ struct LocationDetailView: View {
                     }
 
                     Divider()
-                        .overlay(isInkwell ? InkwellTheme.surface : Color.clear)
+                        .overlay(style.surface)
 
                     // Note
                     if isEditing {
                         TextField("Add a note...", text: $editText, axis: .vertical)
-                            .font(isInkwell ? .system(.body, design: .serif) : .body)
-                            .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : .primary)
+                            .font(style.body)
+                            .foregroundStyle(style.primaryText)
                             .focused($textFieldFocused)
                     } else {
                         Text(entry.text.isEmpty ? "Tap to add a note..." : entry.text)
-                            .font(isInkwell ? .system(.body, design: .serif) : .body)
+                            .font(style.body)
                             .italic(entry.text.isEmpty ? false : true)
-                            .foregroundStyle(entry.text.isEmpty
-                                ? (isInkwell ? InkwellTheme.inkTertiary : Color(uiColor: .tertiaryLabel))
-                                : (isInkwell ? InkwellTheme.inkSecondary : .secondary))
+                            .foregroundStyle(entry.text.isEmpty ? style.tertiaryText : style.secondaryText)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .contentShape(Rectangle())
                             .onTapGesture {
@@ -107,27 +112,30 @@ struct LocationDetailView: View {
                             }
                     }
 
-                    TagInputView(tags: $entry.tags, accentColor: accentColor)
+                    TagInputView(tags: $entry.tags, accentColor: accentColor, style: style)
 
                     Divider()
-                        .overlay(isInkwell ? InkwellTheme.surface : Color.clear)
+                        .overlay(style.surface)
 
                     // Metadata footer
                     HStack(alignment: .bottom) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(entry.createdAt.formatted(date: .long, time: .omitted))
                                 .font(.caption)
-                                .foregroundStyle(isInkwell ? InkwellTheme.inkSecondary : .secondary)
+                                .foregroundStyle(style.secondaryText)
                             Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
                                 .font(.caption)
-                                .foregroundStyle(isInkwell ? InkwellTheme.inkSecondary : .secondary)
+                                .foregroundStyle(style.secondaryText)
                             if let lat = entry.captureLatitude, let lon = entry.captureLongitude {
                                 Button {
                                     openInMaps(lat: lat, lon: lon, name: entry.captureLocationName)
                                 } label: {
-                                    Label(entry.captureLocationName ?? "\(String(format: "%.4f", lat)), \(String(format: "%.4f", lon))", systemImage: "location.fill")
-                                        .font(.caption)
-                                        .foregroundStyle(isInkwell ? InkwellTheme.inkSecondary : .secondary)
+                                    Label(
+                                        entry.captureLocationName ?? "\(String(format: "%.4f", lat)), \(String(format: "%.4f", lon))",
+                                        systemImage: "location.fill"
+                                    )
+                                    .font(.caption)
+                                    .foregroundStyle(style.secondaryText)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -136,7 +144,7 @@ struct LocationDetailView: View {
                                     Circle().fill(accentColor).frame(width: 20, height: 20)
                                     Image(systemName: "mappin.circle.fill")
                                         .font(.system(size: 10, weight: .semibold))
-                                        .foregroundStyle(isInkwell ? InkwellTheme.background : .white)
+                                        .foregroundStyle(style.background)
                                 }
                                 Text("Location")
                                     .font(.caption)
@@ -160,9 +168,12 @@ struct LocationDetailView: View {
                         textFieldFocused = false
                     }
                     .bold()
-                    .foregroundStyle(isInkwell ? InkwellTheme.amber : .primary)
+                    .foregroundStyle(style.accent)
                 }
             }
+        }
+        .onDisappear {
+            SearchIndex.shared.index(entry: entry)
         }
     }
 
