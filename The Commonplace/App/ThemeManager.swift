@@ -25,6 +25,12 @@ class ThemeManager: ObservableObject {
         self.current = AppTheme(rawValue: saved) ?? .system
     }
     
+    var style: any AppThemeStyle {
+        switch current {
+        case .inkwell: return InkwellStyle()
+        case .system:  return SystemStyle()
+        }
+    }
     var colorScheme: ColorScheme? {
         switch current {
         case .system:  return nil
@@ -173,4 +179,90 @@ struct InkwellTheme {
         default:        return Color(hex: "#B8A888")
         }
     }
+}
+// MARK: - Theme Style Protocol
+
+protocol AppThemeStyle {
+    // Backgrounds
+    var background: Color { get }
+    var surface: Color { get }
+    var cardBackground: Color { get }
+    
+    // Text
+    var primaryText: Color { get }
+    var secondaryText: Color { get }
+    var tertiaryText: Color { get }
+    
+    // Accent
+    var accent: Color { get }
+    var accentDim: Color { get }
+    
+    // Fonts
+    var largeTitle: Font { get }
+    var title: Font { get }
+    var headline: Font { get }
+    var body: Font { get }
+    var subheadline: Font { get }
+    var caption: Font { get }
+    
+    // Behavior
+    var usesSerifFonts: Bool { get }
+}
+
+// MARK: - Inkwell Style
+
+struct InkwellStyle: AppThemeStyle {
+    // Backgrounds
+    var background: Color    { InkwellTheme.background }
+    var surface: Color       { InkwellTheme.surface }
+    var cardBackground: Color { InkwellTheme.card }
+    
+    // Text
+    var primaryText: Color   { InkwellTheme.inkPrimary }
+    var secondaryText: Color { InkwellTheme.inkSecondary }
+    var tertiaryText: Color  { InkwellTheme.inkTertiary }
+    
+    // Accent
+    var accent: Color        { InkwellTheme.amber }
+    var accentDim: Color     { InkwellTheme.amberDim }
+    
+    // Fonts — serif throughout
+    var largeTitle: Font  { .system(.largeTitle, design: .serif) }
+    var title: Font       { .system(.title, design: .serif) }
+    var headline: Font    { .system(.headline, design: .serif) }
+    var body: Font        { .system(.body, design: .serif) }
+    var subheadline: Font { .system(.subheadline, design: .serif) }
+    var caption: Font     { .system(.caption, design: .serif) }
+    
+    // Behavior
+    var usesSerifFonts: Bool { true }
+}
+
+// MARK: - System Style
+
+struct SystemStyle: AppThemeStyle {
+    // Backgrounds
+    var background: Color     { Color(uiColor: .systemBackground) }
+    var surface: Color        { Color(uiColor: .secondarySystemBackground) }
+    var cardBackground: Color { Color(uiColor: .secondarySystemBackground) }
+    
+    // Text
+    var primaryText: Color   { Color(uiColor: .label) }
+    var secondaryText: Color { Color(uiColor: .secondaryLabel) }
+    var tertiaryText: Color  { Color(uiColor: .tertiaryLabel) }
+    
+    // Accent
+    var accent: Color        { .accentColor }
+    var accentDim: Color     { .accentColor.opacity(0.5) }
+    
+    // Fonts — system throughout
+    var largeTitle: Font  { .largeTitle }
+    var title: Font       { .title }
+    var headline: Font    { .headline }
+    var body: Font        { .body }
+    var subheadline: Font { .subheadline }
+    var caption: Font     { .caption }
+    
+    // Behavior
+    var usesSerifFonts: Bool { false }
 }
