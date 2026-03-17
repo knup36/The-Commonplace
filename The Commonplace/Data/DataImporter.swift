@@ -174,7 +174,16 @@ class DataImporter {
         let journalEntriesImported: Int
         
         var summary: String {
-            "\(entriesImported) entries, \(collectionsImported) collections, \(habitsImported) habits, \(journalEntriesImported) journal entries imported."
+            let total = entriesImported + collectionsImported + habitsImported + journalEntriesImported
+            if total == 0 {
+                return "Everything is already up to date — no duplicates were imported."
+            }
+            var parts: [String] = []
+            if entriesImported > 0 { parts.append("\(entriesImported) entries") }
+            if collectionsImported > 0 { parts.append("\(collectionsImported) collections") }
+            if habitsImported > 0 { parts.append("\(habitsImported) habits") }
+            if journalEntriesImported > 0 { parts.append("\(journalEntriesImported) journal entries") }
+            return "Imported \(parts.joined(separator: ", "))."
         }
     }
 }
