@@ -9,17 +9,13 @@ struct CollectionListRowView: View {
     @Query var entries: [Entry]
     @EnvironmentObject var themeManager: ThemeManager
 
-    var isInkwell: Bool { themeManager.current == .inkwell }
-        var accentColor: Color {
-            isInkwell
-                ? InkwellTheme.collectionAccentColor(for: collection.colorHex)
-                : Color(hex: collection.colorHex)
-        }
-        var cardBackground: Color {
-            isInkwell
-                ? InkwellTheme.collectionCardBackground(for: collection.colorHex)
-                : Color(hex: collection.colorHex).opacity(0.1)
-        }
+    var style: any AppThemeStyle { themeManager.style }
+    var accentColor: Color {
+        InkwellTheme.collectionAccentColor(for: collection.colorHex)
+    }
+    var cardBackground: Color {
+        InkwellTheme.collectionCardBackground(for: collection.colorHex)
+    }
 
     var entryCount: Int {
         entries.filter { collectionMatches(entry: $0, collection: collection) }.count
@@ -27,13 +23,12 @@ struct CollectionListRowView: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            // Icon
             ZStack {
                 Circle()
-                    .fill(accentColor.opacity(isInkwell ? 0.15 : 0.3))
+                    .fill(accentColor.opacity(0.15))
                     .frame(width: 40, height: 40)
                     .overlay(
-                        isInkwell
+                        style.usesSerifFonts
                         ? Circle().strokeBorder(accentColor.opacity(0.3), lineWidth: 0.5)
                         : nil
                     )
@@ -42,18 +37,16 @@ struct CollectionListRowView: View {
                     .foregroundStyle(accentColor)
             }
 
-            // Name
             Text(collection.name)
-                .font(isInkwell ? .system(.body, design: .serif) : .body)
+                .font(style.body)
                 .fontWeight(.medium)
-                .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : .primary)
+                .foregroundStyle(style.primaryText)
 
             Spacer()
 
-            // Entry count + chevron
             HStack(spacing: 6) {
                 Text("\(entryCount)")
-                    .font(.subheadline)
+                    .font(style.subheadline)
                     .fontWeight(.semibold)
                     .foregroundStyle(accentColor)
                 Image(systemName: "chevron.right")
@@ -67,7 +60,7 @@ struct CollectionListRowView: View {
         .background(cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
-            isInkwell
+            style.usesSerifFonts
             ? RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(
                     LinearGradient(
@@ -79,6 +72,6 @@ struct CollectionListRowView: View {
                 )
             : nil
         )
-        .shadow(color: isInkwell ? Color.black.opacity(0.3) : .clear, radius: 4, x: 0, y: 2)
+        .shadow(color: style.usesSerifFonts ? Color.black.opacity(0.3) : .clear, radius: 4, x: 0, y: 2)
     }
 }

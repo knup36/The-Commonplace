@@ -16,7 +16,7 @@ struct CollectionsView: View {
     @State private var currentSort: CollectionSort = .custom
     @State private var navigationPath = NavigationPath()
 
-    var isInkwell: Bool { themeManager.current == .inkwell }
+    var style: any AppThemeStyle { themeManager.style }
 
     enum CollectionSort: String, CaseIterable {
         case custom = "Custom"
@@ -84,10 +84,10 @@ struct CollectionsView: View {
         NavigationStack(path: $navigationPath) {
             List {
                 // Inkwell title
-                if isInkwell {
+                if style.usesSerifFonts {
                     Text("Collections")
                         .font(.system(size: 34, weight: .bold, design: .serif))
-                        .foregroundStyle(InkwellTheme.inkPrimary)
+                        .foregroundStyle(style.primaryText)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.leading, 8)
                         .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
@@ -119,10 +119,11 @@ struct CollectionsView: View {
                             withAnimation { currentSort = .custom }
                         }
                         .font(.caption)
-                        .foregroundStyle(isInkwell ? InkwellTheme.amber : .accentColor)
+                        .foregroundStyle(style.accent)
                     }
-                    .foregroundStyle(isInkwell ? InkwellTheme.inkSecondary : .secondary)
-                    .listRowBackground(isInkwell ? InkwellTheme.background : Color(uiColor: .systemBackground))                    .listRowSeparator(.hidden)
+                    .foregroundStyle(style.secondaryText)
+                    .listRowBackground(style.background)
+                    .listRowSeparator(.hidden)
                     .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 0, trailing: 16))
                 }
 
@@ -179,14 +180,14 @@ struct CollectionsView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background(isInkwell ? InkwellTheme.background : Color(uiColor: .systemBackground))
-            .navigationTitle(isInkwell ? "" : "Collections")
-            .navigationBarTitleDisplayMode(isInkwell ? .inline : .large)
+            .background(style.background)
+            .navigationTitle(style.usesSerifFonts ? "" : "Collections")
+            .navigationBarTitleDisplayMode(style.usesSerifFonts ? .inline : .large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     if currentSort == .custom {
                         EditButton()
-                            .foregroundStyle(isInkwell ? InkwellTheme.amber : .accentColor)
+                            .foregroundStyle(style.accent)
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -200,13 +201,13 @@ struct CollectionsView: View {
                             }
                         } label: {
                             Image(systemName: currentSort == .custom ? "arrow.up.arrow.down" : "arrow.up.arrow.down.circle.fill")
-                                .foregroundStyle(isInkwell ? InkwellTheme.amber : .accentColor)
+                                .foregroundStyle(style.accent)
                         }
                         Button {
                             showingAddCollection = true
                         } label: {
                             Image(systemName: "plus")
-                                .foregroundStyle(isInkwell ? InkwellTheme.amber : .accentColor)
+                                .foregroundStyle(style.accent)
                         }
                     }
                 }
@@ -221,12 +222,5 @@ struct CollectionsView: View {
                 EditCollectionView(collection: collection)
             }
         }
-        .overlay(
-            Text("CollectionsView")
-                .font(.caption)
-                .padding(4)
-                .background(Color.red),
-            alignment: .topLeading
-        )
     }
 }

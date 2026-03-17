@@ -12,7 +12,7 @@ class SearchIndex {
         setup()
     }
     
-    private let schemaVersion = 2
+    private let schemaVersion = 3
 
     private func setup() {
         do {

@@ -12,7 +12,7 @@ struct PinnedCollectionsView: View {
     let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 4)
     let entries: [Entry]
 
-    var isInkwell: Bool { themeManager.current == .inkwell }
+    var style: any AppThemeStyle { themeManager.style }
     var isEditing: Bool { editMode?.wrappedValue.isEditing == true }
 
     var body: some View {
@@ -55,11 +55,9 @@ struct PinnedCollectionCell: View {
     let onUnpin: () -> Void
     @EnvironmentObject var themeManager: ThemeManager
 
-    var isInkwell: Bool { themeManager.current == .inkwell }
+    var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color {
-        isInkwell
-        ? InkwellTheme.collectionAccentColor(for: collection.colorHex)
-        : Color(hex: collection.colorHex)
+        InkwellTheme.collectionAccentColor(for: collection.colorHex)
     }
 
     var body: some View {
@@ -92,9 +90,9 @@ struct PinnedCollectionCell: View {
                     }
                 }
                 Text(collection.name)
-                    .font(isInkwell ? .system(.caption, design: .serif) : .caption)
+                    .font(style.caption)
                     .fontWeight(.medium)
-                    .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : .primary)
+                    .foregroundStyle(style.primaryText)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
             }
@@ -105,12 +103,14 @@ struct PinnedCollectionCell: View {
 
     var circleIcon: some View {
         ZStack {
-            if isInkwell {
-                Circle()
-                    .fill(InkwellTheme.collectionCardBackground(for: collection.colorHex))
-                    .frame(width: 68, height: 68)
-                    .shadow(color: .black.opacity(0.4), radius: 6, x: 0, y: 3)
+            Circle()
+                .fill(style.usesSerifFonts
+                    ? InkwellTheme.collectionCardBackground(for: collection.colorHex)
+                    : accentColor.opacity(0.2))
+                .frame(width: 68, height: 68)
+                .shadow(color: style.usesSerifFonts ? .black.opacity(0.4) : .clear, radius: 6, x: 0, y: 3)
 
+            if style.usesSerifFonts {
                 Circle()
                     .strokeBorder(
                         LinearGradient(
@@ -121,35 +121,19 @@ struct PinnedCollectionCell: View {
                         lineWidth: 0.5
                     )
                     .frame(width: 68, height: 68)
-
-                VStack(spacing: 3) {
-                    Image(systemName: collection.icon)
-                        .font(.system(size: 24, weight: .medium))
-                        .foregroundStyle(accentColor)
-                        .offset(y: 4)
-                    Text("\(entryCount)")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(accentColor.opacity(0.8))
-                        .offset(y: 6)
-                }
-                .scaleEffect(isEditing ? 0.95 : 1.0)
-
-            } else {
-                Circle()
-                    .fill(accentColor.opacity(0.2))
-                    .frame(width: 68, height: 68)
-                VStack(spacing: 3) {
-                    Image(systemName: collection.icon)
-                        .font(.system(size: 26))
-                        .foregroundStyle(accentColor)
-                        .offset(y: 4)
-                    Text("\(entryCount)")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(accentColor)
-                        .offset(y: 6)
-                }
-                .scaleEffect(isEditing ? 0.95 : 1.0)
             }
+
+            VStack(spacing: 3) {
+                Image(systemName: collection.icon)
+                    .font(.system(size: style.usesSerifFonts ? 24 : 26, weight: .medium))
+                    .foregroundStyle(accentColor)
+                    .offset(y: 4)
+                Text("\(entryCount)")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(accentColor.opacity(style.usesSerifFonts ? 0.8 : 1.0))
+                    .offset(y: 6)
+            }
+            .scaleEffect(isEditing ? 0.95 : 1.0)
         }
         .contentShape(Circle())
     }

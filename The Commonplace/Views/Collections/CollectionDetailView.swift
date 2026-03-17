@@ -9,21 +9,19 @@ struct CollectionDetailView: View {
     @Query var entries: [Entry]
     @EnvironmentObject var themeManager: ThemeManager
     @State private var searchText = ""
-    
-    var isInkwell: Bool { themeManager.current == .inkwell }
+
+    var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color {
-        isInkwell
-        ? InkwellTheme.collectionAccentColor(for: collection.colorHex)
-        : Color(hex: collection.colorHex)
+        InkwellTheme.collectionAccentColor(for: collection.colorHex)
     }
-    
+
     var hasNonTypeFilters: Bool {
         !collection.filterTags.isEmpty ||
         collection.filterSearchText != nil ||
         collection.filterLocationName != nil ||
         (DateFilterRange(rawValue: collection.filterDateRange) ?? .allTime) != .allTime
     }
-    
+
     var filteredEntries: [Entry] {
         let matched = entries
             .filter { collectionMatches(entry: $0, collection: collection) }
@@ -31,7 +29,7 @@ struct CollectionDetailView: View {
         if searchText.isEmpty { return matched }
         return matched.filter { entryMatchesSearch($0, searchText: searchText) }
     }
-    
+
     var body: some View {
         List {
             collectionHeader
@@ -39,10 +37,10 @@ struct CollectionDetailView: View {
                 VStack(spacing: 12) {
                     Image(systemName: "line.3.horizontal.decrease.circle")
                         .font(.system(size: 40))
-                        .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : Color(uiColor: .tertiaryLabel))
+                        .foregroundStyle(style.tertiaryText)
                     Text("Nothing matches these filters")
-                        .font(isInkwell ? .system(.subheadline, design: .serif) : .subheadline)
-                        .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : Color(uiColor: .tertiaryLabel))
+                        .font(style.subheadline)
+                        .foregroundStyle(style.tertiaryText)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, 60)
@@ -50,33 +48,25 @@ struct CollectionDetailView: View {
                 .listRowBackground(Color.clear)
             } else {
                 entryRows
-            }        }
+            }
+        }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .background(isInkwell ? InkwellTheme.background : Color(uiColor: .systemBackground))
+        .background(style.background)
         .searchable(text: $searchText, prompt: "Search collection...")
         .navigationBarTitleDisplayMode(.inline)
-        .overlay(
-            Text("CollectionDetailViewView")
-                .font(.caption)
-                .padding(4)
-                .background(Color.red),
-            alignment: .topLeading
-        )
     }
-    
-    
+
     // MARK: - Sub-views
-    
+
     var collectionHeader: some View {
         HStack(spacing: 12) {
-            // Icon
             ZStack {
                 Circle()
                     .fill(InkwellTheme.collectionCardBackground(for: collection.colorHex))
                     .frame(width: 52, height: 52)
                     .overlay(
-                        isInkwell
+                        style.usesSerifFonts
                         ? Circle().strokeBorder(
                             LinearGradient(
                                 colors: [InkwellTheme.cardBorderTop, accentColor.opacity(0.2)],
@@ -86,22 +76,22 @@ struct CollectionDetailView: View {
                     )
                 Image(systemName: collection.icon)
                     .font(.title2)
-                    .foregroundStyle(isInkwell ? Color(hex: collection.colorHex) : accentColor)
+                    .foregroundStyle(accentColor)
             }
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 Text(collection.name)
-                    .font(isInkwell ? .system(.title2, design: .serif) : .title2)
+                    .font(style.title)
                     .fontWeight(.bold)
-                    .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : accentColor)
-                
+                    .foregroundStyle(style.primaryText)
+
                 if hasNonTypeFilters {
                     filterChips
                 }
             }
-            
+
             Spacer()
-            
+
             Text("\(filteredEntries.count)")
                 .font(.title)
                 .fontWeight(.bold)
@@ -112,12 +102,12 @@ struct CollectionDetailView: View {
         .listRowBackground(Color.clear)
         .listRowSeparator(.hidden)
     }
-    
+
     var filterChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
                 filterChip(icon: nil, label: "Collection")
-                
+
                 if !collection.filterTypes.isEmpty {
                     ForEach(collection.filterTypes, id: \.self) { type in
                         filterChip(icon: iconForEntryType(type), label: type.capitalized)
@@ -143,7 +133,7 @@ struct CollectionDetailView: View {
             }
         }
     }
-    
+
     func filterChip(icon: String?, label: String) -> some View {
         HStack(spacing: 3) {
             if let icon {
@@ -151,9 +141,9 @@ struct CollectionDetailView: View {
             }
             Text(label).font(.caption)
         }
-        .foregroundStyle(isInkwell ? InkwellTheme.inkSecondary : .secondary)
+        .foregroundStyle(style.secondaryText)
     }
-    
+
     @ViewBuilder
     var entryRows: some View {
         ForEach(filteredEntries) { entry in
@@ -169,9 +159,9 @@ struct CollectionDetailView: View {
             .listRowBackground(Color.clear)
         }
     }
-    
+
     // MARK: - Helpers
-    
+
     @ViewBuilder
     func destinationView(for entry: Entry) -> some View {
         switch entry.type {
@@ -180,7 +170,7 @@ struct CollectionDetailView: View {
         default:        EntryDetailView(entry: entry)
         }
     }
-    
+
     func iconForEntryType(_ type: String) -> String {
         switch type {
         case "text":     return "text.alignleft"
