@@ -6,6 +6,9 @@ struct MusicEntryView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @State private var player: AVPlayer? = nil
     @State private var isPlaying = false
+    @State private var progress: Double = 1.0
+    @State private var playbackTimer: Timer? = nil
+    private let previewDuration: Double = 30.0
     
     var isInkwell: Bool { themeManager.current == .inkwell }
     var accentColor: Color { isInkwell ? InkwellTheme.accentColor(for: .music) : .red }
@@ -90,9 +93,21 @@ struct MusicEntryView: View {
             togglePlayback()
         } label: {
             ZStack {
+                // Background circle
                 Circle()
                     .fill(accentColor.opacity(0.15))
                     .frame(width: 40, height: 40)
+                
+                // Countdown ring
+                if isPlaying {
+                    Circle()
+                        .trim(from: 0, to: progress)
+                        .stroke(accentColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                        .frame(width: 40, height: 40)
+                        .rotationEffect(.degrees(-90)) // start from top
+                        .animation(.linear(duration: 0.1), value: progress)
+                }
+                
                 Image(systemName: isPlaying ? "pause.fill" : "play.fill")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(accentColor)
@@ -104,22 +119,50 @@ struct MusicEntryView: View {
     
     // MARK: - Playback
     
+    func configureAudioSession() {
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            print("AVAudioSession configuration failed: \(error)")
+        }
+    }
+    
     func togglePlayback() {
         if isPlaying {
-            player?.pause()
-            isPlaying = false
+            stopPlayback()
         } else {
             if let urlString = entry.previewURL, let url = URL(string: urlString) {
+                configureAudioSession()
                 if player == nil {
                     player = AVPlayer(url: url)
                 }
                 player?.play()
                 isPlaying = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
-                    player?.pause()
-                    isPlaying = false
-                }
+                progress = 1.0
+                startCountdown()
             }
         }
+    }
+    
+    func startCountdown() {
+        playbackTimer?.invalidate()
+        let interval = 0.1
+        var elapsed = 0.0
+        playbackTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { timer in
+            elapsed += interval
+            progress = max(0, 1.0 - (elapsed / previewDuration))
+            if elapsed >= previewDuration {
+                stopPlayback()
+            }
+        }
+    }
+    
+    func stopPlayback() {
+        player?.pause()
+        isPlaying = false
+        progress = 1.0
+        playbackTimer?.invalidate()
+        playbackTimer = nil
     }
 }
