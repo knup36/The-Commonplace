@@ -9,10 +9,10 @@ struct MusicEntryView: View {
     @State private var progress: Double = 1.0
     @State private var playbackTimer: Timer? = nil
     private let previewDuration: Double = 30.0
-    
-    var isInkwell: Bool { themeManager.current == .inkwell }
-    var accentColor: Color { isInkwell ? InkwellTheme.accentColor(for: .music) : .red }
-    
+
+    var style: any AppThemeStyle { themeManager.style }
+    var accentColor: Color { InkwellTheme.accentColor(for: .music) }
+
     var body: some View {
         HStack(spacing: 12) {
             artworkThumbnail
@@ -23,9 +23,9 @@ struct MusicEntryView: View {
             }
         }
     }
-    
+
     // MARK: - Artwork
-    
+
     var artworkThumbnail: some View {
         Group {
             if let path = entry.mediaArtworkPath,
@@ -38,7 +38,7 @@ struct MusicEntryView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(isInkwell ? InkwellTheme.cardBorderTop.opacity(0.3) : Color.clear, lineWidth: 0.5)
+                            .strokeBorder(style.cardBackground.opacity(0.3), lineWidth: 0.5)
                     )
             } else {
                 RoundedRectangle(cornerRadius: 8)
@@ -52,62 +52,60 @@ struct MusicEntryView: View {
             }
         }
     }
-    
+
     // MARK: - Info
-    
+
     var infoStack: some View {
         VStack(alignment: .leading, spacing: 4) {
             if let title = entry.linkTitle, !title.isEmpty {
                 Text(title)
-                    .font(isInkwell ? .system(.subheadline, design: .serif) : .subheadline)
+                    .font(style.subheadline)
                     .fontWeight(.semibold)
-                    .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : .primary)
+                    .foregroundStyle(style.primaryText)
                     .lineLimit(2)
             }
             if let artist = entry.mediaArtist, !artist.isEmpty {
                 Text(artist)
-                    .font(isInkwell ? .system(.caption, design: .serif) : .caption)
-                    .foregroundStyle(isInkwell ? InkwellTheme.inkSecondary : .secondary)
+                    .font(style.caption)
+                    .foregroundStyle(style.secondaryText)
                     .lineLimit(1)
             }
             if let album = entry.mediaAlbum, !album.isEmpty {
                 Text(album)
-                    .font(isInkwell ? .system(.caption, design: .serif) : .caption)
-                    .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : Color(uiColor: .tertiaryLabel))
+                    .font(style.caption)
+                    .foregroundStyle(style.tertiaryText)
                     .lineLimit(1)
             }
             if !entry.text.isEmpty {
                 Text(entry.text)
-                    .font(isInkwell ? .system(.caption, design: .serif) : .caption)
+                    .font(style.caption)
                     .italic()
                     .lineLimit(2)
-                    .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : .secondary)
+                    .foregroundStyle(style.tertiaryText)
             }
         }
     }
-    
+
     // MARK: - Play Button
-    
+
     var playButton: some View {
         Button {
             togglePlayback()
         } label: {
             ZStack {
-                // Background circle
                 Circle()
                     .fill(accentColor.opacity(0.15))
                     .frame(width: 40, height: 40)
-                
-                // Countdown ring
+
                 if isPlaying {
                     Circle()
                         .trim(from: 0, to: progress)
                         .stroke(accentColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
                         .frame(width: 40, height: 40)
-                        .rotationEffect(.degrees(-90)) // start from top
+                        .rotationEffect(.degrees(-90))
                         .animation(.linear(duration: 0.1), value: progress)
                 }
-                
+
                 Image(systemName: isPlaying ? "pause.fill" : "play.fill")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(accentColor)
@@ -116,9 +114,9 @@ struct MusicEntryView: View {
         }
         .buttonStyle(.plain)
     }
-    
+
     // MARK: - Playback
-    
+
     func configureAudioSession() {
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
@@ -127,7 +125,7 @@ struct MusicEntryView: View {
             print("AVAudioSession configuration failed: \(error)")
         }
     }
-    
+
     func togglePlayback() {
         if isPlaying {
             stopPlayback()
@@ -144,7 +142,7 @@ struct MusicEntryView: View {
             }
         }
     }
-    
+
     func startCountdown() {
         playbackTimer?.invalidate()
         let interval = 0.1
@@ -157,7 +155,7 @@ struct MusicEntryView: View {
             }
         }
     }
-    
+
     func stopPlayback() {
         player?.pause()
         isPlaying = false
