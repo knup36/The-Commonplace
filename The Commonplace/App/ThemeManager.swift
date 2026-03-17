@@ -133,20 +133,24 @@ struct InkwellTheme {
         case "#FF3B30": return Color(hex: "#2E1A18") // Red
         case "#FF6B6B": return Color(hex: "#2E1E1E") // Coral
         case "#FF9500": return Color(hex: "#2E2218") // Orange
+        case "#FF9F0A": return Color(hex: "#2E2518") // Audio orange
         case "#FFCC00": return Color(hex: "#2A2410") // Amber
-        case "#FFD60A": return Color(hex: "#282408") // Yellow
+        case "#FFD60A": return Color(hex: "#282408") // Yellow/Stickies
+        case "#FF375F": return Color(hex: "#2E1820") // Photos pink
         case "#B5E550": return Color(hex: "#1E2610") // Lime
         case "#34C759": return Color(hex: "#182818") // Green
+        case "#30D158": return Color(hex: "#182818") // Locations green
         case "#00C7BE": return Color(hex: "#182828") // Mint
         case "#30B0C7": return Color(hex: "#182430") // Teal
         case "#32ADE6": return Color(hex: "#182030") // Cyan
-        case "#007AFF": return Color(hex: "#1A2030") // Blue
+        case "#007AFF": return Color(hex: "#1A2030") // Blue/Links
         case "#5856D6": return Color(hex: "#201E38") // Indigo
         case "#AF52DE": return Color(hex: "#261830") // Purple
+        case "#BF5AF2": return Color(hex: "#261830") // Journal purple
         case "#FF2D55": return Color(hex: "#2E1820") // Pink
         case "#FF6492": return Color(hex: "#2E1C24") // Rose
+        case "#8E8E93": return Color(hex: "#222224") // Gray/Text
         case "#A2845E": return Color(hex: "#281E14") // Brown
-        case "#8E8E93": return Color(hex: "#222224") // Gray
         case "#636366": return Color(hex: "#1E1E20") // Slate
         case "#3A3A3C": return Color(hex: "#1C1C1E") // Charcoal
         case "#1C1C1E": return Color(hex: "#1A1A1C") // Black
@@ -159,20 +163,24 @@ struct InkwellTheme {
         case "#FF3B30": return Color(hex: "#C85850") // Red
         case "#FF6B6B": return Color(hex: "#E07878") // Coral
         case "#FF9500": return Color(hex: "#E08830") // Orange
-        case "#AF52DE": return Color(hex: "#B070E0") // Purple
-        case "#FF2D55": return Color(hex: "#E05070") // Pink
-        case "#FF6492": return Color(hex: "#E07898") // Rose
+        case "#FF9F0A": return Color(hex: "#E08830") // Audio orange
+        case "#FFCC00": return Color(hex: "#C8A830") // Amber
+        case "#FFD60A": return Color(hex: "#B8A030") // Yellow/Stickies
+        case "#FF375F": return Color(hex: "#C85870") // Photos pink
+        case "#B5E550": return Color(hex: "#90C040") // Lime
         case "#34C759": return Color(hex: "#50C068") // Green
+        case "#30D158": return Color(hex: "#50C068") // Locations green
         case "#00C7BE": return Color(hex: "#40C0B8") // Mint
         case "#30B0C7": return Color(hex: "#40A8C0") // Teal
         case "#32ADE6": return Color(hex: "#3888C0") // Cyan
-        case "#007AFF": return Color(hex: "#4878C8") // Blue
+        case "#007AFF": return Color(hex: "#4878C8") // Blue/Links
         case "#5856D6": return Color(hex: "#6860B8") // Indigo
         case "#AF52DE": return Color(hex: "#9868C8") // Purple
+        case "#BF5AF2": return Color(hex: "#9868C8") // Journal purple
         case "#FF2D55": return Color(hex: "#C84868") // Pink
         case "#FF6492": return Color(hex: "#C86888") // Rose
+        case "#8E8E93": return Color(hex: "#787880") // Gray/Text
         case "#A2845E": return Color(hex: "#987050") // Brown
-        case "#8E8E93": return Color(hex: "#787880") // Gray
         case "#636366": return Color(hex: "#606068") // Slate
         case "#3A3A3C": return Color(hex: "#505055") // Charcoal
         case "#1C1C1E": return Color(hex: "#404045") // Black

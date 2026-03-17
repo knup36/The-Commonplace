@@ -10,8 +10,9 @@ struct CollectionListRowView: View {
     @EnvironmentObject var themeManager: ThemeManager
 
     var style: any AppThemeStyle { themeManager.style }
+
     var accentColor: Color {
-        InkwellTheme.collectionAccentColor(for: collection.colorHex)
+        return InkwellTheme.collectionAccentColor(for: collection.colorHex)
     }
     var cardBackground: Color {
         InkwellTheme.collectionCardBackground(for: collection.colorHex)

@@ -97,25 +97,31 @@ func createDefaultCollectionsIfNeeded(context: ModelContext) {
         do {
             let descriptor = FetchDescriptor<Collection>()
             let existing = try context.fetch(descriptor)
-            guard existing.isEmpty else { return }
+            let existingNames = Set(existing.map { $0.name })
 
             let defaults: [(name: String, icon: String, colorHex: String, type: String?, isFavorites: Bool)] = [
-                ("Favorites", "star.fill", "#FFD60A", nil, true),
-                ("Text", "text.alignleft", "#8E8E93", "text", false),
-                ("Photos", "photo.fill", "#FF375F", "photo", false),
-                ("Links", "link", "#007AFF", "link", false),
-                ("Audio", "waveform", "#FF9F0A", "audio", false),
-                ("Locations", "mappin.circle.fill", "#30D158", "location", false),
-                ("Journal", "bookmark.fill", "#BF5AF2", "journal", false),
-                ("Stickies", "checklist", "#FFD60A", "sticky", false)
+                ("Favorites",  "star.fill",          "#FFD60A", nil,        true),
+                ("Text",       "text.alignleft",      "#8E8E93", "text",     false),
+                ("Photos",     "photo.fill",          "#FF375F", "photo",    false),
+                ("Links",      "link",                "#007AFF", "link",     false),
+                ("Audio",      "waveform",            "#FF9F0A", "audio",    false),
+                ("Locations",  "mappin.circle.fill",  "#34C759", "location", false),
+                ("Journal",    "bookmark.fill",       "#AF52DE", "journal",  false),
+                ("Stickies",   "checklist",           "#FFD60A", "sticky",   false),
+                ("Music",      "music.note",          "#FF3B30", "music",    false)
             ]
 
+            // Only create defaults that don't already exist by name
+            let nextOrder = existing.map { $0.order }.max().map { $0 + 1 } ?? 0
+            var created = 0
+
             for (index, item) in defaults.enumerated() {
+                guard !existingNames.contains(item.name) else { continue }
                 let collection = Collection(
                     name: item.name,
                     icon: item.icon,
                     colorHex: item.colorHex,
-                    order: index
+                    order: nextOrder + index
                 )
                 if let type = item.type {
                     collection.filterTypes = [type]
@@ -125,9 +131,13 @@ func createDefaultCollectionsIfNeeded(context: ModelContext) {
                 }
                 collection.isSystem = true
                 context.insert(collection)
+                created += 1
             }
 
-            try context.save()
+            if created > 0 {
+                try context.save()
+                print("Default collections: created \(created) missing collections")
+            }
         } catch {
             print("Default collections error: \(error)")
         }

@@ -151,12 +151,12 @@ struct CollectionsView: View {
                         }
                     }
                     .swipeActions(edge: .trailing) {
+                        Button(role: .destructive) {
+                            modelContext.delete(collection)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
                         if !collection.isSystem {
-                            Button(role: .destructive) {
-                                modelContext.delete(collection)
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
                             Button {
                                 collectionToEdit = collection
                             } label: {
