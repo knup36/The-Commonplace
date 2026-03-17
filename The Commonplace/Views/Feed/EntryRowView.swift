@@ -1,39 +1,25 @@
 import SwiftUI
 
+// MARK: - EntryRowView
+// Feed card for all entry types.
+// Displays type-specific content, tags, metadata, and favorite indicator.
+// Used in FeedView, CollectionDetailView, TagFeedView, and TodayView.
+// Screen: Feed, Collections, Tags, Today tabs
+
 struct EntryRowView: View {
     let entry: Entry
     @EnvironmentObject var themeManager: ThemeManager
-    
-    var isInkwell: Bool { themeManager.current == .inkwell }
-    
+
+    var style: any AppThemeStyle { themeManager.style }
+
     var entryColor: Color {
-        if isInkwell { return InkwellTheme.cardBackground(for: entry.type) }
-        switch entry.type {
-        case .text:     return Color(uiColor: .systemGray5)
-        case .photo:    return Color.pink.opacity(0.15)
-        case .audio:    return Color.orange.opacity(0.15)
-        case .link:     return Color.blue.opacity(0.15)
-        case .journal:  return Color(hex: "#BF5AF2").opacity(0.15)
-        case .location: return Color.green.opacity(0.15)
-        case .sticky:   return Color(hex: "#FFD60A").opacity(0.15)
-        case .music:    return Color.red.opacity(0.15)
-        }
+        InkwellTheme.cardBackground(for: entry.type)
     }
-    
+
     var entryAccentColor: Color {
-        if isInkwell { return InkwellTheme.accentColor(for: entry.type) }
-        switch entry.type {
-        case .text:     return Color(uiColor: .systemGray)
-        case .photo:    return Color.pink
-        case .audio:    return Color.orange
-        case .link:     return Color.blue
-        case .journal:  return Color(hex: "#BF5AF2")
-        case .location: return Color.green
-        case .sticky:   return Color(hex: "#FFD60A")
-        case .music:    return Color.red
-        }
+        InkwellTheme.accentColor(for: entry.type)
     }
-    
+
     var iconForType: String {
         switch entry.type {
         case .text:     return "text.alignleft"
@@ -46,7 +32,7 @@ struct EntryRowView: View {
         case .music:    return "music.note"
         }
     }
-    
+
     var typeName: String {
         switch entry.type {
         case .text:     return "Note"
@@ -59,12 +45,12 @@ struct EntryRowView: View {
         case .music:    return "Music"
         }
     }
-    
+
     // MARK: - Sub-views
-    
+
     @ViewBuilder
     var typeLabel: some View {
-        if isInkwell {
+        if style.usesSerifFonts {
             HStack(spacing: 5) {
                 Circle()
                     .fill(entryAccentColor)
@@ -76,16 +62,16 @@ struct EntryRowView: View {
             }
         }
     }
-    
+
     var metadataColumn: some View {
         HStack(spacing: 6) {
             Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
                 .font(.caption)
-                .foregroundStyle(isInkwell ? entryAccentColor.opacity(0.5) : entryAccentColor.opacity(0.5))
+                .foregroundStyle(entryAccentColor.opacity(0.5))
             Text(entry.createdAt.formatted(date: .abbreviated, time: .omitted))
                 .font(.caption)
-                .foregroundStyle(isInkwell ? entryAccentColor.opacity(0.5) : entryAccentColor.opacity(0.5))
-            if !isInkwell {
+                .foregroundStyle(entryAccentColor.opacity(0.5))
+            if !style.usesSerifFonts {
                 ZStack {
                     Circle()
                         .fill(entryAccentColor.opacity(0.1))
@@ -98,7 +84,7 @@ struct EntryRowView: View {
         }
         .fixedSize()
     }
-    
+
     @ViewBuilder
     var cardContent: some View {
         switch entry.type {
@@ -133,33 +119,33 @@ struct EntryRowView: View {
             let displayText = entry.text.isEmpty ? (entry.transcript ?? "") : entry.text
             if !displayText.isEmpty {
                 Text(displayText)
-                    .font(isInkwell ? .system(.body, design: .serif) : .body)
+                    .font(style.body)
                     .lineLimit(4)
-                    .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : Color.primary)
+                    .foregroundStyle(style.primaryText)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         case .text:
             if !entry.text.isEmpty {
                 Text(entry.text)
-                    .font(isInkwell ? .system(.body, design: .serif) : .body)
+                    .font(style.body)
                     .lineLimit(4)
-                    .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : Color.primary)
+                    .foregroundStyle(style.primaryText)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         case .music:
             MusicEntryView(entry: entry)
         }
     }
-    
+
     func noteText(italic: Bool) -> some View {
         Text(entry.text)
-            .font(.body)
+            .font(style.body)
             .italic(italic)
             .lineLimit(4)
-            .foregroundStyle(isInkwell ? InkwellTheme.inkSecondary : Color.secondary)
+            .foregroundStyle(style.secondaryText)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
-    
+
     @ViewBuilder
     var tagsRow: some View {
         HStack(alignment: .bottom, spacing: 8) {
@@ -167,21 +153,21 @@ struct EntryRowView: View {
                 if entry.isFavorited {
                     Image(systemName: "star.fill")
                         .font(.caption)
-                        .foregroundStyle(isInkwell ? InkwellTheme.amber : .yellow)
+                        .foregroundStyle(style.accent)
                 }
                 if !entry.tags.isEmpty {
                     HStack(spacing: 4) {
                         ForEach(entry.tags.prefix(3), id: \.self) { tag in
                             Text(tag)
                                 .font(.caption)
-                                .italic(isInkwell)
+                                .italic(style.usesSerifFonts)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(entryAccentColor.opacity(isInkwell ? 0.15 : 0.12))
-                                .foregroundStyle(entryAccentColor.opacity(isInkwell ? 0.9 : 0.5))
+                                .background(entryAccentColor.opacity(0.15))
+                                .foregroundStyle(entryAccentColor.opacity(0.9))
                                 .clipShape(Capsule())
                                 .overlay(
-                                    isInkwell
+                                    style.usesSerifFonts
                                     ? Capsule().strokeBorder(entryAccentColor.opacity(0.3), lineWidth: 0.5)
                                     : nil
                                 )
@@ -189,7 +175,7 @@ struct EntryRowView: View {
                         if entry.tags.count > 3 {
                             Text("+\(entry.tags.count - 3)")
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(style.secondaryText)
                         }
                     }
                 }
@@ -198,9 +184,9 @@ struct EntryRowView: View {
             metadataColumn
         }
     }
-    
+
     // MARK: - Body
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ZStack(alignment: .topTrailing) {
@@ -209,15 +195,15 @@ struct EntryRowView: View {
                 typeLabel
             }
             Divider()
-                .overlay(isInkwell ? InkwellTheme.cardBorderTop : Color(uiColor: .separator))
-                .opacity(isInkwell ? 0.6 : 1)
+                .overlay(style.usesSerifFonts ? InkwellTheme.cardBorderTop : Color(uiColor: .separator))
+                .opacity(style.usesSerifFonts ? 0.6 : 1)
             tagsRow
         }
         .padding(12)
         .background(entryColor)
-        .clipShape(RoundedRectangle(cornerRadius: isInkwell ? 14 : 12))
+        .clipShape(RoundedRectangle(cornerRadius: style.usesSerifFonts ? 14 : 12))
         .overlay(
-            isInkwell
+            style.usesSerifFonts
             ? RoundedRectangle(cornerRadius: 14)
                 .strokeBorder(
                     LinearGradient(
@@ -229,6 +215,6 @@ struct EntryRowView: View {
                 )
             : nil
         )
-        .shadow(color: isInkwell ? Color.black.opacity(0.4) : Color.clear, radius: 6, x: 0, y: 3)
+        .shadow(color: style.usesSerifFonts ? Color.black.opacity(0.4) : Color.clear, radius: 6, x: 0, y: 3)
     }
 }

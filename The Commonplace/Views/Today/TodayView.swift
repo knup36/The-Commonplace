@@ -3,6 +3,12 @@ import SwiftData
 import CoreLocation
 import PhotosUI
 
+// MARK: - TodayView
+// Main view for the Today tab.
+// Shows the daily journal block (weather, mood, habits, note, photo),
+// entries captured today, and On This Day memories.
+// Screen: Today tab (bottom navigation)
+
 struct TodayView: View {
     @Environment(\.modelContext) var modelContext
     @Query var entries: [Entry]
@@ -18,10 +24,10 @@ struct TodayView: View {
     @State private var journalImage: UIImage? = nil
     @FocusState private var noteFieldFocused: Bool
 
-    var isInkwell: Bool { themeManager.current == .inkwell }
-    var journalAccent: Color { isInkwell ? InkwellTheme.journalAccent : Color(hex: "#BF5AF2") }
-    var journalCardBg: Color { isInkwell ? InkwellTheme.journalCard : Color(hex: "#BF5AF2").opacity(0.12) }
-    var journalDivider: Color { isInkwell ? InkwellTheme.journalBorder : Color(hex: "#BF5AF2").opacity(0.2) }
+    var style: any AppThemeStyle { themeManager.style }
+    var journalAccent: Color { InkwellTheme.journalAccent }
+    var journalCardBg: Color { InkwellTheme.journalCard }
+    var journalDivider: Color { InkwellTheme.journalBorder }
 
     var today: Date { Calendar.current.startOfDay(for: Date()) }
 
@@ -88,17 +94,17 @@ struct TodayView: View {
                 }
                 .padding(.vertical)
             }
-            .background(isInkwell ? InkwellTheme.background : Color(uiColor: .systemBackground))
+            .background(style.background)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if noteFieldFocused {
                         Button("Done") { noteFieldFocused = false }
-                            .foregroundStyle(isInkwell ? InkwellTheme.amber : .accentColor)
+                            .foregroundStyle(style.accent)
                     } else {
                         Button { showingSettings = true } label: {
                             Image(systemName: "gearshape.fill")
-                                .foregroundStyle(isInkwell ? InkwellTheme.amber : .primary)
+                                .foregroundStyle(style.accent)
                         }
                     }
                 }
@@ -125,10 +131,10 @@ struct TodayView: View {
     var titleHeader: some View {
         HStack {
             Text(selectedTab == 0 ? "Today" : "On This Day")
-                .font(isInkwell
+                .font(style.usesSerifFonts
                       ? .system(size: 34, weight: .bold, design: .serif)
                       : .largeTitle.bold())
-                .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : .primary)
+                .foregroundStyle(style.primaryText)
             Spacer()
         }
         .padding(.horizontal)
@@ -163,7 +169,7 @@ struct TodayView: View {
         .background(journalCardBg)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
-            isInkwell
+            style.usesSerifFonts
             ? RoundedRectangle(cornerRadius: 16).strokeBorder(
                 LinearGradient(
                     colors: [InkwellTheme.cardBorderTop, journalAccent.opacity(0.2)],
@@ -171,16 +177,16 @@ struct TodayView: View {
                 ), lineWidth: 0.5)
             : nil
         )
-        .shadow(color: isInkwell ? .black.opacity(0.3) : .clear, radius: 6, x: 0, y: 3)
+        .shadow(color: style.usesSerifFonts ? .black.opacity(0.3) : .clear, radius: 6, x: 0, y: 3)
         .padding(.horizontal)
     }
 
     var journalHeader: some View {
         HStack {
             Text(dateString)
-                .font(isInkwell ? .system(.title3, design: .serif) : .title3)
+                .font(style.usesSerifFonts ? .system(.title3, design: .serif) : .title3)
                 .fontWeight(.bold)
-                .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : .white)
+                .foregroundStyle(style.primaryText)
             Spacer()
             HStack(spacing: 6) {
                 Text("Journal")
@@ -190,7 +196,7 @@ struct TodayView: View {
                     Circle().fill(journalAccent).frame(width: 18, height: 18)
                     Image(systemName: "bookmark.fill")
                         .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(isInkwell ? InkwellTheme.background : .white)
+                        .foregroundStyle(style.background)
                 }
             }
         }
@@ -200,11 +206,11 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: 10) {
             Label("Habits", systemImage: "checkmark.circle.fill")
                 .font(.subheadline).fontWeight(.medium)
-                .foregroundStyle(isInkwell ? InkwellTheme.inkSecondary : .secondary)
+                .foregroundStyle(style.secondaryText)
             if habits.isEmpty {
                 Text("Tap + to add habits to track")
                     .font(.caption)
-                    .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : .white.opacity(0.6))
+                    .foregroundStyle(style.tertiaryText)
                     .padding(.top, 2)
             } else {
                 VStack(spacing: 4) {
@@ -214,7 +220,7 @@ struct TodayView: View {
                             isCompleted: todayJournalEntry?.completedHabits.contains(habit.id.uuidString) ?? false,
                             onToggle: { toggleHabit(habit) },
                             accentColor: journalAccent,
-                            isInkwell: isInkwell
+                            style: style
                         )
                     }
                 }
@@ -226,14 +232,14 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: 6) {
             Label("Daily Note", systemImage: "pencil")
                 .font(.subheadline).fontWeight(.medium)
-                .foregroundStyle(isInkwell ? InkwellTheme.inkSecondary : .secondary)
+                .foregroundStyle(style.secondaryText)
             AutoResizingTextEditor(
                 text: $dailyNoteText,
                 placeholder: "How was your day...",
                 minHeight: 60
             )
-            .font(isInkwell ? .system(.body, design: .serif) : .body)
-            .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : .white)
+            .font(style.body)
+            .foregroundStyle(style.primaryText)
             .focused($noteFieldFocused)
             .onChange(of: dailyNoteText) { _, newValue in saveDailyNote(newValue) }
         }
@@ -243,7 +249,7 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Daily Photo", systemImage: "camera.fill")
                 .font(.subheadline).fontWeight(.medium)
-                .foregroundStyle(isInkwell ? InkwellTheme.inkSecondary : .secondary)
+                .foregroundStyle(style.secondaryText)
             if let imageData = todayJournalEntry?.journalImageData,
                let uiImage = UIImage(data: imageData) {
                 ZStack(alignment: .topTrailing) {
@@ -268,10 +274,10 @@ struct TodayView: View {
                     .foregroundStyle(journalAccent)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(journalAccent.opacity(isInkwell ? 0.12 : 0.15))
+                    .background(journalAccent.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(
-                        isInkwell
+                        style.usesSerifFonts
                         ? RoundedRectangle(cornerRadius: 10)
                             .strokeBorder(journalAccent.opacity(0.3), lineWidth: 0.5)
                         : nil
@@ -288,7 +294,7 @@ struct TodayView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Label("Captured Today", systemImage: "tray.fill")
                     .font(.subheadline).fontWeight(.semibold)
-                    .foregroundStyle(isInkwell ? InkwellTheme.inkSecondary : .secondary)
+                    .foregroundStyle(style.secondaryText)
                     .padding(.horizontal)
                 ForEach(todayEntries) { entry in
                     NavigationLink(destination: destinationView(for: entry)) {
@@ -307,9 +313,11 @@ struct TodayView: View {
             VStack(spacing: 8) {
                 Image(systemName: "tray")
                     .font(.system(size: 32))
-                    .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : Color(uiColor: .tertiaryLabel));                Text("Nothing captured yet today")
+                    .foregroundStyle(style.tertiaryText)
+                Text("Nothing captured yet today")
                     .font(.subheadline)
-                .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : Color(uiColor: .tertiaryLabel))            }
+                    .foregroundStyle(style.tertiaryText)
+            }
             .frame(maxWidth: .infinity)
             .padding(.top, 20)
         }
@@ -321,9 +329,11 @@ struct TodayView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
                         .font(.system(size: 32))
-                        .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : Color(uiColor: .tertiaryLabel));                    Text("Nothing on this day in previous years")
+                        .foregroundStyle(style.tertiaryText)
+                    Text("Nothing on this day in previous years")
                         .font(.subheadline)
-                        .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : Color(uiColor: .tertiaryLabel))                        .multilineTextAlignment(.center)
+                        .foregroundStyle(style.tertiaryText)
+                        .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, 40)
@@ -332,7 +342,7 @@ struct TodayView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(group.yearsAgo == 1 ? "1 year ago" : "\(group.yearsAgo) years ago")
                             .font(.caption).fontWeight(.semibold)
-                            .foregroundStyle(isInkwell ? InkwellTheme.amber : .secondary)
+                            .foregroundStyle(style.accent)
                             .padding(.horizontal)
                         ForEach(group.entries) { entry in
                             ZStack {
@@ -355,17 +365,17 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: 6) {
             Label(label, systemImage: icon)
                 .font(.subheadline).fontWeight(.medium)
-                .foregroundStyle(isInkwell ? InkwellTheme.inkSecondary : .secondary)
+                .foregroundStyle(style.secondaryText)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(options, id: \.self) { emoji in
                         Text(emoji)
                             .font(.title2)
                             .padding(6)
-                            .background(selected == emoji ? journalAccent.opacity(isInkwell ? 0.2 : 0.25) : Color.clear)
+                            .background(selected == emoji ? journalAccent.opacity(0.2) : Color.clear)
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                             .overlay(
-                                selected == emoji && isInkwell
+                                selected == emoji && style.usesSerifFonts
                                 ? RoundedRectangle(cornerRadius: 8)
                                     .strokeBorder(journalAccent.opacity(0.4), lineWidth: 0.5)
                                 : nil
@@ -431,13 +441,16 @@ struct TodayView: View {
 }
 
 // MARK: - HabitRowView
+// Individual habit row in TodayView's habits block.
+// Shows checkmark, habit icon, name, and strikethrough when completed.
+// Screen: Today tab → journal block → habits section
 
 struct HabitRowView: View {
     let habit: Habit
     let isCompleted: Bool
     let onToggle: () -> Void
     let accentColor: Color
-    var isInkwell: Bool = false
+    var style: any AppThemeStyle
 
     var body: some View {
         Button(action: onToggle) {
@@ -450,11 +463,9 @@ struct HabitRowView: View {
                     .foregroundStyle(accentColor.opacity(0.7))
                     .frame(width: 20, alignment: .center)
                 Text(habit.name)
-                    .font(isInkwell ? .system(.body, design: .serif) : .body)
-                    .foregroundStyle(isCompleted
-                        ? (isInkwell ? InkwellTheme.inkTertiary : Color(hex: "#BF5AF2").opacity(0.4))
-                        : (isInkwell ? InkwellTheme.inkPrimary : .white))
-                    .strikethrough(isCompleted, color: isInkwell ? InkwellTheme.inkTertiary : Color(hex: "#BF5AF2").opacity(0.4))
+                    .font(style.body)
+                    .foregroundStyle(isCompleted ? style.tertiaryText : style.primaryText)
+                    .strikethrough(isCompleted, color: style.tertiaryText)
                 Spacer()
             }
             .padding(.vertical, 4)

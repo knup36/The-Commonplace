@@ -2,6 +2,11 @@ import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
 
+// MARK: - SettingsView
+// App settings including theme selection, habit management, and data export/import.
+// Accessed via the settings button in the Today tab or Feed tab.
+// Screen: Settings sheet (presented modally)
+
 struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) var modelContext
@@ -10,7 +15,7 @@ struct SettingsView: View {
     @Query var allCollections: [Collection]
     @Query var allJournalEntries: [JournalEntry]
     @EnvironmentObject var themeManager: ThemeManager
-    
+
     @State private var showingAddHabit = false
     @State private var isExporting = false
     @State private var isImporting = false
@@ -21,14 +26,14 @@ struct SettingsView: View {
     @State private var importError: String? = nil
     @State private var showingImportError = false
     @State private var showingImportFilePicker = false
-    
-    var isInkwell: Bool { themeManager.current == .inkwell }
-    var accent: Color { isInkwell ? InkwellTheme.amber : Color(hex: "#BF5AF2") }
-    
+
+    var style: any AppThemeStyle { themeManager.style }
+    var accent: Color { style.accent }
+
     var body: some View {
         NavigationStack {
             Form {
-                
+
                 // MARK: - Appearance
                 Section {
                     ForEach(AppTheme.allCases, id: \.self) { theme in
@@ -40,7 +45,7 @@ struct SettingsView: View {
                                     .foregroundStyle(accent)
                                     .frame(width: 24)
                                 Text(theme.label)
-                                    .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : .primary)
+                                    .foregroundStyle(style.primaryText)
                                 Spacer()
                                 if themeManager.current == theme {
                                     Image(systemName: "checkmark")
@@ -51,22 +56,22 @@ struct SettingsView: View {
                     }
                 } header: {
                     Text("Appearance")
-                        .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : .secondary)
+                        .foregroundStyle(style.tertiaryText)
                 } footer: {
                     Text("Inkwell uses a warm dark theme inspired by leather-bound books and candlelight.")
-                        .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : .secondary)
+                        .foregroundStyle(style.tertiaryText)
                 }
-                
+
                 // MARK: - Habits
                 Section {
                     ForEach(habits) { habit in
                         HStack(spacing: 12) {
                             ZStack {
                                 Circle()
-                                    .fill(accent.opacity(isInkwell ? 0.12 : 0.15))
+                                    .fill(accent.opacity(0.12))
                                     .frame(width: 36, height: 36)
                                     .overlay(
-                                        isInkwell
+                                        style.usesSerifFonts
                                         ? Circle().strokeBorder(accent.opacity(0.3), lineWidth: 0.5)
                                         : nil
                                     )
@@ -75,8 +80,8 @@ struct SettingsView: View {
                                     .foregroundStyle(accent)
                             }
                             Text(habit.name)
-                                .font(isInkwell ? .system(.body, design: .serif) : .body)
-                                .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : .primary)
+                                .font(style.body)
+                                .foregroundStyle(style.primaryText)
                         }
                     }
                     .onDelete { indexSet in
@@ -91,7 +96,7 @@ struct SettingsView: View {
                             habit.order = index
                         }
                     }
-                    
+
                     Button {
                         showingAddHabit = true
                     } label: {
@@ -100,26 +105,27 @@ struct SettingsView: View {
                     }
                 } header: {
                     Text("Daily Habits")
-                        .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : .secondary)
+                        .foregroundStyle(style.tertiaryText)
                 } footer: {
                     Text("These habits appear on your Today page every day, ready to check off.")
-                        .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : .secondary)
+                        .foregroundStyle(style.tertiaryText)
                 }
-                
-                // MARK: - Data
+
+                // MARK: - About
                 Section {
                     HStack {
                         Text("Version")
-                            .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : .primary)
+                            .foregroundStyle(style.primaryText)
                         Spacer()
                         Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
-                            .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : .secondary)
+                            .foregroundStyle(style.tertiaryText)
                     }
                 } header: {
                     Text("About")
-                        .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : .secondary)
+                        .foregroundStyle(style.tertiaryText)
                 }
-                
+
+                // MARK: - Data
                 Section {
                     Button {
                         exportData()
@@ -128,7 +134,7 @@ struct SettingsView: View {
                             HStack(spacing: 10) {
                                 ProgressView()
                                 Text("Preparing export...")
-                                    .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : .primary)
+                                    .foregroundStyle(style.primaryText)
                             }
                         } else {
                             Label("Export All Data", systemImage: "arrow.up.doc.fill")
@@ -136,7 +142,7 @@ struct SettingsView: View {
                         }
                     }
                     .disabled(isExporting)
-                    
+
                     Button {
                         showingImportFilePicker = true
                     } label: {
@@ -144,7 +150,7 @@ struct SettingsView: View {
                             HStack(spacing: 10) {
                                 ProgressView()
                                 Text("Importing...")
-                                    .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : .primary)
+                                    .foregroundStyle(style.primaryText)
                             }
                         } else {
                             Label("Import Data", systemImage: "arrow.down.doc.fill")
@@ -152,17 +158,17 @@ struct SettingsView: View {
                         }
                     }
                     .disabled(isImporting)
-                    
+
                 } header: {
                     Text("Data")
-                        .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : .secondary)
+                        .foregroundStyle(style.tertiaryText)
                 } footer: {
                     Text("Export creates a .commonplace archive including all entries, photos, audio, collections, habits, and journal data. Import merges data into your existing library.")
-                        .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : .secondary)
+                        .foregroundStyle(style.tertiaryText)
                 }
             }
-            .scrollContentBackground(isInkwell ? .hidden : .visible)
-            .background(isInkwell ? InkwellTheme.background : Color(uiColor: .systemGroupedBackground))
+            .scrollContentBackground(style.usesSerifFonts ? .hidden : .visible)
+            .background(style.usesSerifFonts ? style.background : Color(uiColor: .systemGroupedBackground))
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -202,9 +208,9 @@ struct SettingsView: View {
             }
         }
     }
-    
+
     // MARK: - Export
-    
+
     func exportData() {
         isExporting = true
         Task {
@@ -229,9 +235,9 @@ struct SettingsView: View {
             }
         }
     }
-    
+
     // MARK: - Import
-    
+
     func handleImport(result: Result<[URL], Error>) {
         switch result {
         case .success(let urls):
@@ -264,10 +270,10 @@ struct SettingsView: View {
 
 struct ShareSheet: UIViewControllerRepresentable {
     let url: URL
-    
+
     func makeUIViewController(context: Context) -> UIActivityViewController {
         UIActivityViewController(activityItems: [url], applicationActivities: nil)
     }
-    
+
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }

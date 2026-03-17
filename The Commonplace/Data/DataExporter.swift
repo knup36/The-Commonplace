@@ -44,6 +44,10 @@ class DataExporter {
         var stickyTitle: String?
         var stickyItems: [String]
         var stickyChecked: [String]
+        var mediaArtist: String?
+        var mediaAlbum: String?
+        var previewURL: String?
+        var mediaArtworkFile: String?
     }
     
     struct CollectionDTO: Codable {
@@ -129,7 +133,11 @@ class DataExporter {
                 captureLocationName: entry.captureLocationName,
                 stickyTitle: entry.stickyTitle,
                 stickyItems: entry.stickyItems,
-                stickyChecked: entry.stickyChecked
+                stickyChecked: entry.stickyChecked,
+                mediaArtist: entry.mediaArtist,
+                mediaAlbum: entry.mediaAlbum,
+                previewURL: entry.previewURL,
+                mediaArtworkFile: nil
             )
             if let path = entry.imagePath,
                let data = MediaFileManager.load(path: path) {
@@ -154,6 +162,12 @@ class DataExporter {
                 let filename = "entry_\(entry.id.uuidString)_favicon.png"
                 try data.write(to: mediaDir.appendingPathComponent(filename))
                 dto.faviconFile = filename
+            }
+            if let path = entry.mediaArtworkPath,
+               let data = MediaFileManager.load(path: path) {
+                let filename = "entry_\(entry.id.uuidString)_artwork.jpg"
+                try data.write(to: mediaDir.appendingPathComponent(filename))
+                dto.mediaArtworkFile = filename
             }
             entryDTOs.append(dto)
         }

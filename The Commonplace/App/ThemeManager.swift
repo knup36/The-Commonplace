@@ -66,7 +66,7 @@ struct InkwellTheme {
     static let journalAccent  = Color(hex: "#9868C8")
     static let locationAccent = Color(hex: "#58A870")
     static let stickyAccent   = Color(hex: "#B8A030")
-    static let musicAccent    = Color(hex: "#8A3030")
+    static let musicAccent    = Color(hex: "#C87858")
     
     // Entry card backgrounds
     static let textCard       = Color(hex: "#262626")
@@ -76,7 +76,7 @@ struct InkwellTheme {
     static let journalCard    = Color(hex: "#261830")
     static let locationCard   = Color(hex: "#182820")
     static let stickyCard     = Color(hex: "#282408")
-    static let musicCard      = Color(hex: "#2A0A0A")
+    static let musicCard      = Color(hex: "#2A1510")
     
     // Entry card borders
     static let textBorder     = Color(hex: "#363636")
@@ -154,6 +154,7 @@ struct InkwellTheme {
         case "#636366": return Color(hex: "#1E1E20") // Slate
         case "#3A3A3C": return Color(hex: "#1C1C1E") // Charcoal
         case "#1C1C1E": return Color(hex: "#1A1A1C") // Black
+        case "#C87858": return Color(hex: "#2A1510") // Music coral
         default:        return Color(hex: "#2E2620")
         }
     }
@@ -184,6 +185,7 @@ struct InkwellTheme {
         case "#636366": return Color(hex: "#606068") // Slate
         case "#3A3A3C": return Color(hex: "#505055") // Charcoal
         case "#1C1C1E": return Color(hex: "#404045") // Black
+        case "#C87858": return Color(hex: "#C87858") // Music coral
         default:        return Color(hex: "#B8A888")
         }
     }

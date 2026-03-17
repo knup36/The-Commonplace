@@ -33,7 +33,9 @@ class DataImporter {
         var journalEntriesImported = 0
         
         // Import Habits
+        let existingHabitIDs = Set((try? modelContext.fetch(FetchDescriptor<Habit>()))?.map { $0.id.uuidString } ?? [])
         for dto in manifest.habits {
+            guard !existingHabitIDs.contains(dto.id) else { continue }
             let habit = Habit(name: dto.name, icon: dto.icon, order: dto.order)
             habit.id = UUID(uuidString: dto.id) ?? UUID()
             modelContext.insert(habit)
@@ -41,7 +43,13 @@ class DataImporter {
         }
         
         // Import Collections
+        let existingCollectionIDs = Set((try? modelContext.fetch(FetchDescriptor<Collection>()))?.map { $0.id.uuidString } ?? [])
+        let existingCollectionNames = Set((try? modelContext.fetch(FetchDescriptor<Collection>()))?.map { $0.name } ?? [])
         for dto in manifest.collections {
+            // Skip if same ID already exists (exact duplicate)
+            guard !existingCollectionIDs.contains(dto.id) else { continue }
+            // Skip system collections if one with the same name already exists
+            if dto.isSystem && existingCollectionNames.contains(dto.name) { continue }
             let collection = Collection(
                 name: dto.name,
                 icon: dto.icon,
@@ -66,7 +74,9 @@ class DataImporter {
         }
         
         // Import Journal Entries
+        let existingJournalIDs = Set((try? modelContext.fetch(FetchDescriptor<JournalEntry>()))?.map { $0.id.uuidString } ?? [])
         for dto in manifest.journalEntries {
+            guard !existingJournalIDs.contains(dto.id) else { continue }
             let je = JournalEntry(date: dto.date)
             je.id = UUID(uuidString: dto.id) ?? UUID()
             je.weatherEmoji = dto.weatherEmoji
@@ -82,8 +92,10 @@ class DataImporter {
         }
         
         // Import Entries
+        let existingEntryIDs = Set((try? modelContext.fetch(FetchDescriptor<Entry>()))?.map { $0.id.uuidString } ?? [])
         for dto in manifest.entries {
             guard let type = EntryType(rawValue: dto.type) else { continue }
+            guard !existingEntryIDs.contains(dto.id) else { continue }
             let entry = Entry(type: type, text: dto.text, tags: dto.tags)
             entry.id = UUID(uuidString: dto.id) ?? UUID()
             entry.createdAt = dto.createdAt
@@ -106,6 +118,9 @@ class DataImporter {
             entry.stickyTitle = dto.stickyTitle
             entry.stickyItems = dto.stickyItems
             entry.stickyChecked = dto.stickyChecked
+            entry.mediaArtist = dto.mediaArtist
+            entry.mediaAlbum = dto.mediaAlbum
+            entry.previewURL = dto.previewURL
             
             if let filename = dto.imageFile,
                let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
@@ -122,6 +137,10 @@ class DataImporter {
             if let filename = dto.faviconFile,
                let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
                 entry.faviconPath = try? MediaFileManager.save(data, type: .favicon, id: entry.id.uuidString)
+            }
+            if let filename = dto.mediaArtworkFile,
+               let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
+                entry.mediaArtworkPath = try? MediaFileManager.save(data, type: .image, id: "\(entry.id.uuidString)_artwork")
             }
             
             modelContext.insert(entry)

@@ -108,7 +108,7 @@ func createDefaultCollectionsIfNeeded(context: ModelContext) {
                 ("Locations",  "mappin.circle.fill",  "#34C759", "location", false),
                 ("Journal",    "bookmark.fill",       "#AF52DE", "journal",  false),
                 ("Stickies",   "checklist",           "#FFD60A", "sticky",   false),
-                ("Music",      "music.note",          "#FF3B30", "music",    false)
+                ("Music",      "music.note",          "#C87858", "music",    false)
             ]
 
             // Only create defaults that don't already exist by name

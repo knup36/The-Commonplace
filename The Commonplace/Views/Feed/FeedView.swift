@@ -2,6 +2,11 @@ import SwiftUI
 import SwiftData
 import CoreLocation
 
+// MARK: - FeedView
+// Main feed view showing all entries in reverse chronological order.
+// Handles search, add entry card, swipe actions, and undo toast.
+// Screen: Feed tab (bottom navigation)
+
 struct FeedView: View {
     @Query(sort: \Entry.createdAt, order: .reverse) var entries: [Entry]
     @Environment(\.modelContext) var modelContext
@@ -15,7 +20,7 @@ struct FeedView: View {
     @State private var showingUndoToast = false
     @EnvironmentObject var themeManager: ThemeManager
     @FocusState private var searchFocused: Bool
-    
+
     let addTypes: [(type: EntryType, label: String, icon: String, color: Color)] = [
         (.text,     "Note",   "text.alignleft",    .gray),
         (.photo,    "Photo",  "camera.fill",        .pink),
@@ -25,22 +30,22 @@ struct FeedView: View {
         (.location, "Place",  "mappin.circle.fill", .green),
         (.music,    "Music",  "music.note",         .red),
     ]
-    
-    var isInkwell: Bool { themeManager.current == .inkwell }
-    
+
+    var style: any AppThemeStyle { themeManager.style }
+
     var filteredEntries: [Entry] {
         let base = searchText.isEmpty ? entries : entries.filter { entryMatchesSearch($0, searchText: searchText) }
         return base.filter { $0.id != deletedEntry?.id }
     }
-    
+
     var body: some View {
         ZStack(alignment: .bottom) {
             NavigationStack(path: $navigationPath) {
                 List {
-                    if !isSearching && isInkwell {
+                    if !isSearching && style.usesSerifFonts {
                         Text("Feed")
                             .font(.system(size: 34, weight: .bold, design: .serif))
-                            .foregroundStyle(InkwellTheme.inkPrimary)
+                            .foregroundStyle(style.primaryText)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.leading, 8)
                             .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
@@ -80,7 +85,7 @@ struct FeedView: View {
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
-                .background(isInkwell ? InkwellTheme.background : Color(uiColor: .systemBackground))
+                .background(style.background)
                 .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -182,7 +187,7 @@ struct FeedView: View {
                 }
                 .animation(.spring(response: 0.4, dampingFraction: 0.78), value: showingAddEntry)
             }
-            
+
             // Undo toast
             if showingUndoToast, let entry = deletedEntry {
                 UndoToast(
@@ -210,15 +215,15 @@ struct FeedView: View {
             locationManager.requestLocation()
         }
     }
-    
+
     // MARK: - Add Entry Card
 
     var addEntryCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("New Entry")
-                .font(.system(.subheadline, design: isInkwell ? .serif : .rounded))
+                .font(.system(.subheadline, design: style.usesSerifFonts ? .serif : .rounded))
                 .fontWeight(.semibold)
-                .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : .secondary)
+                .foregroundStyle(style.primaryText)
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
                 .padding(.bottom, 12)
@@ -229,12 +234,12 @@ struct FeedView: View {
                 .padding(.top, 10)
                 .padding(.bottom, 16)
         }
-        .background(isInkwell ? InkwellTheme.background : Color(uiColor: .secondarySystemBackground))
+        .background(style.background)
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .shadow(color: .black.opacity(0.25), radius: 20, x: 0, y: 8)
         .overlay(
-            isInkwell ?
-            RoundedRectangle(cornerRadius: 20)
+            style.usesSerifFonts
+            ? RoundedRectangle(cornerRadius: 20)
                 .strokeBorder(
                     LinearGradient(
                         colors: [InkwellTheme.cardBorderTop, InkwellTheme.cardBorderTop.opacity(0.3)],
@@ -276,10 +281,12 @@ struct FeedView: View {
     func entryTypeButton(item: (type: EntryType, label: String, icon: String, color: Color)) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12)
-                .fill(isInkwell ? InkwellTheme.cardBackground(for: item.type) : item.color.opacity(0.12))
+                .fill(style.usesSerifFonts
+                      ? InkwellTheme.cardBackground(for: item.type)
+                      : item.color.opacity(0.12))
                 .frame(maxWidth: .infinity, minHeight: 80)
                 .overlay(
-                    isInkwell
+                    style.usesSerifFonts
                     ? AnyView(
                         RoundedRectangle(cornerRadius: 12)
                             .strokeBorder(
@@ -296,15 +303,19 @@ struct FeedView: View {
                             .strokeBorder(item.color.opacity(0.5), lineWidth: 0.5)
                     )
                 )
-                .shadow(color: isInkwell ? .black.opacity(0.4) : .black.opacity(0.08), radius: 6, x: 0, y: 3)
+                .shadow(color: style.usesSerifFonts ? .black.opacity(0.4) : .black.opacity(0.08), radius: 6, x: 0, y: 3)
             VStack(spacing: 6) {
                 Image(systemName: item.icon)
                     .font(.system(size: 22, weight: .medium))
-                    .foregroundStyle(isInkwell ? InkwellTheme.accentColor(for: item.type) : item.color)
+                    .foregroundStyle(style.usesSerifFonts
+                                     ? InkwellTheme.accentColor(for: item.type)
+                                     : item.color)
                 Text(item.label)
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .foregroundStyle(isInkwell ? InkwellTheme.accentColor(for: item.type) : .primary)
+                    .foregroundStyle(style.usesSerifFonts
+                                     ? InkwellTheme.accentColor(for: item.type)
+                                     : .primary)
             }
         }
     }
@@ -327,24 +338,21 @@ struct FeedView: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
             }
-            .foregroundStyle(isInkwell ? InkwellTheme.amber : Color.accentColor)
+            .foregroundStyle(style.accent)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
-            .background(isInkwell ? InkwellTheme.amber.opacity(0.1) : Color.accentColor.opacity(0.08))
+            .background(style.accent.opacity(0.1))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(
-                        isInkwell ? InkwellTheme.amber.opacity(0.3) : Color.accentColor.opacity(0.2),
-                        lineWidth: 0.5
-                    )
+                    .strokeBorder(style.accent.opacity(0.3), lineWidth: 0.5)
             )
         }
         .buttonStyle(.plain)
     }
 
     // MARK: - Helpers
-    
+
     func createEntry(type: EntryType) {
         let entry = Entry(type: type, text: "", tags: [])
         if let location = locationManager.currentLocation {
@@ -368,11 +376,8 @@ struct FeedView: View {
 @ViewBuilder
 func destinationView(for entry: Entry) -> some View {
     switch entry.type {
-    case .location:
-        LocationDetailView(entry: entry)
-    case .sticky:
-        StickyDetailView(entry: entry)
-    default:
-        EntryDetailView(entry: entry)
+    case .location: LocationDetailView(entry: entry)
+    case .sticky:   StickyDetailView(entry: entry)
+    default:        EntryDetailView(entry: entry)
     }
 }
