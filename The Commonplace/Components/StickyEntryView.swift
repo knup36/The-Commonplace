@@ -6,8 +6,8 @@ struct StickyEntryView: View {
     var isPreview: Bool = false
     let previewLimit = 4
 
-    var isInkwell: Bool { themeManager.current == .inkwell }
-    var accentColor: Color { isInkwell ? InkwellTheme.stickyAccent : Color(hex: "#FFD60A") }
+    var style: any AppThemeStyle { themeManager.style }
+    var accentColor: Color { InkwellTheme.stickyAccent }
 
     struct StickyItem: Identifiable {
         let id: String
@@ -26,7 +26,7 @@ struct StickyEntryView: View {
         VStack(alignment: .leading, spacing: 6) {
             if let title = entry.stickyTitle, !title.isEmpty {
                 Text(title)
-                    .font(isInkwell ? .system(.subheadline, design: .serif) : .subheadline)
+                    .font(style.subheadline)
                     .fontWeight(.semibold)
                     .foregroundStyle(accentColor)
             }
@@ -40,24 +40,24 @@ struct StickyEntryView: View {
                         Image(systemName: entry.stickyChecked.contains(item.id) ? "checkmark.circle.fill" : "circle")
                             .foregroundStyle(entry.stickyChecked.contains(item.id)
                                 ? accentColor
-                                : (isInkwell ? InkwellTheme.inkTertiary : Color.secondary))
+                                : style.tertiaryText)
                     }
                     .buttonStyle(.plain)
                     Text(item.text)
-                        .font(isInkwell ? .system(.subheadline, design: .serif) : .subheadline)
+                        .font(style.subheadline)
                         .foregroundStyle(entry.stickyChecked.contains(item.id)
-                            ? (isInkwell ? InkwellTheme.inkTertiary : Color.secondary)
-                            : (isInkwell ? InkwellTheme.inkPrimary : Color.primary))
+                            ? style.tertiaryText
+                            : style.primaryText)
                         .strikethrough(entry.stickyChecked.contains(item.id),
-                                       color: isInkwell ? InkwellTheme.inkTertiary : .secondary)
+                                       color: style.tertiaryText)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
 
             if isPreview && items.count > previewLimit {
                 Text("\(items.count - previewLimit) more...")
-                    .font(.caption)
-                    .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : Color.secondary)
+                    .font(style.caption)
+                    .foregroundStyle(style.tertiaryText)
                     .padding(.top, 2)
             }
 
@@ -67,7 +67,7 @@ struct StickyEntryView: View {
                         .tint(accentColor)
                     Text("\(entry.stickyChecked.count)/\(items.count)")
                         .font(.caption2)
-                        .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : Color.secondary)
+                        .foregroundStyle(style.tertiaryText)
                 }
                 .padding(.top, 2)
             }

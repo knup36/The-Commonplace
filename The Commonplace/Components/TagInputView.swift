@@ -5,6 +5,7 @@ struct TagInputView: View {
     @Binding var tags: [String]
     @Query var entries: [Entry]
     var accentColor: Color = .accentColor
+    var style: (any AppThemeStyle)?
     
     @State private var inputText = ""
     @FocusState private var isFocused: Bool
@@ -96,8 +97,8 @@ struct TagInputView: View {
                                     .font(.caption)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 5)
-                                    .background(Color(uiColor: .systemGray5))
-                                    .foregroundStyle(.primary)
+                                    .background(style?.surface ?? Color(uiColor: .systemGray5))
+                                    .foregroundStyle(style?.primaryText ?? .primary)
                                     .clipShape(Capsule())
                             }
                         }
