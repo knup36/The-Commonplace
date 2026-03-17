@@ -177,6 +177,9 @@ struct EntryDetailView: View {
                 }
             }
         }
+        .onDisappear {
+            SearchIndex.shared.index(entry: entry)
+        }
     }
     
     // MARK: - Sub-views

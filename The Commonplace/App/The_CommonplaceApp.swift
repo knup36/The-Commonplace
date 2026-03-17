@@ -45,7 +45,7 @@ struct CommonplaceApp: App {
         MediaFileManager.initializeiCloudContainer()
         Task.detached {
                     _ = FileManager.default.url(
-                        forUbiquityContainerIdentifier: "iCloud.com.knup36.The-Commonplace"
+                        forUbiquityContainerIdentifier: "iCloud.com.johncaldwell.commonplace"
                     )
                 }
             }
@@ -57,8 +57,22 @@ struct CommonplaceApp: App {
             ContentView()
                 .environmentObject(themeManager)
                 .preferredColorScheme(themeManager.colorScheme)
+                .task {
+                    await backfillSearchIndex()
+                }
         }
         .modelContainer(container)
+    }
+
+    @MainActor
+    func backfillSearchIndex() async {
+        do {
+            let context = container.mainContext
+            let entries = try context.fetch(FetchDescriptor<Entry>())
+            SearchIndex.shared.backfillIfNeeded(entries: entries)
+        } catch {
+            print("Backfill fetch failed: \(error)")
+        }
     }
 }
 

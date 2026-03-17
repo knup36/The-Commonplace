@@ -194,6 +194,7 @@ struct FeedView: View {
                     },
                     onExpire: {
                         if let entry = deletedEntry {
+                            SearchIndex.shared.remove(entryID: entry.id)
                             withAnimation { modelContext.delete(entry) }
                         }
                         deletedEntry = nil
@@ -352,11 +353,13 @@ struct FeedView: View {
             entry.captureLocationName = locationManager.currentPlaceName
         }
         modelContext.insert(entry)
+        SearchIndex.shared.index(entry: entry)
         navigationPath.append(entry)
     }
 
     func deleteEntries(at offsets: IndexSet) {
         for index in offsets {
+            SearchIndex.shared.remove(entryID: filteredEntries[index].id)
             modelContext.delete(filteredEntries[index])
         }
     }

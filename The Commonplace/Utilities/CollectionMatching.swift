@@ -54,14 +54,6 @@ func collectionMatches(entry: Entry, collection: Collection) -> Bool {
 }
 func entryMatchesSearch(_ entry: Entry, searchText: String) -> Bool {
     guard !searchText.isEmpty else { return true }
-    return entry.text.localizedCaseInsensitiveContains(searchText) ||
-        entry.tags.joined(separator: " ").localizedCaseInsensitiveContains(searchText) ||
-        entry.transcript?.localizedCaseInsensitiveContains(searchText) == true ||
-        entry.extractedText?.localizedCaseInsensitiveContains(searchText) == true ||
-        entry.markdownContent?.localizedCaseInsensitiveContains(searchText) == true ||
-        entry.linkTitle?.localizedCaseInsensitiveContains(searchText) == true ||
-        entry.locationName?.localizedCaseInsensitiveContains(searchText) == true ||
-        entry.locationAddress?.localizedCaseInsensitiveContains(searchText) == true ||
-        entry.captureLocationName?.localizedCaseInsensitiveContains(searchText) == true ||
-        entry.locationCategory?.localizedCaseInsensitiveContains(searchText) == true
+    let matchingIDs = SearchIndex.shared.search(query: searchText)
+    return matchingIDs.contains(entry.id)
 }
