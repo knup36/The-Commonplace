@@ -91,6 +91,10 @@ struct TodayView: View {
                     if selectedTab == 1 {
                         onThisDayBlock
                     }
+                    if selectedTab == 2 {
+                        FeedStatsView(entries: entries)
+                            .padding(.horizontal)
+                    }
                 }
                 .padding(.vertical)
             }
@@ -130,7 +134,7 @@ struct TodayView: View {
 
     var titleHeader: some View {
         HStack {
-            Text(selectedTab == 0 ? "Today" : "On This Day")
+            Text(selectedTab == 0 ? "Today" : selectedTab == 1 ? "On This Day" : "Stats")
                 .font(style.usesSerifFonts
                       ? .system(size: 34, weight: .bold, design: .serif)
                       : .largeTitle.bold())
@@ -145,6 +149,7 @@ struct TodayView: View {
         Picker("", selection: $selectedTab) {
             Text("Today").tag(0)
             Text("On This Day").tag(1)
+            Text("Stats").tag(2)
         }
         .pickerStyle(.segmented)
         .padding(.horizontal)

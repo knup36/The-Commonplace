@@ -67,6 +67,10 @@ struct EntryDetailView: View {
             .padding()
         }
         .background(entryColor.ignoresSafeArea())
+        .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom) {
+            Color.clear.frame(height: 100)
+        }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {

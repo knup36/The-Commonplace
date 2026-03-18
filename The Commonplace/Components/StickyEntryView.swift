@@ -31,7 +31,8 @@ struct StickyEntryView: View {
                     .foregroundStyle(accentColor)
             }
 
-            let visibleItems = isPreview ? Array(items.prefix(previewLimit)) : items
+            let sortedItems = items.sorted { !entry.stickyChecked.contains($0.id) && entry.stickyChecked.contains($1.id) }
+            let visibleItems = isPreview ? Array(sortedItems.prefix(previewLimit)) : sortedItems
             ForEach(visibleItems) { item in
                 HStack(spacing: 8) {
                     Button {

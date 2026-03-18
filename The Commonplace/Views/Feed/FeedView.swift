@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import CoreLocation
 
+
 // MARK: - FeedView
 // Main feed view showing all entries in reverse chronological order.
 // Handles search, add entry card, swipe actions, and undo toast.
@@ -43,12 +44,6 @@ struct FeedView: View {
 
     @ViewBuilder
     var feedHeader: some View {
-        if !isSearching {
-            FeedStatsView(entries: entries)
-                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 24, trailing: 16))
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-        }
         if !isSearching && style.usesSerifFonts {
             Text("Feed")
                 .font(.system(size: 34, weight: .bold, design: .serif))
@@ -103,120 +98,115 @@ struct FeedView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             NavigationStack(path: $navigationPath) {
-                ScrollViewReader { proxy in
-                    List {
-                        feedHeader
-                        entryRows
-                    }
-                    .listStyle(.plain)
-                    .scrollContentBackground(.hidden)
-                    .background(style.background)
-                    .navigationTitle("")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarLeading) {
-                            if isSearching {
-                                HStack {
-                                    Image(systemName: "magnifyingglass")
-                                        .foregroundStyle(.secondary)
-                                    TextField("Search entries...", text: $searchText)
-                                        .focused($searchFocused)
-                                        .autocorrectionDisabled()
-                                }
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(Color(uiColor: .systemGray6))
-                                .clipShape(Capsule())
-                                .frame(width: 260)
+                List {
+                    feedHeader
+                    entryRows
+                }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .background(style.background)
+                .navigationTitle("")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        if isSearching {
+                            HStack {
+                                Image(systemName: "magnifyingglass")
+                                    .foregroundStyle(.secondary)
+                                TextField("Search entries...", text: $searchText)
+                                    .focused($searchFocused)
+                                    .autocorrectionDisabled()
                             }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Color(uiColor: .systemGray6))
+                            .clipShape(Capsule())
+                            .frame(width: 260)
                         }
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            HStack(spacing: 16) {
-                                if !showingAddEntry {
-                                    Button {
-                                        withAnimation(.spring(response: 0.3)) {
-                                            isSearching.toggle()
-                                            if isSearching {
-                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                                    searchFocused = true
-                                                }
-                                            } else {
-                                                searchText = ""
-                                                searchFocused = false
-                                                UIApplication.shared.sendAction(
-                                                    #selector(UIResponder.resignFirstResponder),
-                                                    to: nil, from: nil, for: nil
-                                                )
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        HStack(spacing: 16) {
+                            if !showingAddEntry {
+                                Button {
+                                    withAnimation(.spring(response: 0.3)) {
+                                        isSearching.toggle()
+                                        if isSearching {
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                                searchFocused = true
                                             }
+                                        } else {
+                                            searchText = ""
+                                            searchFocused = false
+                                            UIApplication.shared.sendAction(
+                                                #selector(UIResponder.resignFirstResponder),
+                                                to: nil, from: nil, for: nil
+                                            )
                                         }
-                                    } label: {
-                                        Image(systemName: isSearching ? "xmark.circle.fill" : "magnifyingglass")
-                                            .foregroundStyle(isSearching ? .secondary : .primary)
                                     }
-                                }
-                                if !isSearching {
-                                    Button {
-                                        withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                                            showingAddEntry.toggle()
-                                        }
-                                    } label: {
-                                        Image(systemName: "plus")
-                                            .fontWeight(.medium)
-                                            .rotationEffect(.degrees(showingAddEntry ? 45 : 0))
-                                            .animation(.spring(response: 0.4, dampingFraction: 0.65), value: showingAddEntry)
-                                    }
-                                    .simultaneousGesture(
-                                        LongPressGesture(minimumDuration: 0.5).onEnded { _ in
-                                            showingTemplatePicker = true
-                                        }
-                                    )
+                                } label: {
+                                    Image(systemName: isSearching ? "xmark.circle.fill" : "magnifyingglass")
+                                        .foregroundStyle(isSearching ? .secondary : .primary)
                                 }
                             }
-                        }
-                    }
-                    .sheet(isPresented: $showingTemplatePicker) {
-                        TemplatePickerView(navigationPath: $navigationPath)
-                    }
-                    .navigationDestination(for: Entry.self) { entry in
-                        destinationView(for: entry)
-                    }
-                    .overlay(alignment: .topTrailing) {
-                        if showingAddEntry {
-                            RadialGradient(
-                                colors: [Color.black.opacity(0.95), Color.black.opacity(0.4)],
-                                center: .center,
-                                startRadius: 0,
-                                endRadius: 400
-                            )
-                            .ignoresSafeArea()
-                            .onTapGesture {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    showingAddEntry = false
+                            if !isSearching {
+                                Button {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                                        showingAddEntry.toggle()
+                                    }
+                                } label: {
+                                    Image(systemName: "plus")
+                                        .fontWeight(.medium)
+                                        .rotationEffect(.degrees(showingAddEntry ? 45 : 0))
+                                        .animation(.spring(response: 0.4, dampingFraction: 0.65), value: showingAddEntry)
                                 }
-                            }
-                            .transition(.opacity)
-                        }
-                    }
-                    .overlay {
-                        if showingAddEntry {
-                            addEntryCard
-                                .transition(
-                                    .asymmetric(
-                                        insertion: .scale(scale: 0.8, anchor: .topTrailing)
-                                            .combined(with: .opacity),
-                                        removal: .scale(scale: 0.8, anchor: .topTrailing)
-                                            .combined(with: .opacity)
-                                    )
+                                .simultaneousGesture(
+                                    LongPressGesture(minimumDuration: 0.5).onEnded { _ in
+                                        showingTemplatePicker = true
+                                    }
                                 )
+                            }
                         }
                     }
-                    .animation(.spring(response: 0.4, dampingFraction: 0.78), value: showingAddEntry)
-                    .onAppear {
-                        locationManager.requestLocation()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                            proxy.scrollTo("feed-title", anchor: .top)
+                }
+                .sheet(isPresented: $showingTemplatePicker) {
+                    TemplatePickerView(navigationPath: $navigationPath)
+                }
+                .navigationDestination(for: Entry.self) { entry in
+                    destinationView(for: entry)
+                }
+                .overlay(alignment: .topTrailing) {
+                    if showingAddEntry {
+                        RadialGradient(
+                            colors: [Color.black.opacity(0.95), Color.black.opacity(0.4)],
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 400
+                        )
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                showingAddEntry = false
+                            }
                         }
+                        .transition(.opacity)
                     }
+                }
+                .overlay {
+                    if showingAddEntry {
+                        addEntryCard
+                            .transition(
+                                .asymmetric(
+                                    insertion: .scale(scale: 0.8, anchor: .topTrailing)
+                                        .combined(with: .opacity),
+                                    removal: .scale(scale: 0.8, anchor: .topTrailing)
+                                        .combined(with: .opacity)
+                                )
+                            )
+                    }
+                }
+                .animation(.spring(response: 0.4, dampingFraction: 0.78), value: showingAddEntry)
+                .onAppear {
+                    locationManager.requestLocation()
                 }
             }
 
