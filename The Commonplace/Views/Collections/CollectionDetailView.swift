@@ -110,7 +110,7 @@ struct CollectionDetailView: View {
 
                 if !collection.filterTypes.isEmpty {
                     ForEach(collection.filterTypes, id: \.self) { type in
-                        filterChip(icon: iconForEntryType(type), label: type.capitalized)
+                        filterChip(icon: EntryType(rawValue: type)?.icon, label: type.capitalized)
                     }
                 }
                 if !collection.filterTags.isEmpty {
@@ -168,19 +168,6 @@ struct CollectionDetailView: View {
         case .location: LocationDetailView(entry: entry)
         case .sticky:   StickyDetailView(entry: entry)
         default:        EntryDetailView(entry: entry)
-        }
-    }
-
-    func iconForEntryType(_ type: String) -> String {
-        switch type {
-        case "text":     return "text.alignleft"
-        case "photo":    return "photo"
-        case "audio":    return "waveform"
-        case "link":     return "link"
-        case "journal":  return "bookmark.fill"
-        case "location": return "mappin.circle.fill"
-        case "sticky":   return "checklist"
-        default:         return "square"
         }
     }
 }

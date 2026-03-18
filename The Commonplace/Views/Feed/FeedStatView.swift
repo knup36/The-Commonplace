@@ -10,26 +10,26 @@ import SwiftData
 struct FeedStatsView: View {
     let entries: [Entry]
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { style.usesSerifFonts ? InkwellTheme.amber : .accentColor }
-
+    
     // MARK: - Computed stats
-
+    
     var totalEntries: Int { entries.count }
-
+    
     var countsByType: [(type: EntryType, count: Int)] {
         EntryType.allCases.compactMap { type in
             let count = entries.filter { $0.type == type }.count
             return count > 0 ? (type: type, count: count) : nil
         }
     }
-
+    
     var daysSinceFirst: Int? {
         guard let first = entries.map({ $0.createdAt }).min() else { return nil }
         return Calendar.current.dateComponents([.day], from: first, to: Date()).day
     }
-
+    
     var currentStreak: Int {
         var streak = 0
         var checkDate = Calendar.current.startOfDay(for: Date())
@@ -40,7 +40,7 @@ struct FeedStatsView: View {
         }
         return streak
     }
-
+    
     var mostActiveDay: String? {
         guard !entries.isEmpty else { return nil }
         let calendar = Calendar.current
@@ -53,31 +53,31 @@ struct FeedStatsView: View {
         let formatter = DateFormatter()
         return formatter.weekdaySymbols[maxWeekday - 1]
     }
-
+    
     var entriesThisWeek: Int {
         let startOfWeek = Calendar.current.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
         return entries.filter { $0.createdAt >= startOfWeek }.count
     }
-
+    
     var entriesThisMonth: Int {
         let startOfMonth = Calendar.current.dateInterval(of: .month, for: Date())?.start ?? Date()
         return entries.filter { $0.createdAt >= startOfMonth }.count
     }
-
+    
     // MARK: - Body
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-
+            
             // Total
             Text("\(totalEntries) Entries")
                 .font(style.usesSerifFonts ? .system(size: 28, weight: .bold, design: .serif) : .system(size: 28, weight: .bold))
                 .foregroundStyle(style.primaryText)
-
+            
             Divider()
                 .overlay(style.usesSerifFonts ? InkwellTheme.cardBorderTop : Color(uiColor: .separator))
                 .opacity(0.6)
-
+            
             // Icon grid — 4 per row
             let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 4)
             LazyVGrid(columns: columns, spacing: 12) {
@@ -91,7 +91,7 @@ struct FeedStatsView: View {
                                     RoundedRectangle(cornerRadius: 12)
                                         .strokeBorder(InkwellTheme.cardBorderColor(for: item.type), lineWidth: 0.5)
                                 )
-                            Image(systemName: iconForType(item.type))
+                            Image(systemName: item.type.icon)
                                 .font(.system(size: 32, weight: .medium))
                                 .foregroundStyle(InkwellTheme.accentColor(for: item.type))
                         }
@@ -102,11 +102,11 @@ struct FeedStatsView: View {
                     }
                 }
             }
-
+            
             Divider()
                 .overlay(style.usesSerifFonts ? InkwellTheme.cardBorderTop : Color(uiColor: .separator))
                 .opacity(0.6)
-
+            
             // Capturing days + streak
             HStack {
                 if let days = daysSinceFirst {
@@ -126,11 +126,11 @@ struct FeedStatsView: View {
                     }
                 }
             }
-
+            
             Divider()
                 .overlay(style.usesSerifFonts ? InkwellTheme.cardBorderTop : Color(uiColor: .separator))
                 .opacity(0.6)
-
+            
             // Most active day
             if let day = mostActiveDay {
                 HStack {
@@ -142,7 +142,7 @@ struct FeedStatsView: View {
                         .foregroundStyle(style.secondaryText)
                 }
             }
-
+            
             // This week / this month
             HStack(spacing: 16) {
                 HStack(spacing: 4) {
@@ -162,20 +162,5 @@ struct FeedStatsView: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 8)
-    }
-
-    // MARK: - Helpers
-
-    func iconForType(_ type: EntryType) -> String {
-        switch type {
-        case .text:     return "text.alignleft"
-        case .photo:    return "photo.fill"
-        case .audio:    return "waveform"
-        case .link:     return "link"
-        case .journal:  return "bookmark.fill"
-        case .location: return "mappin.circle.fill"
-        case .sticky:   return "checklist"
-        case .music:    return "music.note"
-        }
     }
 }

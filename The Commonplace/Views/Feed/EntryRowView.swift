@@ -20,32 +20,6 @@ struct EntryRowView: View {
         InkwellTheme.accentColor(for: entry.type)
     }
     
-    var iconForType: String {
-        switch entry.type {
-        case .text:     return "text.alignleft"
-        case .photo:    return "photo"
-        case .audio:    return "waveform"
-        case .link:     return "link"
-        case .journal:  return "bookmark.fill"
-        case .location: return "mappin.circle.fill"
-        case .sticky:   return "checklist"
-        case .music:    return "music.note"
-        }
-    }
-    
-    var typeName: String {
-        switch entry.type {
-        case .text:     return "Note"
-        case .photo:    return "Photo"
-        case .audio:    return "Audio"
-        case .link:     return "Link"
-        case .journal:  return "Journal"
-        case .location: return "Place"
-        case .sticky:   return "List"
-        case .music:    return "Music"
-        }
-    }
-    
     // MARK: - Sub-views
     
     @ViewBuilder
@@ -55,7 +29,7 @@ struct EntryRowView: View {
                 Circle()
                     .fill(entryAccentColor)
                     .frame(width: 5, height: 5)
-                Text(typeName.uppercased())
+                Text(entry.type.displayName.uppercased())
                     .font(.system(size: 9, weight: .medium))
                     .kerning(0.8)
                     .foregroundStyle(entryAccentColor)
@@ -76,7 +50,7 @@ struct EntryRowView: View {
                     Circle()
                         .fill(entryAccentColor.opacity(0.1))
                         .frame(width: 22, height: 22)
-                    Image(systemName: iconForType)
+                    Image(systemName: entry.type.icon)
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(entryAccentColor.opacity(0.7))
                 }

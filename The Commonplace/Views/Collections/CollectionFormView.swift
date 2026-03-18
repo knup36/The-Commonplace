@@ -59,7 +59,7 @@ struct CollectionFormView: View {
                 Section("Filter by Type") {
                     ForEach(EntryType.allCases, id: \.self) { type in
                         HStack {
-                            Label(type.rawValue.capitalized, systemImage: iconForType(type))
+                            Label(type.rawValue.capitalized, systemImage: type.icon)
                             Spacer()
                             if selectedTypes.contains(type.rawValue) {
                                 Image(systemName: "checkmark")
@@ -272,18 +272,5 @@ struct CollectionFormView: View {
         collection.filterLocationLongitude = filterLocationLongitude
         collection.filterLocationRadius = filterLocationRadius
         collection.filterSearchText = favoritesOnly ? "__favorites__" : (filterSearchText.isEmpty ? nil : filterSearchText)
-    }
-
-    func iconForType(_ type: EntryType) -> String {
-        switch type {
-        case .text:     return "text.alignleft"
-        case .photo:    return "photo"
-        case .audio:    return "waveform"
-        case .link:     return "link"
-        case .journal:  return "bookmark.fill"
-        case .location: return "mappin.circle.fill"
-        case .sticky:   return "checklist"
-        case .music:    return "music.note"
-        }
     }
 }

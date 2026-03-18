@@ -69,4 +69,30 @@ enum EntryType: String, Codable, CaseIterable {
     case location
     case sticky
     case music
+
+    var icon: String {
+        switch self {
+        case .text:     return "text.alignleft"
+        case .photo:    return "photo.fill"
+        case .audio:    return "waveform"
+        case .link:     return "link"
+        case .journal:  return "bookmark.fill"
+        case .location: return "mappin.circle.fill"
+        case .sticky:   return "checklist"
+        case .music:    return "music.note"
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .text:     return "Note"
+        case .photo:    return "Photo"
+        case .audio:    return "Audio"
+        case .link:     return "Link"
+        case .journal:  return "Journal"
+        case .location: return "Place"
+        case .sticky:   return "List"
+        case .music:    return "Music"
+        }
+    }
 }

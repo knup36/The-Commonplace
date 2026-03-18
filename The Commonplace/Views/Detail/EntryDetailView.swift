@@ -17,8 +17,7 @@ struct EntryDetailView: View {
     @State private var isEditing = false
     @State private var editText = ""
     @FocusState private var textFieldFocused: Bool
-    @Query(sort: \Habit.order) var habits: [Habit]
-
+    
     var style: any AppThemeStyle { themeManager.style }
 
     var entryColor: Color {
@@ -35,19 +34,6 @@ struct EntryDetailView: View {
         case .location: return InkwellTheme.collectionAccentColor(for: "#30D158")
         case .sticky:   return InkwellTheme.amber
         case .music:    return InkwellTheme.accentColor(for: .music)
-        }
-    }
-
-    var iconForType: String {
-        switch entry.type {
-        case .text:     return "text.alignleft"
-        case .photo:    return "photo"
-        case .audio:    return "waveform"
-        case .link:     return "link"
-        case .journal:  return "bookmark.fill"
-        case .location: return "mappin.circle.fill"
-        case .sticky:   return "checklist"
-        case .music:    return "music.note"
         }
     }
 
@@ -160,7 +146,7 @@ struct EntryDetailView: View {
                         Circle()
                             .fill(entryAccentColor)
                             .frame(width: 20, height: 20)
-                        Image(systemName: iconForType)
+                        Image(systemName: entry.type.icon)
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundStyle(style.background)
                     }
