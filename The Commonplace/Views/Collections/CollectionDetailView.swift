@@ -159,15 +159,4 @@ struct CollectionDetailView: View {
             .listRowBackground(Color.clear)
         }
     }
-
-    // MARK: - Helpers
-
-    @ViewBuilder
-    func destinationView(for entry: Entry) -> some View {
-        switch entry.type {
-        case .location: LocationDetailView(entry: entry)
-        case .sticky:   StickyDetailView(entry: entry)
-        default:        EntryDetailView(entry: entry)
-        }
-    }
 }

@@ -58,13 +58,4 @@ struct TagFeedView: View {
         }
         .searchable(text: $searchText, prompt: "Search entries...")
     }
-
-    @ViewBuilder
-    func destinationView(for entry: Entry) -> some View {
-        switch entry.type {
-        case .location: LocationDetailView(entry: entry)
-        case .sticky:   StickyDetailView(entry: entry)
-        default:        EntryDetailView(entry: entry)
-        }
-    }
 }
