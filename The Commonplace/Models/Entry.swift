@@ -49,6 +49,23 @@ class Entry {
     var stickyItems: [String] = []
     var stickyChecked: [String] = []
     
+    // Journal
+    var weatherEmoji: String = ""
+    var moodEmoji: String = ""
+    var completedHabits: [String] = []
+    var completedHabitSnapshots: [String] = []
+    var totalHabitsAtTime: Int = 0
+    var journalImageData: Data? = nil
+
+    // Health data (fetched once for past days, live for today)
+    var healthActiveCalories: Double? = nil
+    var healthExerciseMinutes: Double? = nil
+    var healthStandHours: Double? = nil
+    var healthWorkoutName: String? = nil
+    var healthWorkoutDuration: Int? = nil
+    var healthWorkoutCalories: Double? = nil
+    var healthDataFetched: Bool = false
+    
     init(type: EntryType = .text, text: String = "", tags: [String] = []) {
         self.id = UUID()
         self.createdAt = Date()

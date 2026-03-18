@@ -5,13 +5,12 @@ import PhotosUI
 // MARK: - JournalBlockView
 // The daily journal card shown on the Today tab.
 // Contains weather/mood pickers, habits, daily note, and daily photo.
-// Owns all its own state — no bindings needed from TodayView.
+// All data now lives on Entry — JournalEntry is no longer used.
 // Screen: Today tab → Today segment
 
 struct JournalBlockView: View {
     @Environment(\.modelContext) var modelContext
     @Query var entries: [Entry]
-    @Query var journalEntries: [JournalEntry]
     @Query(sort: \Habit.order) var habits: [Habit]
     @StateObject private var locationManager = LocationManager()
     @EnvironmentObject var themeManager: ThemeManager
@@ -28,11 +27,8 @@ struct JournalBlockView: View {
 
     var today: Date { Calendar.current.startOfDay(for: Date()) }
 
-    var todayJournalEntry: JournalEntry? {
-        journalEntries.first { Calendar.current.isDateInToday($0.date) }
-    }
-
-    var dailyNoteEntry: Entry? {
+    // Single source of truth — today's journal Entry
+    var todayEntry: Entry? {
         entries.first {
             Calendar.current.isDateInToday($0.createdAt) && $0.type == .journal
         }
@@ -52,9 +48,9 @@ struct JournalBlockView: View {
             journalHeader
             Divider().overlay(journalDivider)
             emojiPickerRow(label: "Weather", icon: "cloud.sun.fill", options: weatherOptions,
-                           selected: todayJournalEntry?.weatherEmoji ?? "", onSelect: { setWeather($0) })
+                           selected: todayEntry?.weatherEmoji ?? "", onSelect: { setWeather($0) })
             emojiPickerRow(label: "Mood", icon: "face.smiling", options: moodOptions,
-                           selected: todayJournalEntry?.moodEmoji ?? "", onSelect: { setMood($0) })
+                           selected: todayEntry?.moodEmoji ?? "", onSelect: { setMood($0) })
             Divider().overlay(journalDivider)
             habitsBlock
             Divider().overlay(journalDivider)
@@ -81,7 +77,7 @@ struct JournalBlockView: View {
         }
         .onChange(of: journalImage) { _, newImage in
             if let image = newImage, let data = image.jpegData(compressionQuality: 0.8) {
-                getOrCreateJournalEntry().journalImageData = data
+                getOrCreateTodayEntry().journalImageData = data
                 journalImage = nil
             }
         }
@@ -129,7 +125,7 @@ struct JournalBlockView: View {
                     ForEach(habits) { habit in
                         HabitRowView(
                             habit: habit,
-                            isCompleted: todayJournalEntry?.completedHabits.contains(habit.id.uuidString) ?? false,
+                            isCompleted: todayEntry?.completedHabits.contains(habit.id.uuidString) ?? false,
                             onToggle: { toggleHabit(habit) },
                             accentColor: journalAccent,
                             style: style
@@ -162,7 +158,7 @@ struct JournalBlockView: View {
             Label("Daily Photo", systemImage: "camera.fill")
                 .font(.subheadline).fontWeight(.medium)
                 .foregroundStyle(style.secondaryText)
-            if let imageData = todayJournalEntry?.journalImageData,
+            if let imageData = todayEntry?.journalImageData,
                let uiImage = UIImage(data: imageData) {
                 ZStack(alignment: .topTrailing) {
                     Image(uiImage: uiImage)
@@ -170,7 +166,7 @@ struct JournalBlockView: View {
                         .frame(maxWidth: .infinity)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                     Button {
-                        getOrCreateJournalEntry().journalImageData = nil
+                        todayEntry?.journalImageData = nil
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(.white).padding(8)
@@ -229,19 +225,31 @@ struct JournalBlockView: View {
 
     // MARK: - Helpers
 
-    func getOrCreateJournalEntry() -> JournalEntry {
-        if let existing = todayJournalEntry { return existing }
-        let entry = JournalEntry(date: today)
+    func getOrCreateTodayEntry() -> Entry {
+        if let existing = todayEntry {
+            // Keep totalHabitsAtTime in sync
+            if existing.totalHabitsAtTime != habits.count {
+                existing.totalHabitsAtTime = habits.count
+            }
+            return existing
+        }
+        let entry = Entry(type: .journal, text: "", tags: [])
+        entry.createdAt = today
         entry.totalHabitsAtTime = habits.count
+        if let location = locationManager.currentLocation {
+            entry.captureLatitude = location.coordinate.latitude
+            entry.captureLongitude = location.coordinate.longitude
+            entry.captureLocationName = locationManager.currentPlaceName
+        }
         modelContext.insert(entry)
         return entry
     }
 
-    func setWeather(_ emoji: String) { getOrCreateJournalEntry().weatherEmoji = emoji }
-    func setMood(_ emoji: String) { getOrCreateJournalEntry().moodEmoji = emoji }
+    func setWeather(_ emoji: String) { getOrCreateTodayEntry().weatherEmoji = emoji }
+    func setMood(_ emoji: String) { getOrCreateTodayEntry().moodEmoji = emoji }
 
     func toggleHabit(_ habit: Habit) {
-        let entry = getOrCreateJournalEntry()
+        let entry = getOrCreateTodayEntry()
         let id = habit.id.uuidString
         if entry.completedHabits.contains(id) {
             entry.completedHabits.removeAll { $0 == id }
@@ -253,20 +261,15 @@ struct JournalBlockView: View {
     }
 
     func saveDailyNote(_ text: String) {
-        if let existing = dailyNoteEntry {
+        if let existing = todayEntry {
             existing.text = text
         } else if !text.isEmpty {
-            let entry = Entry(type: .journal, text: text, tags: [])
-            if let location = locationManager.currentLocation {
-                entry.captureLatitude = location.coordinate.latitude
-                entry.captureLongitude = location.coordinate.longitude
-                entry.captureLocationName = locationManager.currentPlaceName
-            }
-            modelContext.insert(entry)
+            let entry = getOrCreateTodayEntry()
+            entry.text = text
         }
     }
 
     func loadDailyNote() {
-        dailyNoteText = dailyNoteEntry?.text ?? ""
+        dailyNoteText = todayEntry?.text ?? ""
     }
 }

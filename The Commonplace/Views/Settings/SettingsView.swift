@@ -13,7 +13,6 @@ struct SettingsView: View {
     @Query(sort: \Habit.order) var habits: [Habit]
     @Query var allEntries: [Entry]
     @Query var allCollections: [Collection]
-    @Query var allJournalEntries: [JournalEntry]
     @EnvironmentObject var themeManager: ThemeManager
 
     @State private var showingAddHabit = false
@@ -218,8 +217,7 @@ struct SettingsView: View {
                 let url = try DataExporter.export(
                     entries: allEntries,
                     collections: allCollections,
-                    habits: habits,
-                    journalEntries: allJournalEntries
+                    habits: habits
                 )
                 await MainActor.run {
                     exportURL = url

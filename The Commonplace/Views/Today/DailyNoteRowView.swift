@@ -4,22 +4,15 @@ import SwiftData
 // MARK: - DailyNoteRowView
 // Feed card content for journal entries.
 // Shows date, weather/mood emojis, note text, habit summary, and journal photo.
+// All data now lives directly on Entry — no JournalEntry query needed.
 // Screen: Feed, Collections, Today tab — journal entry cards
 
 struct DailyNoteRowView: View {
     let entry: Entry
-    @Query var journalEntries: [JournalEntry]
-    @Query(sort: \Habit.order) var habits: [Habit]
     @EnvironmentObject var themeManager: ThemeManager
 
     var style: any AppThemeStyle { themeManager.style }
     var purple: Color { InkwellTheme.journalAccent }
-
-    var journalEntry: JournalEntry? {
-        journalEntries.first {
-            Calendar.current.isDate($0.date, inSameDayAs: entry.createdAt)
-        }
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -31,14 +24,12 @@ struct DailyNoteRowView: View {
                 .foregroundStyle(purple)
 
             // Weather + Mood
-            if let je = journalEntry {
-                HStack(spacing: 8) {
-                    if !je.weatherEmoji.isEmpty {
-                        Text(je.weatherEmoji).font(.title3)
-                    }
-                    if !je.moodEmoji.isEmpty {
-                        Text(je.moodEmoji).font(.title3)
-                    }
+            HStack(spacing: 8) {
+                if !entry.weatherEmoji.isEmpty {
+                    Text(entry.weatherEmoji).font(.title3)
+                }
+                if !entry.moodEmoji.isEmpty {
+                    Text(entry.moodEmoji).font(.title3)
                 }
             }
 
@@ -59,9 +50,9 @@ struct DailyNoteRowView: View {
             }
 
             // Habit summary
-            if let je = journalEntry, (!je.completedHabitSnapshots.isEmpty || je.totalHabitsAtTime > 0) {
-                let completed = je.completedHabitSnapshots.count
-                let total = je.totalHabitsAtTime > 0 ? je.totalHabitsAtTime : habits.count
+            if !entry.completedHabitSnapshots.isEmpty || entry.totalHabitsAtTime > 0 {
+                let completed = entry.completedHabitSnapshots.count
+                let total = entry.totalHabitsAtTime
                 let percentage = total > 0 ? Int((Double(completed) / Double(total)) * 100) : 0
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.circle.fill")
@@ -74,7 +65,7 @@ struct DailyNoteRowView: View {
             }
 
             // Journal photo
-            if let imageData = journalEntry?.journalImageData,
+            if let imageData = entry.journalImageData,
                let uiImage = UIImage(data: imageData) {
                 Image(uiImage: uiImage)
                     .resizable()

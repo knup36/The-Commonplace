@@ -40,15 +40,15 @@ struct CommonplaceApp: App {
                 configurations: config
             )
         } catch {
-                    fatalError("Could not create ModelContainer: \(error)")
-                }
+            fatalError("Could not create ModelContainer: \(error)")
+        }
         MediaFileManager.initializeiCloudContainer()
         Task.detached {
-                    _ = FileManager.default.url(
-                        forUbiquityContainerIdentifier: "iCloud.com.johncaldwell.commonplace"
-                    )
-                }
-            }
+            _ = FileManager.default.url(
+                forUbiquityContainerIdentifier: "iCloud.com.johncaldwell.commonplace"
+            )
+        }
+    }
 
     @StateObject private var themeManager = ThemeManager()
 
@@ -58,20 +58,75 @@ struct CommonplaceApp: App {
                 .environmentObject(themeManager)
                 .preferredColorScheme(themeManager.colorScheme)
                 .task {
-                    await backfillSearchIndex()
+                    await startupTasks()
                 }
         }
         .modelContainer(container)
     }
 
+    // MARK: - Startup
+
     @MainActor
-    func backfillSearchIndex() async {
+    func startupTasks() async {
+        let context = container.mainContext
+        migrateJournalEntriesToEntries(context: context)
         do {
-            let context = container.mainContext
             let entries = try context.fetch(FetchDescriptor<Entry>())
             SearchIndex.shared.backfillIfNeeded(entries: entries)
         } catch {
             print("Backfill fetch failed: \(error)")
+        }
+    }
+
+    // MARK: - Journal Entry Migration
+
+    @MainActor
+    func migrateJournalEntriesToEntries(context: ModelContext) {
+        let migrationKey = "journalEntryMigrationComplete"
+        guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
+
+        do {
+            let journalEntries = try context.fetch(FetchDescriptor<JournalEntry>())
+            guard !journalEntries.isEmpty else {
+                UserDefaults.standard.set(true, forKey: migrationKey)
+                return
+            }
+
+            let entries = try context.fetch(FetchDescriptor<Entry>())
+
+            for je in journalEntries {
+                let matchingEntry = entries.first {
+                    $0.type == .journal &&
+                    Calendar.current.isDate($0.createdAt, inSameDayAs: je.date)
+                }
+
+                if let entry = matchingEntry {
+                    entry.weatherEmoji = je.weatherEmoji
+                    entry.moodEmoji = je.moodEmoji
+                    entry.completedHabits = je.completedHabits
+                    entry.completedHabitSnapshots = je.completedHabitSnapshots
+                    entry.totalHabitsAtTime = je.totalHabitsAtTime
+                    entry.journalImageData = je.journalImageData
+                } else {
+                    let entry = Entry(type: .journal, text: "", tags: [])
+                    entry.createdAt = je.date
+                    entry.weatherEmoji = je.weatherEmoji
+                    entry.moodEmoji = je.moodEmoji
+                    entry.completedHabits = je.completedHabits
+                    entry.completedHabitSnapshots = je.completedHabitSnapshots
+                    entry.totalHabitsAtTime = je.totalHabitsAtTime
+                    entry.journalImageData = je.journalImageData
+                    context.insert(entry)
+                }
+
+                context.delete(je)
+            }
+
+            try context.save()
+            UserDefaults.standard.set(true, forKey: migrationKey)
+            print("Journal migration complete: \(journalEntries.count) entries migrated")
+        } catch {
+            print("Journal migration failed: \(error)")
         }
     }
 }
@@ -111,7 +166,6 @@ func createDefaultCollectionsIfNeeded(context: ModelContext) {
                 ("Music",      "music.note",          "#C87858", "music",    false)
             ]
 
-            // Only create defaults that don't already exist by name
             let nextOrder = existing.map { $0.order }.max().map { $0 + 1 } ?? 0
             var created = 0
 

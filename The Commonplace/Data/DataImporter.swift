@@ -3,35 +3,34 @@ import SwiftData
 import ZIPFoundation
 
 class DataImporter {
-    
+
     static func importArchive(from url: URL, modelContext: ModelContext) throws -> ImportResult {
         let accessing = url.startAccessingSecurityScopedResource()
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }
-        
+
         let tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("commonplace_import_\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: tempDir) }
-        
+
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
         try FileManager.default.unzipItem(at: url, to: tempDir)
-        
+
         let manifestURL = tempDir.appendingPathComponent("manifest.json")
         guard FileManager.default.fileExists(atPath: manifestURL.path) else {
             throw ImportError.missingManifest
         }
-        
+
         let jsonData = try Data(contentsOf: manifestURL)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let manifest = try decoder.decode(DataExporter.ExportManifest.self, from: jsonData)
-        
+
         let mediaDir = tempDir.appendingPathComponent("media")
-        
+
         var entriesImported = 0
         var collectionsImported = 0
         var habitsImported = 0
-        var journalEntriesImported = 0
-        
+
         // Import Habits
         let existingHabitIDs = Set((try? modelContext.fetch(FetchDescriptor<Habit>()))?.map { $0.id.uuidString } ?? [])
         for dto in manifest.habits {
@@ -41,14 +40,12 @@ class DataImporter {
             modelContext.insert(habit)
             habitsImported += 1
         }
-        
+
         // Import Collections
         let existingCollectionIDs = Set((try? modelContext.fetch(FetchDescriptor<Collection>()))?.map { $0.id.uuidString } ?? [])
         let existingCollectionNames = Set((try? modelContext.fetch(FetchDescriptor<Collection>()))?.map { $0.name } ?? [])
         for dto in manifest.collections {
-            // Skip if same ID already exists (exact duplicate)
             guard !existingCollectionIDs.contains(dto.id) else { continue }
-            // Skip system collections if one with the same name already exists
             if dto.isSystem && existingCollectionNames.contains(dto.name) { continue }
             let collection = Collection(
                 name: dto.name,
@@ -72,25 +69,7 @@ class DataImporter {
             modelContext.insert(collection)
             collectionsImported += 1
         }
-        
-        // Import Journal Entries
-        let existingJournalIDs = Set((try? modelContext.fetch(FetchDescriptor<JournalEntry>()))?.map { $0.id.uuidString } ?? [])
-        for dto in manifest.journalEntries {
-            guard !existingJournalIDs.contains(dto.id) else { continue }
-            let je = JournalEntry(date: dto.date)
-            je.id = UUID(uuidString: dto.id) ?? UUID()
-            je.weatherEmoji = dto.weatherEmoji
-            je.moodEmoji = dto.moodEmoji
-            je.completedHabits = dto.completedHabits
-            je.completedHabitSnapshots = dto.completedHabitSnapshots
-            je.totalHabitsAtTime = dto.totalHabitsAtTime
-            if let filename = dto.journalImageFile {
-                je.journalImageData = try? Data(contentsOf: mediaDir.appendingPathComponent(filename))
-            }
-            modelContext.insert(je)
-            journalEntriesImported += 1
-        }
-        
+
         // Import Entries
         let existingEntryIDs = Set((try? modelContext.fetch(FetchDescriptor<Entry>()))?.map { $0.id.uuidString } ?? [])
         for dto in manifest.entries {
@@ -121,7 +100,16 @@ class DataImporter {
             entry.mediaArtist = dto.mediaArtist
             entry.mediaAlbum = dto.mediaAlbum
             entry.previewURL = dto.previewURL
-            
+
+            // Journal fields
+            if type == .journal {
+                entry.weatherEmoji = dto.weatherEmoji ?? ""
+                entry.moodEmoji = dto.moodEmoji ?? ""
+                entry.completedHabits = dto.completedHabits ?? []
+                entry.completedHabitSnapshots = dto.completedHabitSnapshots ?? []
+                entry.totalHabitsAtTime = dto.totalHabitsAtTime ?? 0
+            }
+
             if let filename = dto.imageFile,
                let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
                 entry.imagePath = try? MediaFileManager.save(data, type: .image, id: entry.id.uuidString)
@@ -142,21 +130,60 @@ class DataImporter {
                let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
                 entry.mediaArtworkPath = try? MediaFileManager.save(data, type: .image, id: "\(entry.id.uuidString)_artwork")
             }
-            
+            if let filename = dto.journalImageFile,
+               let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
+                entry.journalImageData = data
+            }
+
             modelContext.insert(entry)
             entriesImported += 1
         }
-        
+
+        // Handle old archive format — import legacy JournalEntry records
+        // and merge them into matching journal entries
+        if !manifest.journalEntries.isEmpty {
+            let allEntries = (try? modelContext.fetch(FetchDescriptor<Entry>())) ?? []
+            for dto in manifest.journalEntries {
+                let matching = allEntries.first {
+                    $0.type == .journal &&
+                    Calendar.current.isDate($0.createdAt, inSameDayAs: dto.date)
+                }
+                if let entry = matching {
+                    if entry.weatherEmoji.isEmpty { entry.weatherEmoji = dto.weatherEmoji }
+                    if entry.moodEmoji.isEmpty { entry.moodEmoji = dto.moodEmoji }
+                    if entry.completedHabits.isEmpty { entry.completedHabits = dto.completedHabits }
+                    if entry.completedHabitSnapshots.isEmpty { entry.completedHabitSnapshots = dto.completedHabitSnapshots }
+                    if entry.totalHabitsAtTime == 0 { entry.totalHabitsAtTime = dto.totalHabitsAtTime }
+                    if entry.journalImageData == nil, let filename = dto.journalImageFile {
+                        entry.journalImageData = try? Data(contentsOf: mediaDir.appendingPathComponent(filename))
+                    }
+                } else {
+                    // Create a new journal entry from the legacy data
+                    let entry = Entry(type: .journal, text: "", tags: [])
+                    entry.createdAt = dto.date
+                    entry.weatherEmoji = dto.weatherEmoji
+                    entry.moodEmoji = dto.moodEmoji
+                    entry.completedHabits = dto.completedHabits
+                    entry.completedHabitSnapshots = dto.completedHabitSnapshots
+                    entry.totalHabitsAtTime = dto.totalHabitsAtTime
+                    if let filename = dto.journalImageFile {
+                        entry.journalImageData = try? Data(contentsOf: mediaDir.appendingPathComponent(filename))
+                    }
+                    modelContext.insert(entry)
+                    entriesImported += 1
+                }
+            }
+        }
+
         try modelContext.save()
-        
+
         return ImportResult(
             entriesImported: entriesImported,
             collectionsImported: collectionsImported,
-            habitsImported: habitsImported,
-            journalEntriesImported: journalEntriesImported
+            habitsImported: habitsImported
         )
     }
-    
+
     enum ImportError: LocalizedError {
         case missingManifest
         var errorDescription: String? {
@@ -166,15 +193,14 @@ class DataImporter {
             }
         }
     }
-    
+
     struct ImportResult {
         let entriesImported: Int
         let collectionsImported: Int
         let habitsImported: Int
-        let journalEntriesImported: Int
-        
+
         var summary: String {
-            let total = entriesImported + collectionsImported + habitsImported + journalEntriesImported
+            let total = entriesImported + collectionsImported + habitsImported
             if total == 0 {
                 return "Everything is already up to date — no duplicates were imported."
             }
@@ -182,7 +208,6 @@ class DataImporter {
             if entriesImported > 0 { parts.append("\(entriesImported) entries") }
             if collectionsImported > 0 { parts.append("\(collectionsImported) collections") }
             if habitsImported > 0 { parts.append("\(habitsImported) habits") }
-            if journalEntriesImported > 0 { parts.append("\(journalEntriesImported) journal entries") }
             return "Imported \(parts.joined(separator: ", "))."
         }
     }
