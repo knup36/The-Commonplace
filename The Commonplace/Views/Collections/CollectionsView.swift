@@ -216,10 +216,10 @@ struct CollectionsView: View {
                 CollectionDetailView(collection: collection)
             }
             .sheet(isPresented: $showingAddCollection) {
-                AddCollectionView()
+                CollectionFormView()
             }
             .sheet(item: $collectionToEdit) { collection in
-                EditCollectionView(collection: collection)
+                CollectionFormView(collection: collection)
             }
         }
     }
