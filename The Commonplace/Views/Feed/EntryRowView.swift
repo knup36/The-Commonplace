@@ -9,17 +9,17 @@ import SwiftUI
 struct EntryRowView: View {
     let entry: Entry
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     var style: any AppThemeStyle { themeManager.style }
-
+    
     var entryColor: Color {
         InkwellTheme.cardBackground(for: entry.type)
     }
-
+    
     var entryAccentColor: Color {
         InkwellTheme.accentColor(for: entry.type)
     }
-
+    
     var iconForType: String {
         switch entry.type {
         case .text:     return "text.alignleft"
@@ -32,7 +32,7 @@ struct EntryRowView: View {
         case .music:    return "music.note"
         }
     }
-
+    
     var typeName: String {
         switch entry.type {
         case .text:     return "Note"
@@ -45,9 +45,9 @@ struct EntryRowView: View {
         case .music:    return "Music"
         }
     }
-
+    
     // MARK: - Sub-views
-
+    
     @ViewBuilder
     var typeLabel: some View {
         if style.usesSerifFonts {
@@ -62,7 +62,7 @@ struct EntryRowView: View {
             }
         }
     }
-
+    
     var metadataColumn: some View {
         HStack(spacing: 6) {
             Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
@@ -84,18 +84,20 @@ struct EntryRowView: View {
         }
         .fixedSize()
     }
-
+    
     @ViewBuilder
     var cardContent: some View {
         switch entry.type {
         case .photo:
-            if let path = entry.imagePath,
-               let imageData = MediaFileManager.load(path: path) {
-                AnimatedImageView(data: imageData, isAnimated: AnimatedImageView.isGIF(data: imageData), crop: false)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
-            if !entry.text.isEmpty {
-                noteText(italic: false)
+            VStack(alignment: .leading, spacing: 8) {
+                if let path = entry.imagePath,
+                   let imageData = MediaFileManager.load(path: path) {
+                    AnimatedImageView(data: imageData, isAnimated: AnimatedImageView.isGIF(data: imageData), crop: false)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                if !entry.text.isEmpty {
+                    noteText(italic: false)
+                }
             }
         case .link:
             VStack(alignment: .leading, spacing: 6) {
@@ -136,7 +138,7 @@ struct EntryRowView: View {
             MusicEntryView(entry: entry)
         }
     }
-
+    
     func noteText(italic: Bool) -> some View {
         Text(entry.text)
             .font(style.body)
@@ -145,7 +147,7 @@ struct EntryRowView: View {
             .foregroundStyle(style.secondaryText)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
-
+    
     @ViewBuilder
     var tagsRow: some View {
         HStack(alignment: .bottom, spacing: 8) {
@@ -184,9 +186,9 @@ struct EntryRowView: View {
             metadataColumn
         }
     }
-
+    
     // MARK: - Body
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ZStack(alignment: .topTrailing) {

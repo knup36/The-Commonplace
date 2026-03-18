@@ -15,12 +15,12 @@ struct PhotoDetailSection: View {
     @Bindable var entry: Entry
     var style: any AppThemeStyle
     var accentColor: Color
-
+    
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @State private var isAnalyzing = false
     @State private var showingExtractedText = false
     @State private var showingFullScreenImage = false
-
+    
     var body: some View {
         if entry.type == .photo {
             if let path = entry.imagePath,
@@ -28,6 +28,12 @@ struct PhotoDetailSection: View {
                 AnimatedImageView(data: imageData, isAnimated: AnimatedImageView.isGIF(data: imageData), crop: false)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .onTapGesture { showingFullScreenImage = true }
+                    .fullScreenCover(isPresented: $showingFullScreenImage) {
+                        if let path = entry.imagePath,
+                           let imageData = MediaFileManager.load(path: path) {
+                            FullScreenImageView(data: imageData)
+                        }
+                    }
                 PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
                     Label("Change Photo", systemImage: "photo")
                         .font(.caption)
@@ -66,10 +72,9 @@ struct PhotoDetailSection: View {
                             isAnalyzing = false
                         }
                     }
-                    fullScreenImageCover
                 }
             }
-
+            
             // Analyzing indicator
             if isAnalyzing {
                 HStack(spacing: 8) {
@@ -79,7 +84,7 @@ struct PhotoDetailSection: View {
                         .foregroundStyle(style.secondaryText)
                 }
             }
-
+            
             // Extracted text section
             if let extractedText = entry.extractedText, !extractedText.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
@@ -111,17 +116,5 @@ struct PhotoDetailSection: View {
                 }
             }
         }
-            }
-            
-            // MARK: - Full Screen Image
-            
-            var fullScreenImageCover: some View {
-                Color.clear
-                    .fullScreenCover(isPresented: $showingFullScreenImage) {
-                        if let path = entry.imagePath,
-                           let imageData = MediaFileManager.load(path: path) {
-                            FullScreenImageView(data: imageData)
-                        }
-                    }
-            }
-        }
+    }
+}

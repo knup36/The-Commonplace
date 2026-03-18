@@ -5,6 +5,7 @@ import CoreLocation
 // MARK: - FeedView
 // Main feed view showing all entries in reverse chronological order.
 // Handles search, add entry card, swipe actions, and undo toast.
+// Stats are hidden above the Feed title — pull down to reveal.
 // Screen: Feed tab (bottom navigation)
 
 struct FeedView: View {
@@ -38,154 +39,185 @@ struct FeedView: View {
         return base.filter { $0.id != deletedEntry?.id }
     }
 
+    // MARK: - Feed Header
+
+    @ViewBuilder
+    var feedHeader: some View {
+        if !isSearching {
+            FeedStatsView(entries: entries)
+                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 24, trailing: 16))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+        }
+        if !isSearching && style.usesSerifFonts {
+            Text("Feed")
+                .font(.system(size: 34, weight: .bold, design: .serif))
+                .foregroundStyle(style.primaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 8)
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+                .id("feed-title")
+        }
+    }
+
+    // MARK: - Entry Rows
+
+    @ViewBuilder
+    var entryRows: some View {
+        ForEach(filteredEntries) { entry in
+            ZStack {
+                NavigationLink(destination: destinationView(for: entry)) {
+                    EmptyView()
+                }
+                .opacity(0)
+                EntryRowView(entry: entry)
+            }
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                Button {
+                    withAnimation { entry.isFavorited.toggle() }
+                } label: {
+                    Label(entry.isFavorited ? "Unfavorite" : "Favorite",
+                          systemImage: entry.isFavorited ? "star.slash.fill" : "star.fill")
+                }
+                .tint(.yellow)
+            }
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button(role: .destructive) {
+                    deletedEntry = entry
+                    showingUndoToast = true
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+        }
+        .onDelete(perform: deleteEntries)
+    }
+
+    // MARK: - Body
+
     var body: some View {
         ZStack(alignment: .bottom) {
             NavigationStack(path: $navigationPath) {
-                List {
-                    if !isSearching && style.usesSerifFonts {
-                        Text("Feed")
-                            .font(.system(size: 34, weight: .bold, design: .serif))
-                            .foregroundStyle(style.primaryText)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.leading, 8)
-                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.clear)
+                ScrollViewReader { proxy in
+                    List {
+                        feedHeader
+                        entryRows
                     }
-                    ForEach(filteredEntries) { entry in
-                        ZStack {
-                            NavigationLink(destination: destinationView(for: entry)) {
-                                EmptyView()
-                            }
-                            .opacity(0)
-                            EntryRowView(entry: entry)
-                        }
-                        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                            Button {
-                                withAnimation { entry.isFavorited.toggle() }
-                            } label: {
-                                Label(entry.isFavorited ? "Unfavorite" : "Favorite",
-                                      systemImage: entry.isFavorited ? "star.slash.fill" : "star.fill")
-                            }
-                            .tint(.yellow)
-                        }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button(role: .destructive) {
-                                deletedEntry = entry
-                                showingUndoToast = true
-                            } label: {
-                                Label("Delete", systemImage: "trash")
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                    .background(style.background)
+                    .navigationTitle("")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            if isSearching {
+                                HStack {
+                                    Image(systemName: "magnifyingglass")
+                                        .foregroundStyle(.secondary)
+                                    TextField("Search entries...", text: $searchText)
+                                        .focused($searchFocused)
+                                        .autocorrectionDisabled()
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Color(uiColor: .systemGray6))
+                                .clipShape(Capsule())
+                                .frame(width: 260)
                             }
                         }
-                    }
-                    .onDelete(perform: deleteEntries)
-                }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
-                .background(style.background)
-                .navigationTitle("")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        if isSearching {
-                            HStack {
-                                Image(systemName: "magnifyingglass")
-                                    .foregroundStyle(.secondary)
-                                TextField("Search entries...", text: $searchText)
-                                    .focused($searchFocused)
-                                    .autocorrectionDisabled()
-                            }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Color(uiColor: .systemGray6))
-                            .clipShape(Capsule())
-                            .frame(width: 260)
-                        }
-                    }
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        HStack(spacing: 16) {
-                            if !showingAddEntry {
-                                Button {
-                                    withAnimation(.spring(response: 0.3)) {
-                                        isSearching.toggle()
-                                        if isSearching {
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                                searchFocused = true
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            HStack(spacing: 16) {
+                                if !showingAddEntry {
+                                    Button {
+                                        withAnimation(.spring(response: 0.3)) {
+                                            isSearching.toggle()
+                                            if isSearching {
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                                    searchFocused = true
+                                                }
+                                            } else {
+                                                searchText = ""
+                                                searchFocused = false
+                                                UIApplication.shared.sendAction(
+                                                    #selector(UIResponder.resignFirstResponder),
+                                                    to: nil, from: nil, for: nil
+                                                )
                                             }
-                                        } else {
-                                            searchText = ""
-                                            searchFocused = false
-                                            UIApplication.shared.sendAction(
-                                                #selector(UIResponder.resignFirstResponder),
-                                                to: nil, from: nil, for: nil
-                                            )
                                         }
+                                    } label: {
+                                        Image(systemName: isSearching ? "xmark.circle.fill" : "magnifyingglass")
+                                            .foregroundStyle(isSearching ? .secondary : .primary)
                                     }
-                                } label: {
-                                    Image(systemName: isSearching ? "xmark.circle.fill" : "magnifyingglass")
-                                        .foregroundStyle(isSearching ? .secondary : .primary)
                                 }
-                            }
-                            if !isSearching {
-                                Button {
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                                        showingAddEntry.toggle()
+                                if !isSearching {
+                                    Button {
+                                        withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                                            showingAddEntry.toggle()
+                                        }
+                                    } label: {
+                                        Image(systemName: "plus")
+                                            .fontWeight(.medium)
+                                            .rotationEffect(.degrees(showingAddEntry ? 45 : 0))
+                                            .animation(.spring(response: 0.4, dampingFraction: 0.65), value: showingAddEntry)
                                     }
-                                } label: {
-                                    Image(systemName: "plus")
-                                        .fontWeight(.medium)
-                                        .rotationEffect(.degrees(showingAddEntry ? 45 : 0))
-                                        .animation(.spring(response: 0.4, dampingFraction: 0.65), value: showingAddEntry)
+                                    .simultaneousGesture(
+                                        LongPressGesture(minimumDuration: 0.5).onEnded { _ in
+                                            showingTemplatePicker = true
+                                        }
+                                    )
                                 }
-                                .simultaneousGesture(
-                                    LongPressGesture(minimumDuration: 0.5).onEnded { _ in
-                                        showingTemplatePicker = true
-                                    }
-                                )
                             }
                         }
                     }
-                }
-                .sheet(isPresented: $showingTemplatePicker) {
-                    TemplatePickerView(navigationPath: $navigationPath)
-                }
-                .navigationDestination(for: Entry.self) { entry in
-                    destinationView(for: entry)
-                }
-                .overlay(alignment: .topTrailing) {
-                    if showingAddEntry {
-                        RadialGradient(
-                            colors: [Color.black.opacity(0.95), Color.black.opacity(0.4)],
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: 400
-                        )
-                        .ignoresSafeArea()
-                        .onTapGesture {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                showingAddEntry = false
-                            }
-                        }
-                        .transition(.opacity)
+                    .sheet(isPresented: $showingTemplatePicker) {
+                        TemplatePickerView(navigationPath: $navigationPath)
                     }
-                }
-                .overlay {
-                    if showingAddEntry {
-                        addEntryCard
-                            .transition(
-                                .asymmetric(
-                                    insertion: .scale(scale: 0.8, anchor: .topTrailing)
-                                        .combined(with: .opacity),
-                                    removal: .scale(scale: 0.8, anchor: .topTrailing)
-                                        .combined(with: .opacity)
-                                )
+                    .navigationDestination(for: Entry.self) { entry in
+                        destinationView(for: entry)
+                    }
+                    .overlay(alignment: .topTrailing) {
+                        if showingAddEntry {
+                            RadialGradient(
+                                colors: [Color.black.opacity(0.95), Color.black.opacity(0.4)],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 400
                             )
+                            .ignoresSafeArea()
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    showingAddEntry = false
+                                }
+                            }
+                            .transition(.opacity)
+                        }
+                    }
+                    .overlay {
+                        if showingAddEntry {
+                            addEntryCard
+                                .transition(
+                                    .asymmetric(
+                                        insertion: .scale(scale: 0.8, anchor: .topTrailing)
+                                            .combined(with: .opacity),
+                                        removal: .scale(scale: 0.8, anchor: .topTrailing)
+                                            .combined(with: .opacity)
+                                    )
+                                )
+                        }
+                    }
+                    .animation(.spring(response: 0.4, dampingFraction: 0.78), value: showingAddEntry)
+                    .onAppear {
+                        locationManager.requestLocation()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                            proxy.scrollTo("feed-title", anchor: .top)
+                        }
                     }
                 }
-                .animation(.spring(response: 0.4, dampingFraction: 0.78), value: showingAddEntry)
             }
 
             // Undo toast
@@ -210,9 +242,6 @@ struct FeedView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .zIndex(1)
             }
-        }
-        .onAppear {
-            locationManager.requestLocation()
         }
     }
 
