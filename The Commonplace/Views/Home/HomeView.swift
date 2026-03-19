@@ -12,26 +12,55 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+            ZStack {
+                style.background.ignoresSafeArea()
+                VStack(spacing: 16) {
+                    ZStack {
+                        Circle()
+                            .stroke(style.surface.opacity(0.3), lineWidth: 0.5)
+                            .frame(width: 180, height: 180)
+                        Circle()
+                            .stroke(style.surface.opacity(0.5), lineWidth: 0.5)
+                            .frame(width: 140, height: 140)
+                        Circle()
+                            .stroke(style.surface.opacity(0.3), lineWidth: 0.5)
+                            .frame(width: 100, height: 100)
+                        Circle()
+                            .fill(style.surface.opacity(0.6))
+                            .frame(width: 72, height: 72)
+                        Circle()
+                            .fill(style.surface)
+                            .frame(width: 56, height: 56)
+                        Image(systemName: "house.fill")
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundStyle(style.accent.opacity(0.7))
+                    }
                     Text("Home")
                         .font(style.usesSerifFonts
-                              ? .system(size: 34, weight: .bold, design: .serif)
-                              : .largeTitle.bold())
+                              ? .system(.title2, design: .serif)
+                              : .title2)
+                        .fontWeight(.bold)
                         .foregroundStyle(style.primaryText)
-                        .padding(.horizontal)
-                        .padding(.top, 4)
-
-                    Text("Home view coming soon.")
-                        .font(style.body)
-                        .foregroundStyle(style.secondaryText)
-                        .padding(.horizontal)
+                    Text("COMING SOON")
+                        .font(.system(size: 11, weight: .medium))
+                        .kerning(2)
+                        .foregroundStyle(style.tertiaryText)
+                    HStack(spacing: 8) {
+                        ForEach(0..<3) { _ in
+                            Circle()
+                                .fill(style.accent.opacity(0.4))
+                                .frame(width: 4, height: 4)
+                        }
+                    }
+                    .padding(.top, 4)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical)
             }
-            .background(style.background.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Color.clear.frame(width: 44, height: 44)
+                }
+            }
         }
     }
 }
