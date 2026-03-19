@@ -1,15 +1,20 @@
 import SwiftUI
 
+// MARK: - ContentView
+// Root tab bar for the app.
+// Tab order: Home · Feed · Search · Library · Today
+// This is the final tab structure — do not add intermediate tabs.
+
 struct ContentView: View {
     @State private var selectedTab = 0
     @State private var previousTab = 0
-    
+
     @Environment(\.modelContext) var modelContext
-    
+
     init() {
         let navBarAppearance = UINavigationBarAppearance()
         navBarAppearance.configureWithDefaultBackground()
-        
+
         if let roundedDescriptor = UIFontDescriptor
             .preferredFontDescriptor(withTextStyle: .largeTitle)
             .withDesign(.rounded)?
@@ -29,32 +34,38 @@ struct ContentView: View {
         UINavigationBar.appearance().standardAppearance = navBarAppearance
         UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
     }
-    
+
     var body: some View {
         TabView(selection: $selectedTab) {
+            HomeView()
+                .tabItem {
+                    Label("Home", systemImage: "house.fill")
+                }
+                .tag(0)
+
             FeedView()
                 .tabItem {
                     Label("Feed", systemImage: "rectangle.stack.fill")
                 }
-                .tag(0)
-            
-            CollectionsView()
-                .tabItem {
-                    Label("Collections", systemImage: "books.vertical.fill")
-                }
                 .tag(1)
-            
-            TagsView()
+
+            SearchView()
                 .tabItem {
-                    Label("Tags", systemImage: "tag.fill")
+                    Label("Search", systemImage: "magnifyingglass")
                 }
                 .tag(2)
-            
+
+            LibraryView()
+                .tabItem {
+                    Label("Library", systemImage: "books.vertical.fill")
+                }
+                .tag(3)
+
             TodayView()
                 .tabItem {
                     Label("Today", systemImage: "sun.max.fill")
                 }
-                .tag(3)
+                .tag(4)
         }
         .onChange(of: selectedTab) { old, new in
             previousTab = old
