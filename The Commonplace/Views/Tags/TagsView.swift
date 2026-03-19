@@ -77,17 +77,20 @@ struct TagsView: View {
                                     .font(.subheadline)
                                     .fontWeight(.semibold)
                                     .foregroundStyle(style.accent)
+                                    .padding(.trailing, -12)
                             }
                             .padding(.vertical, 4)
+                            .padding(.horizontal, 10)
                         }
                         .listRowBackground(
                             style.usesSerifFonts
                             ? style.surface
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                                 .padding(.vertical, 2)
+                                .padding(.horizontal, 16)
                             : nil
                         )
-                        .listRowInsets(EdgeInsets(top: 3, leading: 16, bottom: 3, trailing: 16))
+                        .listRowInsets(EdgeInsets(top: 3, leading: 16, bottom: 3, trailing: 24))
                         .listRowSeparator(style.usesSerifFonts ? .hidden : .visible)
                     }
                 }

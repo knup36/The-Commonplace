@@ -3,7 +3,7 @@ import MapKit
 
 // MARK: - EntryMetadataFooter
 // Reusable metadata footer shown at the bottom of all entry detail views.
-// Displays created date, time, capture location, and entry type badge.
+// Two column layout: location + type badge on left, date + time on right.
 // Used by EntryDetailView, LocationDetailView, and StickyDetailView.
 
 struct EntryMetadataFooter: View {
@@ -12,44 +12,33 @@ struct EntryMetadataFooter: View {
     var accentColor: Color
 
     var body: some View {
-        HStack(alignment: .bottom) {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(alignment: .top) {
+            // Left column — location
+            if let lat = entry.captureLatitude, let lon = entry.captureLongitude {
+                Button {
+                    openInMaps(lat: lat, lon: lon, name: entry.captureLocationName)
+                } label: {
+                    Label(
+                        entry.captureLocationName ?? "\(String(format: "%.4f", lat)), \(String(format: "%.4f", lon))",
+                        systemImage: "location.fill"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(style.secondaryText)
+                }
+                .buttonStyle(.plain)
+            }
+
+            Spacer()
+
+            // Right column — date + time
+            VStack(alignment: .trailing, spacing: 4) {
                 Text(entry.createdAt.formatted(date: .long, time: .omitted))
                     .font(.caption)
                     .foregroundStyle(style.secondaryText)
                 Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
                     .font(.caption)
                     .foregroundStyle(style.secondaryText)
-                if let lat = entry.captureLatitude, let lon = entry.captureLongitude {
-                    Button {
-                        openInMaps(lat: lat, lon: lon, name: entry.captureLocationName)
-                    } label: {
-                        Label(
-                            entry.captureLocationName ?? "\(String(format: "%.4f", lat)), \(String(format: "%.4f", lon))",
-                            systemImage: "location.fill"
-                        )
-                        .font(.caption)
-                        .foregroundStyle(style.secondaryText)
-                    }
-                    .buttonStyle(.plain)
-                }
-                HStack(spacing: 6) {
-                    ZStack {
-                        Circle()
-                            .fill(accentColor)
-                            .frame(width: 20, height: 20)
-                        Image(systemName: entry.type.icon)
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(style.background)
-                    }
-                    Text(entry.type.displayName)
-                        .font(.caption)
-                        .foregroundStyle(accentColor)
-                }
-                .padding(.leading, -5)
-                .padding(.top, 3)
             }
-            Spacer()
         }
     }
 
