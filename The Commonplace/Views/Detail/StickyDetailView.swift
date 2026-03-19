@@ -56,6 +56,10 @@ struct StickyDetailView: View {
             .padding()
         }
         .background(bgColor.ignoresSafeArea())
+        .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom) {
+            Color.clear.frame(height: 50)
+        }
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             sortedChecked = Set(entry.stickyChecked)

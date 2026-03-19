@@ -33,10 +33,10 @@ struct CommonplaceApp: App {
         UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
 
         do {
-            let schema = Schema([Entry.self, Collection.self, JournalEntry.self, Habit.self])
+            let schema = Schema([Entry.self, Collection.self, Habit.self])
             let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
             container = try ModelContainer(
-                for: Entry.self, Collection.self, JournalEntry.self, Habit.self,
+                for: Entry.self, Collection.self, Habit.self,
                 configurations: config
             )
         } catch {
@@ -68,65 +68,12 @@ struct CommonplaceApp: App {
 
     @MainActor
     func startupTasks() async {
-        let context = container.mainContext
-        migrateJournalEntriesToEntries(context: context)
         do {
+            let context = container.mainContext
             let entries = try context.fetch(FetchDescriptor<Entry>())
             SearchIndex.shared.backfillIfNeeded(entries: entries)
         } catch {
             print("Backfill fetch failed: \(error)")
-        }
-    }
-
-    // MARK: - Journal Entry Migration
-
-    @MainActor
-    func migrateJournalEntriesToEntries(context: ModelContext) {
-        let migrationKey = "journalEntryMigrationComplete"
-        guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
-
-        do {
-            let journalEntries = try context.fetch(FetchDescriptor<JournalEntry>())
-            guard !journalEntries.isEmpty else {
-                UserDefaults.standard.set(true, forKey: migrationKey)
-                return
-            }
-
-            let entries = try context.fetch(FetchDescriptor<Entry>())
-
-            for je in journalEntries {
-                let matchingEntry = entries.first {
-                    $0.type == .journal &&
-                    Calendar.current.isDate($0.createdAt, inSameDayAs: je.date)
-                }
-
-                if let entry = matchingEntry {
-                    entry.weatherEmoji = je.weatherEmoji
-                    entry.moodEmoji = je.moodEmoji
-                    entry.completedHabits = je.completedHabits
-                    entry.completedHabitSnapshots = je.completedHabitSnapshots
-                    entry.totalHabitsAtTime = je.totalHabitsAtTime
-                    entry.journalImageData = je.journalImageData
-                } else {
-                    let entry = Entry(type: .journal, text: "", tags: [])
-                    entry.createdAt = je.date
-                    entry.weatherEmoji = je.weatherEmoji
-                    entry.moodEmoji = je.moodEmoji
-                    entry.completedHabits = je.completedHabits
-                    entry.completedHabitSnapshots = je.completedHabitSnapshots
-                    entry.totalHabitsAtTime = je.totalHabitsAtTime
-                    entry.journalImageData = je.journalImageData
-                    context.insert(entry)
-                }
-
-                context.delete(je)
-            }
-
-            try context.save()
-            UserDefaults.standard.set(true, forKey: migrationKey)
-            print("Journal migration complete: \(journalEntries.count) entries migrated")
-        } catch {
-            print("Journal migration failed: \(error)")
         }
     }
 }
