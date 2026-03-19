@@ -8,6 +8,7 @@ import SwiftData
 
 struct HomeView: View {
     @Query var allCollections: [Collection]
+    @Query(sort: \Entry.createdAt, order: .reverse) var allEntries: [Entry]
     @EnvironmentObject var themeManager: ThemeManager
     var style: any AppThemeStyle { themeManager.style }
 
@@ -17,6 +18,17 @@ struct HomeView: View {
             .sorted { $0.pinnedOrder < $1.pinnedOrder }
             .prefix(5)
             .map { $0 }
+    }
+
+    var pinnedEntries: [Entry] {
+        allEntries
+            .filter { $0.isPinned }
+            .prefix(5)
+            .map { $0 }
+    }
+
+    var hasAnyPinned: Bool {
+        !pinnedCollections.isEmpty || !pinnedEntries.isEmpty
     }
 
     var body: some View {
@@ -36,13 +48,18 @@ struct HomeView: View {
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
 
+                // Pages section
+                if !pinnedEntries.isEmpty {
+                    pagesSection
+                }
+
                 // Collections section
                 if !pinnedCollections.isEmpty {
                     collectionsSection
                 }
 
                 // Empty state
-                if pinnedCollections.isEmpty {
+                if !hasAnyPinned {
                     emptyState
                 }
             }
@@ -50,6 +67,41 @@ struct HomeView: View {
             .scrollContentBackground(.hidden)
             .background(style.background)
             .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+
+    // MARK: - Pages Section
+
+    var pagesSection: some View {
+        Section {
+            ForEach(pinnedEntries) { entry in
+                ZStack {
+                    NavigationLink(destination: destinationView(for: entry)) {
+                        EmptyView()
+                    }
+                    .opacity(0)
+                    EntryRowView(entry: entry)
+                }
+                .buttonStyle(.plain)
+                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            }
+        } header: {
+            HStack(spacing: 6) {
+                Text("Pages")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(style.primaryText)
+                NavigationLink(destination: PinnedPagesListView()) {
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(style.primaryText)
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 8)
+            .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 12, trailing: 16))
         }
     }
 

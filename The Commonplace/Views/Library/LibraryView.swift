@@ -14,17 +14,17 @@ struct LibraryView: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.editMode) var editMode
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     @State private var selectedTab = 0
     @State private var navigationPath = NavigationPath()
     @State private var showingAddCollection = false
     @State private var currentSort: CollectionSort = .custom
     @State private var collectionToEdit: Collection? = nil
-
+    
     var style: any AppThemeStyle { themeManager.style }
-
+    
     // MARK: - Collections logic
-
+    
     enum CollectionSort: String, CaseIterable {
         case custom = "Custom"
         case name = "Name"
@@ -32,7 +32,7 @@ struct LibraryView: View {
         case dateCreated = "Date Created"
         case recentlyModified = "Recently Modified"
     }
-
+    
     var displayedCollections: [Collection] {
         switch currentSort {
         case .custom:
@@ -47,18 +47,18 @@ struct LibraryView: View {
             return allCollections.sorted { latestEntry(for: $0) > latestEntry(for: $1) }
         }
     }
-
+    
     func entryCount(for collection: Collection) -> Int {
         allEntries.filter { collectionMatches(entry: $0, collection: collection) }.count
     }
-
+    
     func latestEntry(for collection: Collection) -> Date {
         allEntries
             .filter { collectionMatches(entry: $0, collection: collection) }
             .map { $0.createdAt }
             .max() ?? collection.createdAt
     }
-
+    
     func iconForSort(_ sort: CollectionSort) -> String {
         switch sort {
         case .custom:           return "hand.draw.fill"
@@ -68,9 +68,9 @@ struct LibraryView: View {
         case .recentlyModified: return "clock.fill"
         }
     }
-
+    
     // MARK: - Tags logic
-
+    
     var allTags: [(tag: String, count: Int)] {
         var tagCounts: [String: Int] = [:]
         for entry in allEntries {
@@ -82,9 +82,9 @@ struct LibraryView: View {
             .map { (tag: $0.key, count: $0.value) }
             .sorted { $0.tag < $1.tag }
     }
-
+    
     // MARK: - Body
-
+    
     var body: some View {
         NavigationStack(path: $navigationPath) {
             List {
@@ -96,7 +96,7 @@ struct LibraryView: View {
                               : .largeTitle.bold())
                         .foregroundStyle(style.primaryText)
                         .padding(.leading, 8)
-
+                    
                     Picker("", selection: $selectedTab) {
                         Text("Collections").tag(0)
                         Text("Tags").tag(1)
@@ -106,7 +106,7 @@ struct LibraryView: View {
                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
-
+                
                 // Collections content
                 if selectedTab == 0 {
                     if currentSort != .custom {
@@ -125,7 +125,7 @@ struct LibraryView: View {
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 0, trailing: 16))
                     }
-
+                    
                     ForEach(displayedCollections) { collection in
                         ZStack {
                             NavigationLink(destination: CollectionDetailView(collection: collection)) {
@@ -138,6 +138,14 @@ struct LibraryView: View {
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .buttonStyle(.plain)
+                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            Button {
+                                withAnimation { collection.isPinned.toggle() }
+                            } label: {
+                                Label(collection.isPinned ? "Unpin" : "Pin", systemImage: collection.isPinned ? "pin.slash.fill" : "pin.fill")
+                            }
+                            .tint(.orange)
+                        }
                         .swipeActions(edge: .trailing) {
                             Button(role: .destructive) {
                                 modelContext.delete(collection)
@@ -166,7 +174,7 @@ struct LibraryView: View {
                         }
                     }
                 }
-
+                
                 // Tags content
                 if selectedTab == 1 {
                     if allTags.isEmpty {

@@ -10,6 +10,8 @@ class Entry {
     var text: String = ""
     var tags: [String] = []
     var isFavorited: Bool = false
+    var isPinned: Bool = false
+    
     // Photo
     var imagePath: String? = nil
     var extractedText: String? = nil

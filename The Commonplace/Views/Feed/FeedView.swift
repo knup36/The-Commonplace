@@ -80,6 +80,13 @@ struct FeedView: View {
                           systemImage: entry.isFavorited ? "star.slash.fill" : "star.fill")
                 }
                 .tint(.yellow)
+                Button {
+                    withAnimation { entry.isPinned.toggle() }
+                } label: {
+                    Label(entry.isPinned ? "Unpin" : "Pin",
+                          systemImage: entry.isPinned ? "pin.slash.fill" : "pin.fill")
+                }
+                .tint(.orange)
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 Button(role: .destructive) {

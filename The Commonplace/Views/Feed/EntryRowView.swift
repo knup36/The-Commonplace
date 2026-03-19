@@ -158,8 +158,16 @@ struct EntryRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ZStack(alignment: .topTrailing) {
-                cardContent
-                    .padding(.top, entry.type == .journal ? 0 : 18)
+                ZStack(alignment: .topLeading) {
+                    cardContent
+                        .padding(.top, entry.type == .journal ? 0 : 18)
+                    if entry.isPinned {
+                        Image(systemName: "bookmark.fill")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(style.accent.opacity(0.5))
+                            .padding(.top, -13)
+                    }
+                }
                 typeLabel
             }
             Divider()
