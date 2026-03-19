@@ -51,7 +51,7 @@ struct StickyDetailView: View {
                 Divider().overlay(style.surface)
                 TagInputView(tags: $entry.tags, accentColor: accentColor, style: style)
                 Divider().overlay(style.surface)
-                metadataFooter
+                EntryMetadataFooter(entry: entry, style: style, accentColor: accentColor)
             }
             .padding()
         }
@@ -185,7 +185,7 @@ struct StickyDetailView: View {
                     focusedItemID = item.id
                 }
 
-            Button { deleteItem(item.id) } label: {
+            Button { entry.deleteStickyItem(item.id) } label: {
                 Image(systemName: "xmark")
                     .font(.caption)
                     .foregroundStyle(style.tertiaryText)
@@ -215,46 +215,6 @@ struct StickyDetailView: View {
         .padding(.vertical, 10)
     }
 
-    var metadataFooter: some View {
-        HStack(alignment: .bottom) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(entry.createdAt.formatted(date: .long, time: .omitted))
-                    .font(.caption)
-                    .foregroundStyle(style.secondaryText)
-                Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
-                    .font(.caption)
-                    .foregroundStyle(style.secondaryText)
-                if let lat = entry.captureLatitude, let lon = entry.captureLongitude {
-                    Button {
-                        openInMaps(lat: lat, lon: lon, name: entry.captureLocationName)
-                    } label: {
-                        Label(
-                            entry.captureLocationName ?? "\(String(format: "%.4f", lat)), \(String(format: "%.4f", lon))",
-                            systemImage: "location.fill"
-                        )
-                        .font(.caption)
-                        .foregroundStyle(style.secondaryText)
-                    }
-                    .buttonStyle(.plain)
-                }
-                HStack(spacing: 6) {
-                    ZStack {
-                        Circle().fill(accentColor).frame(width: 20, height: 20)
-                        Image(systemName: "checklist")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(style.background)
-                    }
-                    Text("Sticky")
-                        .font(.caption)
-                        .foregroundStyle(accentColor)
-                }
-                .padding(.leading, -3)
-                .padding(.top, 3)
-            }
-            Spacer()
-        }
-    }
-
     // MARK: - Helpers
 
     func toggleItem(_ id: String) {
@@ -274,16 +234,11 @@ struct StickyDetailView: View {
         newItemFocused = true
     }
 
-    func deleteItem(_ id: String) {
-        entry.stickyItems.removeAll { $0.hasPrefix(id) }
-        entry.stickyChecked.removeAll { $0 == id }
-    }
-
     func saveEditingItem() {
         guard let id = editingItemID else { return }
         let trimmed = editingItemText.trimmingCharacters(in: .whitespaces)
         if trimmed.isEmpty {
-            deleteItem(id)
+            entry.deleteStickyItem(id)
         } else {
             if let index = entry.stickyItems.firstIndex(where: { $0.hasPrefix(id) }) {
                 entry.stickyItems[index] = "\(id)::\(trimmed)"
@@ -291,12 +246,5 @@ struct StickyDetailView: View {
         }
         editingItemID = nil
         editingItemText = ""
-    }
-
-    func openInMaps(lat: Double, lon: Double, name: String?) {
-        let coordinate = CLLocationCoordinate2D(latitude: lat, longitude: lon)
-        let mapItem = MKMapItem(placemark: MKPlacemark(coordinate: coordinate))
-        mapItem.name = name ?? "Entry Location"
-        mapItem.openInMaps()
     }
 }

@@ -1,5 +1,11 @@
 import SwiftUI
 
+// MARK: - StickyEntryView
+// Feed card preview for sticky/checklist entries.
+// Shows title, sorted items (incomplete first), progress bar.
+// Used in EntryRowView for the feed card preview.
+// Screen: Feed, Collections, Today tab — sticky entry cards
+
 struct StickyEntryView: View {
     @Bindable var entry: Entry
     @EnvironmentObject var themeManager: ThemeManager
@@ -8,19 +14,6 @@ struct StickyEntryView: View {
 
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { InkwellTheme.stickyAccent }
-
-    struct StickyItem: Identifiable {
-        let id: String
-        let text: String
-    }
-
-    var items: [StickyItem] {
-        entry.stickyItems.compactMap { raw in
-            let parts = raw.components(separatedBy: "::")
-            guard parts.count == 2 else { return nil }
-            return StickyItem(id: parts[0], text: parts[1])
-        }
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -31,12 +24,15 @@ struct StickyEntryView: View {
                     .foregroundStyle(accentColor)
             }
 
-            let sortedItems = items.sorted { !entry.stickyChecked.contains($0.id) && entry.stickyChecked.contains($1.id) }
+            let sortedItems = entry.parsedStickyItems.sorted {
+                !entry.stickyChecked.contains($0.id) && entry.stickyChecked.contains($1.id)
+            }
             let visibleItems = isPreview ? Array(sortedItems.prefix(previewLimit)) : sortedItems
+
             ForEach(visibleItems) { item in
                 HStack(spacing: 8) {
                     Button {
-                        toggleItem(item.id)
+                        entry.toggleStickyItem(item.id)
                     } label: {
                         Image(systemName: entry.stickyChecked.contains(item.id) ? "checkmark.circle.fill" : "circle")
                             .foregroundStyle(entry.stickyChecked.contains(item.id)
@@ -55,18 +51,18 @@ struct StickyEntryView: View {
                 }
             }
 
-            if isPreview && items.count > previewLimit {
-                Text("\(items.count - previewLimit) more...")
+            if isPreview && entry.parsedStickyItems.count > previewLimit {
+                Text("\(entry.parsedStickyItems.count - previewLimit) more...")
                     .font(style.caption)
                     .foregroundStyle(style.tertiaryText)
                     .padding(.top, 2)
             }
 
-            if !items.isEmpty {
+            if !entry.parsedStickyItems.isEmpty {
                 HStack(spacing: 6) {
-                    ProgressView(value: Double(entry.stickyChecked.count), total: Double(items.count))
+                    ProgressView(value: Double(entry.stickyChecked.count), total: Double(entry.parsedStickyItems.count))
                         .tint(accentColor)
-                    Text("\(entry.stickyChecked.count)/\(items.count)")
+                    Text("\(entry.stickyChecked.count)/\(entry.parsedStickyItems.count)")
                         .font(.caption2)
                         .foregroundStyle(style.tertiaryText)
                 }
@@ -74,13 +70,5 @@ struct StickyEntryView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    func toggleItem(_ id: String) {
-        if entry.stickyChecked.contains(id) {
-            entry.stickyChecked.removeAll { $0 == id }
-        } else {
-            entry.stickyChecked.append(id)
-        }
     }
 }
