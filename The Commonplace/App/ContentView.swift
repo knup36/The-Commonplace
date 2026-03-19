@@ -6,7 +6,7 @@ import SwiftUI
 // This is the final tab structure — do not add intermediate tabs.
 
 struct ContentView: View {
-    @State private var selectedTab = 0
+    @State private var selectedTab = 1
     @State private var previousTab = 0
 
     @Environment(\.modelContext) var modelContext

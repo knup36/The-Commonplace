@@ -8,7 +8,7 @@ struct MusicEntryView: View {
     @State private var isPlaying = false
     @State private var progress: Double = 1.0
     @State private var playbackTimer: Timer? = nil
-    private let previewDuration: Double = 30.0
+    private let previewDuration: Double = 90.0
 
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { InkwellTheme.accentColor(for: .music) }

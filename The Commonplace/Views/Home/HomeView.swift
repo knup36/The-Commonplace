@@ -1,66 +1,111 @@
 import SwiftUI
+import SwiftData
 
 // MARK: - HomeView
 // Personal dashboard — the main entry point of the app.
-// Surfaces pinned collections, recent entries, outstanding stickies,
-// habit streaks, calendar, and quick capture shortcuts.
+// Shows pinned collections, pages, and tags.
 // Screen: Home tab (leftmost tab)
 
 struct HomeView: View {
+    @Query var allCollections: [Collection]
     @EnvironmentObject var themeManager: ThemeManager
     var style: any AppThemeStyle { themeManager.style }
 
+    var pinnedCollections: [Collection] {
+        allCollections
+            .filter { $0.isPinned }
+            .sorted { $0.pinnedOrder < $1.pinnedOrder }
+            .prefix(5)
+            .map { $0 }
+    }
+
     var body: some View {
         NavigationStack {
-            ZStack {
-                style.background.ignoresSafeArea()
-                VStack(spacing: 16) {
-                    ZStack {
-                        Circle()
-                            .stroke(style.surface.opacity(0.3), lineWidth: 0.5)
-                            .frame(width: 180, height: 180)
-                        Circle()
-                            .stroke(style.surface.opacity(0.5), lineWidth: 0.5)
-                            .frame(width: 140, height: 140)
-                        Circle()
-                            .stroke(style.surface.opacity(0.3), lineWidth: 0.5)
-                            .frame(width: 100, height: 100)
-                        Circle()
-                            .fill(style.surface.opacity(0.6))
-                            .frame(width: 72, height: 72)
-                        Circle()
-                            .fill(style.surface)
-                            .frame(width: 56, height: 56)
-                        Image(systemName: "house.fill")
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundStyle(style.accent.opacity(0.7))
-                    }
+            List {
+                // Title
+                HStack {
                     Text("Home")
                         .font(style.usesSerifFonts
-                              ? .system(.title2, design: .serif)
-                              : .title2)
-                        .fontWeight(.bold)
+                              ? .system(size: 34, weight: .bold, design: .serif)
+                              : .largeTitle.bold())
                         .foregroundStyle(style.primaryText)
-                    Text("COMING SOON")
-                        .font(.system(size: 11, weight: .medium))
-                        .kerning(2)
-                        .foregroundStyle(style.tertiaryText)
-                    HStack(spacing: 8) {
-                        ForEach(0..<3) { _ in
-                            Circle()
-                                .fill(style.accent.opacity(0.4))
-                                .frame(width: 4, height: 4)
-                        }
-                    }
-                    .padding(.top, 4)
+                    Spacer()
+                }
+                .padding(.leading, 8)
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+
+                // Collections section
+                if !pinnedCollections.isEmpty {
+                    collectionsSection
+                }
+
+                // Empty state
+                if pinnedCollections.isEmpty {
+                    emptyState
                 }
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(style.background)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Color.clear.frame(width: 44, height: 44)
-                }
-            }
         }
+    }
+
+    // MARK: - Collections Section
+
+    var collectionsSection: some View {
+        Section {
+            ForEach(pinnedCollections) { collection in
+                ZStack {
+                    NavigationLink(destination: CollectionDetailView(collection: collection)) {
+                        EmptyView()
+                    }
+                    .opacity(0)
+                    CollectionListRowView(collection: collection)
+                }
+                .buttonStyle(.plain)
+                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            }
+        } header: {
+            HStack(spacing: 6) {
+                Text("Collections")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(style.primaryText)
+                NavigationLink(destination: PinnedCollectionsListView()) {
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(style.primaryText)
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 8)
+            .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 12, trailing: 16))
+        }
+    }
+
+    // MARK: - Empty State
+
+    var emptyState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "pin.slash")
+                .font(.system(size: 36))
+                .foregroundStyle(style.tertiaryText)
+            Text("Nothing pinned yet")
+                .font(.headline)
+                .foregroundStyle(style.secondaryText)
+            Text("Swipe left on a collection, entry, or tag to pin it here.")
+                .font(.caption)
+                .foregroundStyle(style.tertiaryText)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 80)
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
     }
 }
