@@ -1,5 +1,6 @@
 import SwiftData
 import Foundation
+import SwiftUI
 
 @Model
 class Entry {
@@ -112,4 +113,20 @@ enum EntryType: String, Codable, CaseIterable {
         case .music:    return "Music"
         }
     }
+    var accentColor: Color {
+        switch self {
+        case .text:     return InkwellTheme.inkSecondary
+        case .photo:    return InkwellTheme.collectionAccentColor(for: "#FF375F")
+        case .audio:    return InkwellTheme.collectionAccentColor(for: "#FF9F0A")
+        case .link:     return InkwellTheme.collectionAccentColor(for: "#0A84FF")
+        case .journal:  return InkwellTheme.journalAccent
+        case .location: return InkwellTheme.collectionAccentColor(for: "#30D158")
+        case .sticky:   return InkwellTheme.amber
+        case .music:    return InkwellTheme.accentColor(for: .music)
+        }
+    }
+    var cardColor: Color {
+           InkwellTheme.cardBackground(for: self)
+       }
 }
+

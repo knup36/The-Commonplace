@@ -20,39 +20,22 @@ struct EntryDetailView: View {
     
     var style: any AppThemeStyle { themeManager.style }
 
-    var entryColor: Color {
-        InkwellTheme.cardBackground(for: entry.type)
-    }
-
-    var entryAccentColor: Color {
-        switch entry.type {
-        case .text:     return InkwellTheme.inkSecondary
-        case .photo:    return InkwellTheme.collectionAccentColor(for: "#FF375F")
-        case .audio:    return InkwellTheme.collectionAccentColor(for: "#FF9F0A")
-        case .link:     return InkwellTheme.collectionAccentColor(for: "#0A84FF")
-        case .journal:  return InkwellTheme.journalAccent
-        case .location: return InkwellTheme.collectionAccentColor(for: "#30D158")
-        case .sticky:   return InkwellTheme.amber
-        case .music:    return InkwellTheme.accentColor(for: .music)
-        }
-    }
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                PhotoDetailSection(entry: entry, style: style, accentColor: entryAccentColor)
-                AudioDetailSection(entry: entry, style: style, accentColor: entryAccentColor)
-                LinkDetailSection(entry: entry, style: style, accentColor: entryAccentColor)
-                MusicDetailSection(entry: entry, style: style, accentColor: entryAccentColor)
-                JournalMetadataSection(entry: entry, style: style, accentColor: entryAccentColor)
+                PhotoDetailSection(entry: entry, style: style, accentColor: entry.type.accentColor)
+                AudioDetailSection(entry: entry, style: style, accentColor: entry.type.accentColor)
+                LinkDetailSection(entry: entry, style: style, accentColor: entry.type.accentColor)
+                MusicDetailSection(entry: entry, style: style, accentColor: entry.type.accentColor)
+                JournalMetadataSection(entry: entry, style: style, accentColor: entry.type.accentColor)
                 textContentSection
-                TagInputView(tags: $entry.tags, accentColor: entryAccentColor, style: style)
+                TagInputView(tags: $entry.tags, accentColor: entry.type.accentColor, style: style)
                 Divider()
                 metadataFooter
             }
             .padding()
         }
-        .background(entryColor.ignoresSafeArea())
+        .background(entry.type.cardColor.ignoresSafeArea())
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom) {
             Color.clear.frame(height: 100)
@@ -144,7 +127,7 @@ struct EntryDetailView: View {
                 HStack(spacing: 6) {
                     ZStack {
                         Circle()
-                            .fill(entryAccentColor)
+                            .fill(entry.type.accentColor)
                             .frame(width: 20, height: 20)
                         Image(systemName: entry.type.icon)
                             .font(.system(size: 10, weight: .semibold))
@@ -152,7 +135,7 @@ struct EntryDetailView: View {
                     }
                     Text(entry.type.rawValue.capitalized)
                         .font(.caption)
-                        .foregroundStyle(entryAccentColor)
+                        .foregroundStyle(entry.type.accentColor)
                 }
                 .padding(.leading, -5)
                 .padding(.top, 3)

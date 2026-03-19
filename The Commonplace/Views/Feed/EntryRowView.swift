@@ -12,14 +12,6 @@ struct EntryRowView: View {
     
     var style: any AppThemeStyle { themeManager.style }
     
-    var entryColor: Color {
-        InkwellTheme.cardBackground(for: entry.type)
-    }
-    
-    var entryAccentColor: Color {
-        InkwellTheme.accentColor(for: entry.type)
-    }
-    
     // MARK: - Sub-views
     
     @ViewBuilder
@@ -27,12 +19,12 @@ struct EntryRowView: View {
         if style.usesSerifFonts {
             HStack(spacing: 5) {
                 Circle()
-                    .fill(entryAccentColor)
+                    .fill(entry.type.accentColor)
                     .frame(width: 5, height: 5)
                 Text(entry.type.displayName.uppercased())
                     .font(.system(size: 9, weight: .medium))
                     .kerning(0.8)
-                    .foregroundStyle(entryAccentColor)
+                    .foregroundStyle(entry.type.accentColor)
             }
         }
     }
@@ -41,18 +33,18 @@ struct EntryRowView: View {
         HStack(spacing: 6) {
             Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
                 .font(.caption)
-                .foregroundStyle(entryAccentColor.opacity(0.5))
+                .foregroundStyle(entry.type.accentColor.opacity(0.5))
             Text(entry.createdAt.formatted(date: .abbreviated, time: .omitted))
                 .font(.caption)
-                .foregroundStyle(entryAccentColor.opacity(0.5))
+                .foregroundStyle(entry.type.accentColor.opacity(0.5))
             if !style.usesSerifFonts {
                 ZStack {
                     Circle()
-                        .fill(entryAccentColor.opacity(0.1))
+                        .fill(entry.type.accentColor.opacity(0.1))
                         .frame(width: 22, height: 22)
                     Image(systemName: entry.type.icon)
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(entryAccentColor.opacity(0.7))
+                        .foregroundStyle(entry.type.accentColor.opacity(0.7))
                 }
             }
         }
@@ -139,12 +131,12 @@ struct EntryRowView: View {
                                 .italic(style.usesSerifFonts)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(entryAccentColor.opacity(0.15))
-                                .foregroundStyle(entryAccentColor.opacity(0.9))
+                                .background(entry.type.accentColor.opacity(0.15))
+                                .foregroundStyle(entry.type.accentColor.opacity(0.9))
                                 .clipShape(Capsule())
                                 .overlay(
                                     style.usesSerifFonts
-                                    ? Capsule().strokeBorder(entryAccentColor.opacity(0.3), lineWidth: 0.5)
+                                    ? Capsule().strokeBorder(entry.type.accentColor.opacity(0.3), lineWidth: 0.5)
                                     : nil
                                 )
                         }
@@ -176,7 +168,7 @@ struct EntryRowView: View {
             tagsRow
         }
         .padding(12)
-        .background(entryColor)
+        .background(entry.type.cardColor)
         .clipShape(RoundedRectangle(cornerRadius: style.usesSerifFonts ? 14 : 12))
         .overlay(
             style.usesSerifFonts
