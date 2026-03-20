@@ -31,7 +31,10 @@ struct DailyNoteRowView: View {
                 if !entry.moodEmoji.isEmpty {
                     Text(entry.moodEmoji).font(.title3)
                 }
-            }
+                if !entry.vibeEmoji.isEmpty {
+                    Text(entry.vibeEmoji).font(.title3)
+                }
+            }   
 
             // Note text
             if !entry.text.isEmpty {

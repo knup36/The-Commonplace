@@ -116,7 +116,7 @@ struct HomeView: View {
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 8)
-            .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 12, trailing: 16))
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 12, trailing: 16))
         }
     }
 
@@ -155,7 +155,7 @@ struct HomeView: View {
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 8)
-            .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 12, trailing: 16))
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 12, trailing: 16))
         }
         
     }
@@ -194,7 +194,7 @@ struct HomeView: View {
                 Spacer()
             }
             .padding(.horizontal, 8)
-            .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 12, trailing: 16))
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 12, trailing: 16))
         }
     }
 

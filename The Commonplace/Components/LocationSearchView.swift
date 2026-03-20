@@ -13,6 +13,7 @@ struct LocationSearchView: View {
     @StateObject private var completer = LocationCompleter()
     @State private var searchText = ""
     @State private var isResolving = false
+    @FocusState private var searchFocused: Bool
     
     var body: some View {
         VStack(spacing: 0) {
@@ -23,6 +24,7 @@ struct LocationSearchView: View {
                     .foregroundStyle(.green)
                 TextField("Search places...", text: $searchText)
                     .autocorrectionDisabled()
+                    .focused($searchFocused)
                     .tint(.green)
                     .onChange(of: searchText) { _, newValue in
                         completer.search(query: newValue)
@@ -109,6 +111,11 @@ struct LocationSearchView: View {
                         Divider()
                     }
                 }
+            }
+        }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                searchFocused = true
             }
         }
     }

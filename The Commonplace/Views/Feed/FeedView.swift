@@ -94,6 +94,10 @@ struct FeedView: View {
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 Button(role: .destructive) {
+                    if let previous = deletedEntry {
+                        SearchIndex.shared.remove(entryID: previous.id)
+                        modelContext.delete(previous)
+                    }
                     deletedEntry = entry
                     showingUndoToast = true
                 } label: {
@@ -271,6 +275,7 @@ struct FeedView: View {
                         showingUndoToast = false
                     }
                 )
+                .id(deletedEntry?.id)
                 .padding(.bottom, 16)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .zIndex(1)

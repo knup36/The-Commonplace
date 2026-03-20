@@ -37,6 +37,13 @@ struct JournalMetadataSection: View {
                                 .foregroundStyle(style.secondaryText)
                         }
                     }
+                    if !entry.vibeEmoji.isEmpty {
+                        VStack(spacing: 2) {
+                            Text(entry.vibeEmoji).font(.largeTitle)
+                            Text("Vibe").font(.caption2)
+                                .foregroundStyle(style.secondaryText)
+                        }
+                    }
                 }
 
                 if !entry.completedHabitSnapshots.isEmpty {

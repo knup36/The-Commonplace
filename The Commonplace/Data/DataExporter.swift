@@ -55,7 +55,8 @@ class DataExporter {
         var completedHabitSnapshots: [String]?
         var totalHabitsAtTime: Int?
         var journalImageFile: String?
-    }
+        var vibeEmoji: String?
+            }
 
     struct CollectionDTO: Codable {
         var id: String
@@ -150,7 +151,8 @@ class DataExporter {
                 completedHabits: entry.type == .journal ? entry.completedHabits : nil,
                 completedHabitSnapshots: entry.type == .journal ? entry.completedHabitSnapshots : nil,
                 totalHabitsAtTime: entry.type == .journal ? entry.totalHabitsAtTime : nil,
-                journalImageFile: nil
+                journalImageFile: nil,
+                vibeEmoji: entry.type == .journal ? entry.vibeEmoji : nil
             )
             if let path = entry.imagePath,
                let data = MediaFileManager.load(path: path) {

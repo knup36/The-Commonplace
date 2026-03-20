@@ -105,6 +105,7 @@ class DataImporter {
             if type == .journal {
                 entry.weatherEmoji = dto.weatherEmoji ?? ""
                 entry.moodEmoji = dto.moodEmoji ?? ""
+                entry.vibeEmoji = dto.vibeEmoji ?? ""
                 entry.completedHabits = dto.completedHabits ?? []
                 entry.completedHabitSnapshots = dto.completedHabitSnapshots ?? []
                 entry.totalHabitsAtTime = dto.totalHabitsAtTime ?? 0
