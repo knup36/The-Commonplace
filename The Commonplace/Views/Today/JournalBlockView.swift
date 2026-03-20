@@ -16,6 +16,7 @@ struct JournalBlockView: View {
     @EnvironmentObject var themeManager: ThemeManager
 
     @State private var dailyNoteText = ""
+    @State private var showingVibePicker = false
     @State private var showingJournalPhotoPicker = false
     @State private var journalImage: UIImage? = nil
     @FocusState private var noteFieldFocused: Bool
@@ -52,6 +53,8 @@ struct JournalBlockView: View {
             emojiPickerRow(label: "Mood", icon: "face.smiling", options: moodOptions,
                            selected: todayEntry?.moodEmoji ?? "", onSelect: { setMood($0) })
             Divider().overlay(journalDivider)
+            vibeBlock
+            Divider().overlay(journalDivider)
             habitsBlock
             Divider().overlay(journalDivider)
             dailyNoteBlock
@@ -84,6 +87,49 @@ struct JournalBlockView: View {
         .onAppear {
             locationManager.requestLocation()
             loadDailyNote()
+        }
+        
+    }
+    var vibeBlock: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("Vibe", systemImage: "sparkles")
+                .font(.subheadline).fontWeight(.medium)
+                .foregroundStyle(style.secondaryText)
+            Button {
+                showingVibePicker = true
+            } label: {
+                HStack(spacing: 8) {
+                    if let entry = todayEntry, !entry.vibeEmoji.isEmpty {
+                        Text(entry.vibeEmoji)
+                            .font(.largeTitle)
+                        Button {
+                            todayEntry?.vibeEmoji = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.caption)
+                                .foregroundStyle(style.tertiaryText)
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        Text("Tap to set your vibe...")
+                            .font(style.body)
+                            .foregroundStyle(style.tertiaryText)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            .sheet(isPresented: $showingVibePicker) {
+                EmojiPickerSheet(
+                    selectedEmoji: Binding(
+                        get: { todayEntry?.vibeEmoji ?? "" },
+                        set: { newValue in
+                            getOrCreateTodayEntry().vibeEmoji = newValue
+                            showingVibePicker = false
+                        }
+                    )
+                )
+                .presentationDetents([.medium])
+            }
         }
     }
 

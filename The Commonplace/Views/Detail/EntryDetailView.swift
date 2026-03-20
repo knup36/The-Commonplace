@@ -87,9 +87,9 @@ struct EntryDetailView: View {
                 .foregroundStyle(style.primaryText)
                 .onChange(of: editText) { _, newValue in entry.text = newValue }
         } else {
-            Text(entry.text.isEmpty ? "" : entry.text)
+            Text(entry.text.isEmpty ? "Tap to add a note..." : entry.text)
                 .font(style.body)
-                .foregroundStyle(style.primaryText)
+                .foregroundStyle(entry.text.isEmpty ? style.tertiaryText : style.primaryText)
                 .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
                 .contentShape(Rectangle())
                 .onTapGesture {

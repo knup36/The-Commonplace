@@ -140,7 +140,7 @@ struct HomeView: View {
         } header: {
             NavigationLink(destination: PinnedCollectionsListView()) {
                 HStack(spacing: 6) {
-                    Image(systemName: "bookmark.vertical.fill")
+                    Image(systemName: "magazine.fill")
                         .font(.caption)
                         .foregroundStyle(style.accent)
                     Text("Collections")

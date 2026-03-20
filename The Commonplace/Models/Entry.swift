@@ -55,6 +55,7 @@ class Entry {
     // Journal
     var weatherEmoji: String = ""
     var moodEmoji: String = ""
+    var vibeEmoji: String = ""
     var completedHabits: [String] = []
     var completedHabitSnapshots: [String] = []
     var totalHabitsAtTime: Int = 0
