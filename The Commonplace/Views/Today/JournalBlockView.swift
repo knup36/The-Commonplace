@@ -88,7 +88,11 @@ struct JournalBlockView: View {
             locationManager.requestLocation()
             loadDailyNote()
         }
-        
+        .onDisappear {
+            if let entry = todayEntry {
+                SearchIndex.shared.index(entry: entry)
+            }
+        }
     }
     var vibeBlock: some View {
         VStack(alignment: .leading, spacing: 6) {
