@@ -142,7 +142,7 @@ struct LibraryView: View {
                             Button {
                                 withAnimation { collection.isPinned.toggle() }
                             } label: {
-                                Label(collection.isPinned ? "Unpin" : "Pin", systemImage: collection.isPinned ? "pin.slash.fill" : "pin.fill")
+                                Label(collection.isPinned ? "Unbookmark" : "Bookmark", systemImage: collection.isPinned ? "bookmark.slash.fill" : "bookmark.fill")
                             }
                             .tint(.orange)
                         }

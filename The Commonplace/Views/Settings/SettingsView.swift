@@ -16,6 +16,7 @@ struct SettingsView: View {
     @EnvironmentObject var themeManager: ThemeManager
 
     @State private var showingAddHabit = false
+    @State private var habitToEdit: Habit? = nil
     @State private var isExporting = false
     @State private var isImporting = false
     @State private var exportURL: URL? = nil
@@ -64,24 +65,29 @@ struct SettingsView: View {
                 // MARK: - Habits
                 Section {
                     ForEach(habits) { habit in
-                        HStack(spacing: 12) {
-                            ZStack {
-                                Circle()
-                                    .fill(accent.opacity(0.12))
-                                    .frame(width: 36, height: 36)
-                                    .overlay(
-                                        style.usesSerifFonts
-                                        ? Circle().strokeBorder(accent.opacity(0.3), lineWidth: 0.5)
-                                        : nil
-                                    )
-                                Image(systemName: habit.icon)
-                                    .font(.system(size: 16))
-                                    .foregroundStyle(accent)
+                        Button {
+                            habitToEdit = habit
+                        } label: {
+                            HStack(spacing: 12) {
+                                ZStack {
+                                    Circle()
+                                        .fill(accent.opacity(0.12))
+                                        .frame(width: 36, height: 36)
+                                        .overlay(
+                                            style.usesSerifFonts
+                                            ? Circle().strokeBorder(accent.opacity(0.3), lineWidth: 0.5)
+                                            : nil
+                                        )
+                                    Image(systemName: habit.icon)
+                                        .font(.system(size: 16))
+                                        .foregroundStyle(accent)
+                                }
+                                Text(habit.name)
+                                    .font(style.body)
+                                    .foregroundStyle(style.primaryText)
                             }
-                            Text(habit.name)
-                                .font(style.body)
-                                .foregroundStyle(style.primaryText)
                         }
+                        .foregroundStyle(style.primaryText)
                     }
                     .onDelete { indexSet in
                         for index in indexSet {
@@ -182,6 +188,9 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showingAddHabit) {
                 AddHabitView()
+            }
+            .sheet(item: $habitToEdit) { habit in
+                AddHabitView(habit: habit)
             }
             .sheet(isPresented: $showingShareSheet) {
                 if let url = exportURL {

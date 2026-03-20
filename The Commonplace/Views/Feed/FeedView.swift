@@ -20,6 +20,7 @@ struct FeedView: View {
     @State private var navigationPath = NavigationPath()
     @State private var deletedEntry: Entry? = nil
     @State private var showingUndoToast = false
+    @State private var filterType: EntryType? = nil
     @EnvironmentObject var themeManager: ThemeManager
     @FocusState private var searchFocused: Bool
 
@@ -36,7 +37,10 @@ struct FeedView: View {
     var style: any AppThemeStyle { themeManager.style }
 
     var filteredEntries: [Entry] {
-        let base = searchText.isEmpty ? entries : entries.filter { entryMatchesSearch($0, searchText: searchText) }
+        var base = searchText.isEmpty ? entries : entries.filter { entryMatchesSearch($0, searchText: searchText) }
+        if let filterType {
+            base = base.filter { $0.type == filterType }
+        }
         return base.filter { $0.id != deletedEntry?.id }
     }
 
@@ -83,8 +87,8 @@ struct FeedView: View {
                 Button {
                     withAnimation { entry.isPinned.toggle() }
                 } label: {
-                    Label(entry.isPinned ? "Unpin" : "Pin",
-                          systemImage: entry.isPinned ? "pin.slash.fill" : "pin.fill")
+                    Label(entry.isPinned ? "Unbookmark" : "Bookmark",
+                          systemImage: entry.isPinned ? "bookmark.slash.fill" : "bookmark.fill")
                 }
                 .tint(.orange)
             }
@@ -101,6 +105,35 @@ struct FeedView: View {
     }
 
     // MARK: - Body
+    
+    var filterButton: some View {
+        Menu {
+            Button {
+                filterType = nil
+            } label: {
+                Label("All Entries", systemImage: "tray.fill")
+            }
+            Divider()
+            ForEach(EntryType.allCases, id: \.self) { type in
+                Button {
+                    filterType = filterType == type ? nil : type
+                } label: {
+                    Label(type.displayName, systemImage: type.icon)
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: filterType == nil ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
+                    .foregroundStyle(filterType.map { $0.accentColor } ?? style.primaryText)
+                if let ft = filterType {
+                    Text(ft.displayName)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(ft.accentColor)
+                }
+            }
+        }
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -133,6 +166,9 @@ struct FeedView: View {
                     }
                     ToolbarItem(placement: .navigationBarTrailing) {
                         HStack(spacing: 16) {
+                            if !showingAddEntry && !isSearching {
+                                filterButton
+                            }
                             if !showingAddEntry {
                                 Button {
                                     withAnimation(.spring(response: 0.3)) {

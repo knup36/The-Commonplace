@@ -80,6 +80,9 @@ struct StickyDetailView: View {
                             entry.stickyTitle = editTitle.isEmpty ? nil : editTitle
                             isEditingTitle = false
                         }
+                        if newItemFocused {
+                            addItem()
+                        }
                         newItemFocused = false
                     }
                     .bold()
@@ -132,11 +135,12 @@ struct StickyDetailView: View {
 
     var itemsList: some View {
         VStack(spacing: 0) {
+            addItemRow
+            Divider().overlay(style.surface)
             ForEach(items.sorted { !sortedChecked.contains($0.id) && sortedChecked.contains($1.id) }) { item in
                 stickyItemRow(item)
                 Divider().overlay(style.surface)
             }
-            addItemRow
         }
     }
 

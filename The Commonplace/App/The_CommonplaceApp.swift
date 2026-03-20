@@ -100,17 +100,8 @@ func createDefaultCollectionsIfNeeded(context: ModelContext) {
             let descriptor = FetchDescriptor<Collection>()
             let existing = try context.fetch(descriptor)
             let existingNames = Set(existing.map { $0.name })
-
             let defaults: [(name: String, icon: String, colorHex: String, type: String?, isFavorites: Bool)] = [
-                ("Favorites",  "star.fill",          "#FFD60A", nil,        true),
-                ("Text",       "text.alignleft",      "#8E8E93", "text",     false),
-                ("Photos",     "photo.fill",          "#FF375F", "photo",    false),
-                ("Links",      "link",                "#007AFF", "link",     false),
-                ("Audio",      "waveform",            "#FF9F0A", "audio",    false),
-                ("Locations",  "mappin.circle.fill",  "#34C759", "location", false),
-                ("Journal",    "bookmark.fill",       "#AF52DE", "journal",  false),
-                ("Stickies",   "checklist",           "#FFD60A", "sticky",   false),
-                ("Music",      "music.note",          "#C87858", "music",    false)
+                ("Favorites",  "star.fill",  "#FFD60A", nil, true),
             ]
 
             let nextOrder = existing.map { $0.order }.max().map { $0 + 1 } ?? 0

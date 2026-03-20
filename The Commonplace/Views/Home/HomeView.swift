@@ -9,6 +9,13 @@ import SwiftData
 struct HomeView: View {
     @Query var allCollections: [Collection]
     @Query(sort: \Entry.createdAt, order: .reverse) var allEntries: [Entry]
+    
+    var favoritedEntries: [Entry] {
+        allEntries
+            .filter { $0.isFavorited }
+            .prefix(5)
+            .map { $0 }
+    }
     @EnvironmentObject var themeManager: ThemeManager
     var style: any AppThemeStyle { themeManager.style }
 
@@ -28,7 +35,7 @@ struct HomeView: View {
     }
 
     var hasAnyPinned: Bool {
-        !pinnedCollections.isEmpty || !pinnedEntries.isEmpty
+        !pinnedCollections.isEmpty || !pinnedEntries.isEmpty || !favoritedEntries.isEmpty
     }
 
     var body: some View {
@@ -56,6 +63,10 @@ struct HomeView: View {
                 // Collections section
                 if !pinnedCollections.isEmpty {
                     collectionsSection
+                }
+                // Favorites Section
+                if !favoritedEntries.isEmpty {
+                    favoritesSection
                 }
 
                 // Empty state
@@ -88,18 +99,22 @@ struct HomeView: View {
                 .listRowSeparator(.hidden)
             }
         } header: {
-            HStack(spacing: 6) {
-                Text("Pages")
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(style.primaryText)
-                NavigationLink(destination: PinnedPagesListView()) {
+            NavigationLink(destination: PinnedPagesListView()) {
+                HStack(spacing: 6) {
+                    Image(systemName: "bookmark.fill")
+                        .font(.caption)
+                        .foregroundStyle(style.accent)
+                    Text("Bookmarks")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(style.primaryText)
                     Image(systemName: "chevron.right")
                         .font(.caption)
                         .foregroundStyle(style.primaryText)
+                    Spacer()
                 }
-                Spacer()
             }
+            .buttonStyle(.plain)
             .padding(.horizontal, 8)
             .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 12, trailing: 16))
         }
@@ -123,12 +138,55 @@ struct HomeView: View {
                 .listRowSeparator(.hidden)
             }
         } header: {
+            NavigationLink(destination: PinnedCollectionsListView()) {
+                HStack(spacing: 6) {
+                    Image(systemName: "bookmark.vertical.fill")
+                        .font(.caption)
+                        .foregroundStyle(style.accent)
+                    Text("Collections")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(style.primaryText)
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(style.primaryText)
+                    Spacer()
+                }
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 8)
+            .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 12, trailing: 16))
+        }
+        
+    }
+    
+// MARK: Favorites Section
+    
+    var favoritesSection: some View {
+        Section {
+            ForEach(favoritedEntries) { entry in
+                ZStack {
+                    NavigationLink(destination: destinationView(for: entry)) {
+                        EmptyView()
+                    }
+                    .opacity(0)
+                    EntryRowView(entry: entry)
+                }
+                .buttonStyle(.plain)
+                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            }
+        } header: {
             HStack(spacing: 6) {
-                Text("Collections")
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(style.primaryText)
-                NavigationLink(destination: PinnedCollectionsListView()) {
+                HStack(spacing: 6) {
+                    Image(systemName: "star.fill")
+                        .font(.caption)
+                        .foregroundStyle(style.accent)
+                    Text("Favorites")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(style.primaryText)
                     Image(systemName: "chevron.right")
                         .font(.caption)
                         .foregroundStyle(style.primaryText)
@@ -150,7 +208,7 @@ struct HomeView: View {
             Text("Nothing pinned yet")
                 .font(.headline)
                 .foregroundStyle(style.secondaryText)
-            Text("Swipe left on a collection, entry, or tag to pin it here.")
+            Text("Swipe left on a collection, entry, or tag to bookmark it here.")
                 .font(.caption)
                 .foregroundStyle(style.tertiaryText)
                 .multilineTextAlignment(.center)
