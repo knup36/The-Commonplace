@@ -36,7 +36,7 @@ struct CollectionFormView: View {
     var canSave: Bool { !name.isEmpty }
 
     var allTags: [String] {
-        Array(Set(entries.flatMap { $0.tags })).sorted()
+        Array(Set(entries.flatMap { $0.tagNames })).sorted()
     }
 
     // MARK: - Body

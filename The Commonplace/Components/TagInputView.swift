@@ -10,8 +10,10 @@ struct TagInputView: View {
     @State private var inputText = ""
     @FocusState private var isFocused: Bool
     
+    @Environment(\.modelContext) var modelContext
+    
     var allExistingTags: [String] {
-        Array(Set(entries.flatMap { $0.tags }))
+        Array(Set(entries.flatMap { $0.tagNames }))
             .sorted()
             .filter { !tags.contains($0) }
     }
@@ -122,5 +124,13 @@ struct TagInputView: View {
         }
         tags.append(cleaned)
         inputText = ""
+        
+        // Create a Tag object if one doesn't already exist for this name
+        let existingTags = (try? modelContext.fetch(FetchDescriptor<Tag>())) ?? []
+        if !existingTags.contains(where: { $0.name == cleaned }) {
+            let tag = Tag(name: cleaned)
+            modelContext.insert(tag)
+            print("🏷️ Created Tag object: '\(tag.name)' at \(tag.createdAt)")
+        }
     }
 }

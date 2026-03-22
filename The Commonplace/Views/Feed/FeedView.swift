@@ -21,6 +21,8 @@ struct FeedView: View {
     @State private var deletedEntry: Entry? = nil
     @State private var showingUndoToast = false
     @State private var filterType: EntryType? = nil
+    @State private var filteredEntries: [Entry] = []
+    @State private var visibleCount: Int = 50
     @EnvironmentObject var themeManager: ThemeManager
     @FocusState private var searchFocused: Bool
 
@@ -35,14 +37,6 @@ struct FeedView: View {
     ]
 
     var style: any AppThemeStyle { themeManager.style }
-
-    var filteredEntries: [Entry] {
-        var base = searchText.isEmpty ? entries : entries.filter { entryMatchesSearch($0, searchText: searchText) }
-        if let filterType {
-            base = base.filter { $0.type == filterType }
-        }
-        return base.filter { $0.id != deletedEntry?.id }
-    }
 
     // MARK: - Feed Header
 
@@ -106,6 +100,25 @@ struct FeedView: View {
             }
         }
         .onDelete(perform: deleteEntries)
+        // Load More button — only shown when more entries exist beyond visibleCount
+        let totalCount = entries.filter { $0.id != deletedEntry?.id }.count
+        if visibleCount < totalCount {
+            Button {
+                withAnimation {
+                    visibleCount += 50
+                    updateFilter()
+                }
+            } label: {
+                Text("Load More")
+                    .font(.subheadline)
+                    .foregroundStyle(style.accent)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+            }
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+        }
     }
 
     // MARK: - Body
@@ -128,7 +141,7 @@ struct FeedView: View {
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: filterType == nil ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
-                    .foregroundStyle(filterType.map { $0.accentColor } ?? style.primaryText)
+                    .foregroundStyle(filterType.map { $0.accentColor } ?? style.accent)
                 if let ft = filterType {
                     Text(ft.displayName)
                         .font(.caption)
@@ -192,7 +205,7 @@ struct FeedView: View {
                                     }
                                 } label: {
                                     Image(systemName: isSearching ? "xmark.circle.fill" : "magnifyingglass")
-                                        .foregroundStyle(isSearching ? .secondary : .primary)
+                                        .foregroundStyle(isSearching ? style.secondaryText : style.accent)
                                 }
                             }
                             if !isSearching {
@@ -203,6 +216,7 @@ struct FeedView: View {
                                 } label: {
                                     Image(systemName: "plus")
                                         .fontWeight(.medium)
+                                        .foregroundStyle(style.accent)
                                         .rotationEffect(.degrees(showingAddEntry ? 45 : 0))
                                         .animation(.spring(response: 0.4, dampingFraction: 0.65), value: showingAddEntry)
                                 }
@@ -254,7 +268,12 @@ struct FeedView: View {
                 .animation(.spring(response: 0.4, dampingFraction: 0.78), value: showingAddEntry)
                 .onAppear {
                     locationManager.requestLocation()
+                    updateFilter()
                 }
+                .onChange(of: entries) { _, _ in updateFilter() }
+                .onChange(of: searchText) { _, _ in visibleCount = 50; updateFilter() }
+                .onChange(of: filterType) { _, _ in visibleCount = 50; updateFilter() }
+                .onChange(of: deletedEntry) { _, _ in updateFilter() }
             }
 
             // Undo toast
@@ -437,5 +456,13 @@ struct FeedView: View {
             SearchIndex.shared.remove(entryID: filteredEntries[index].id)
             modelContext.delete(filteredEntries[index])
         }
+    }
+    func updateFilter() {
+        var base = searchText.isEmpty ? entries : entries.filter { entryMatchesSearch($0, searchText: searchText) }
+        if let filterType {
+            base = base.filter { $0.type == filterType }
+        }
+        base = base.filter { $0.id != deletedEntry?.id }
+        filteredEntries = Array(base.prefix(visibleCount))
     }
 }

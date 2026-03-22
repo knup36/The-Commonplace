@@ -29,7 +29,7 @@ struct EntryDetailView: View {
                 MusicDetailSection(entry: entry, style: style, accentColor: entry.type.accentColor)
                 JournalMetadataSection(entry: entry, style: style, accentColor: entry.type.accentColor)
                 textContentSection
-                TagInputView(tags: $entry.tags, accentColor: entry.type.accentColor, style: style)
+                TagInputView(tags: $entry.tagNames, accentColor: entry.type.accentColor, style: style)
                 Divider()
                 EntryMetadataFooter(entry: entry, style: style, accentColor: entry.type.accentColor)
             }

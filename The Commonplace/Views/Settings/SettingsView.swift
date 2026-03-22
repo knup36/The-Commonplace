@@ -1,11 +1,27 @@
+// SettingsView.swift
+// Commonplace
+//
+// App settings screen presented as a modal sheet.
+// Sections: Appearance (theme picker), Daily Habits (add/edit/reorder/delete),
+// About (version number), Data (export and import).
+//
+// Export flow:
+//   1. Check if any iCloud media files are not yet downloaded to device
+//   2. If unsynced files exist, show a warning alert with options to
+//      download first or export anyway
+//   3. If downloading, show progress and wait up to 60 seconds
+//   4. Run DataExporter.export() and show a summary alert on success
+//   5. Open share sheet so user can save the .commonplace archive
+//
+// Import flow:
+//   Opens a file picker for .commonplace files, delegates to DataImporter,
+//   and shows a result summary alert.
+
 import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
 
 // MARK: - SettingsView
-// App settings including theme selection, habit management, and data export/import.
-// Accessed via the settings button in the Today tab or Feed tab.
-// Screen: Settings sheet (presented modally)
 
 struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
@@ -17,10 +33,20 @@ struct SettingsView: View {
 
     @State private var showingAddHabit = false
     @State private var habitToEdit: Habit? = nil
+
+    // Export state
     @State private var isExporting = false
-    @State private var isImporting = false
     @State private var exportURL: URL? = nil
     @State private var showingShareSheet = false
+    @State private var exportSummary: String? = nil
+    @State private var showingExportSummary = false
+    @State private var showingUnsyncedWarning = false
+    @State private var unsyncedFileCount = 0
+    @State private var isDownloadingFiles = false
+    @State private var exportStatusMessage = "Preparing export..."
+
+    // Import state
+    @State private var isImporting = false
     @State private var importResult: DataImporter.ImportResult? = nil
     @State private var showingImportResult = false
     @State private var importError: String? = nil
@@ -133,12 +159,12 @@ struct SettingsView: View {
                 // MARK: - Data
                 Section {
                     Button {
-                        exportData()
+                        startExportFlow()
                     } label: {
                         if isExporting {
                             HStack(spacing: 10) {
                                 ProgressView()
-                                Text("Preparing export...")
+                                Text(exportStatusMessage)
                                     .foregroundStyle(style.primaryText)
                             }
                         } else {
@@ -204,6 +230,26 @@ struct SettingsView: View {
             ) { result in
                 handleImport(result: result)
             }
+            // iCloud unsynced files warning
+            .alert("Some Files Not Downloaded", isPresented: $showingUnsyncedWarning) {
+                Button("Download & Export") {
+                    downloadThenExport()
+                }
+                Button("Export Anyway") {
+                    performExport()
+                }
+                Button("Cancel", role: .cancel) {
+                    isExporting = false
+                }
+            } message: {
+                Text("\(unsyncedFileCount) media \(unsyncedFileCount == 1 ? "file is" : "files are") stored in iCloud but not yet downloaded to this device. They will be missing from the export unless you download them first.")
+            }
+            // Export success summary
+            .alert("Export Complete", isPresented: $showingExportSummary) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(exportSummary ?? "")
+            }
             .alert("Import Complete", isPresented: $showingImportResult) {
                 Button("OK", role: .cancel) {}
             } message: {
@@ -217,21 +263,62 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Export
+    // MARK: - Export Flow
 
-    func exportData() {
+    /// Entry point when the user taps Export.
+    /// Checks for unsynced iCloud files first — warns the user if any are found.
+    func startExportFlow() {
         isExporting = true
+        exportStatusMessage = "Checking iCloud sync..."
+        Task {
+            let unsynced = DataExporter.countUnsyncedFiles(entries: allEntries)
+            await MainActor.run {
+                if unsynced > 0 {
+                    unsyncedFileCount = unsynced
+                    showingUnsyncedWarning = true
+                    // isExporting stays true — spinner stays visible behind the alert
+                } else {
+                    performExport()
+                }
+            }
+        }
+    }
+
+    /// Triggers iCloud download for all pending files, then exports.
+    func downloadThenExport() {
+        exportStatusMessage = "Downloading files from iCloud..."
+        Task {
+            let success = await DataExporter.downloadUnsyncedFiles(entries: allEntries)
+            await MainActor.run {
+                if !success {
+                    // Timed out — warn the user but let them proceed
+                    importError = "Some files could not be downloaded in time. The export may be incomplete."
+                    showingImportError = true
+                }
+                performExport()
+            }
+        }
+    }
+
+    /// Runs the actual export and shows the share sheet on success.
+    func performExport() {
+        exportStatusMessage = "Preparing export..."
         Task {
             do {
-                let url = try DataExporter.export(
+                let summary = try DataExporter.export(
                     entries: allEntries,
                     collections: allCollections,
                     habits: habits
                 )
                 await MainActor.run {
-                    exportURL = url
+                    exportURL = summary.exportURL
+                    exportSummary = summary.message
                     isExporting = false
                     showingShareSheet = true
+                    // Show summary after share sheet is dismissed
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        showingExportSummary = true
+                    }
                 }
             } catch {
                 await MainActor.run {

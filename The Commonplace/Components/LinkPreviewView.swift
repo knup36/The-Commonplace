@@ -62,7 +62,7 @@ struct LinkPreviewView: View {
             Spacer()
         }
         .padding(10)
-        .background(Color(uiColor: .systemBackground).opacity(0.6))
+        .background(Color(uiColor: .systemBackground).opacity(0.3))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .onAppear {
             loadImage()

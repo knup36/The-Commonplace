@@ -7,36 +7,43 @@ struct CommonplaceApp: App {
     let container: ModelContainer
 
     init() {
-        let descriptor = UIFontDescriptor
-            .preferredFontDescriptor(withTextStyle: .body)
-            .withDesign(.rounded)!
-        UIFont(descriptor: descriptor, size: 0)
+        // Read saved theme before ThemeManager is available
+        let savedTheme = UserDefaults.standard.string(forKey: "appTheme") ?? "System"
+        let useRounded = savedTheme != "Inkwell"
 
         let navBarAppearance = UINavigationBarAppearance()
         navBarAppearance.configureWithDefaultBackground()
 
-        if let roundedDescriptor = UIFontDescriptor
-            .preferredFontDescriptor(withTextStyle: .largeTitle)
-            .withDesign(.rounded) {
-            navBarAppearance.largeTitleTextAttributes = [
-                .font: UIFont(descriptor: roundedDescriptor, size: 0)
-            ]
-        }
-        if let roundedDescriptor = UIFontDescriptor
-            .preferredFontDescriptor(withTextStyle: .headline)
-            .withDesign(.rounded) {
-            navBarAppearance.titleTextAttributes = [
-                .font: UIFont(descriptor: roundedDescriptor, size: 0)
-            ]
+        if useRounded {
+            // System theme — apply rounded font globally
+            if let roundedDescriptor = UIFontDescriptor
+                .preferredFontDescriptor(withTextStyle: .largeTitle)
+                .withDesign(.rounded) {
+                navBarAppearance.largeTitleTextAttributes = [
+                    .font: UIFont(descriptor: roundedDescriptor, size: 0)
+                ]
+            }
+            if let roundedDescriptor = UIFontDescriptor
+                .preferredFontDescriptor(withTextStyle: .headline)
+                .withDesign(.rounded) {
+                navBarAppearance.titleTextAttributes = [
+                    .font: UIFont(descriptor: roundedDescriptor, size: 0)
+                ]
+            }
+            if let roundedDescriptor = UIFontDescriptor
+                .preferredFontDescriptor(withTextStyle: .body)
+                .withDesign(.rounded) {
+                UIFont(descriptor: roundedDescriptor, size: 0)
+            }
         }
         UINavigationBar.appearance().standardAppearance = navBarAppearance
         UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
 
         do {
-            let schema = Schema([Entry.self, Collection.self, Habit.self])
+            let schema = Schema([Entry.self, Collection.self, Habit.self, Tag.self])
             let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
             container = try ModelContainer(
-                for: Entry.self, Collection.self, Habit.self,
+                for: Entry.self, Collection.self, Habit.self, Tag.self,
                 configurations: config
             )
         } catch {
@@ -63,7 +70,6 @@ struct CommonplaceApp: App {
         }
         .modelContainer(container)
     }
-
     // MARK: - Startup
 
     @MainActor
@@ -72,6 +78,7 @@ struct CommonplaceApp: App {
             let context = container.mainContext
             let entries = try context.fetch(FetchDescriptor<Entry>())
             SearchIndex.shared.backfillIfNeeded(entries: entries)
+            TagMigrationService.migrateIfNeeded(context: context)
         } catch {
             print("Backfill fetch failed: \(error)")
         }
@@ -91,6 +98,8 @@ extension UIWindow {
 // MARK: - Notification names
 extension Notification.Name {
     static let deviceDidShake = Notification.Name("deviceDidShake")
+    static let musicPlaybackStarted = Notification.Name("musicPlaybackStarted")
+
 }
 
 // MARK: - Default collections

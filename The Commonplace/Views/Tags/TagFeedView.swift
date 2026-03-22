@@ -16,7 +16,7 @@ struct TagFeedView: View {
 
     var filteredEntries: [Entry] {
         let tagged = entries
-            .filter { $0.tags.contains(tag) }
+            .filter { $0.tagNames.contains(tag) }
             .sorted { $0.createdAt > $1.createdAt }
         if searchText.isEmpty { return tagged }
         return tagged.filter { entryMatchesSearch($0, searchText: searchText) }

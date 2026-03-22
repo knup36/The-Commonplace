@@ -34,7 +34,7 @@ struct PinnedPagesListView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(style.background)
-        .navigationTitle("Pages")
+        .navigationTitle("Bookmarks")
         .navigationBarTitleDisplayMode(.large)
     }
 }

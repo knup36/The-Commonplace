@@ -1,3 +1,24 @@
+// DataExporter.swift
+// Commonplace
+//
+// Responsible for serializing all app data (entries, collections, habits) into
+// a .commonplace archive — a ZIP file containing a JSON manifest and a flat
+// media folder.
+//
+// Key responsibilities:
+//   - Building EntryDTO, CollectionDTO, HabitDTO value types for JSON encoding
+//   - Copying media files from the iCloud container into the export ZIP
+//   - Checking whether iCloud media files are fully downloaded before export
+//   - Triggering iCloud downloads for any files not yet on device
+//   - Returning an ExportSummary so the UI can show a verification count
+//
+// Important notes:
+//   - journalImageData is stored directly on Entry (not via MediaFileManager)
+//     and is handled as a special case during export
+//   - iCloud download triggering uses NSFileCoordinator — this is the correct
+//     Apple-recommended API for forcing iCloud files to download on demand
+//   - All iCloud checks use URLResourceValues.ubiquitousItemDownloadingStatus
+
 import Foundation
 import SwiftData
 import ZIPFoundation
@@ -56,7 +77,7 @@ class DataExporter {
         var totalHabitsAtTime: Int?
         var journalImageFile: String?
         var vibeEmoji: String?
-            }
+    }
 
     struct CollectionDTO: Codable {
         var id: String
@@ -97,18 +118,94 @@ class DataExporter {
         var journalImageFile: String?
     }
 
+    // MARK: - Export Summary
+
+    /// Returned after a successful export so the UI can show a verification message.
+    struct ExportSummary {
+        let entryCount: Int
+        let mediaFileCount: Int
+        let exportURL: URL
+
+        var message: String {
+            "\(entryCount) entries and \(mediaFileCount) media files exported successfully."
+        }
+    }
+
+    // MARK: - iCloud Sync Check
+
+    /// Checks how many media files referenced by entries are not yet downloaded
+    /// from iCloud to this device.
+    ///
+    /// Returns the count of files that are in iCloud but not locally available.
+    /// A count of 0 means the device is fully in sync and safe to export.
+    static func countUnsyncedFiles(entries: [Entry]) -> Int {
+        var unsyncedCount = 0
+        for entry in entries {
+            let paths = mediaPaths(for: entry)
+            for path in paths {
+                let fileURL = MediaFileManager.containerURL.appendingPathComponent(path)
+                if isFileNotDownloaded(fileURL) {
+                    unsyncedCount += 1
+                }
+            }
+        }
+        return unsyncedCount
+    }
+
+    /// Triggers iCloud to download all media files that are not yet on device.
+    /// Waits until all files are downloaded or a timeout is reached.
+    ///
+    /// - Parameter entries: All entries to check media paths for
+    /// - Parameter timeoutSeconds: How long to wait before giving up (default 60s)
+    /// - Returns: true if all files downloaded successfully, false if timed out
+    static func downloadUnsyncedFiles(
+        entries: [Entry],
+        timeoutSeconds: Double = 60
+    ) async -> Bool {
+        // Collect all file URLs that need downloading
+        var pendingURLs: [URL] = []
+        for entry in entries {
+            let paths = mediaPaths(for: entry)
+            for path in paths {
+                let fileURL = MediaFileManager.containerURL.appendingPathComponent(path)
+                if isFileNotDownloaded(fileURL) {
+                    pendingURLs.append(fileURL)
+                }
+            }
+        }
+
+        guard !pendingURLs.isEmpty else { return true }
+
+        // Trigger download for each file
+        for url in pendingURLs {
+            try? FileManager.default.startDownloadingUbiquitousItem(at: url)
+        }
+
+        // Poll until all files are downloaded or timeout is reached
+        let deadline = Date().addingTimeInterval(timeoutSeconds)
+        while Date() < deadline {
+            try? await Task.sleep(nanoseconds: 500_000_000) // check every 0.5s
+            let stillPending = pendingURLs.filter { isFileNotDownloaded($0) }
+            if stillPending.isEmpty { return true }
+        }
+
+        return false // timed out
+    }
+
     // MARK: - Export
 
     static func export(
         entries: [Entry],
         collections: [Collection],
         habits: [Habit]
-    ) throws -> URL {
+    ) throws -> ExportSummary {
         let tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("commonplace_export_\(UUID().uuidString)")
         let mediaDir = tempDir.appendingPathComponent("media")
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: mediaDir, withIntermediateDirectories: true)
+
+        var mediaFileCount = 0
 
         // Build entry DTOs
         var entryDTOs: [EntryDTO] = []
@@ -118,7 +215,7 @@ class DataExporter {
                 createdAt: entry.createdAt,
                 type: entry.type.rawValue,
                 text: entry.text,
-                tags: entry.tags,
+                tags: entry.tagNames,
                 isFavorited: entry.isFavorited,
                 imageFile: nil,
                 extractedText: entry.extractedText,
@@ -159,35 +256,41 @@ class DataExporter {
                 let filename = "entry_\(entry.id.uuidString)_image.jpg"
                 try data.write(to: mediaDir.appendingPathComponent(filename))
                 dto.imageFile = filename
+                mediaFileCount += 1
             }
             if let path = entry.audioPath,
                let data = MediaFileManager.load(path: path) {
                 let filename = "entry_\(entry.id.uuidString)_audio.m4a"
                 try data.write(to: mediaDir.appendingPathComponent(filename))
                 dto.audioFile = filename
+                mediaFileCount += 1
             }
             if let path = entry.previewImagePath,
                let data = MediaFileManager.load(path: path) {
                 let filename = "entry_\(entry.id.uuidString)_preview.jpg"
                 try data.write(to: mediaDir.appendingPathComponent(filename))
                 dto.previewImageFile = filename
+                mediaFileCount += 1
             }
             if let path = entry.faviconPath,
                let data = MediaFileManager.load(path: path) {
                 let filename = "entry_\(entry.id.uuidString)_favicon.png"
                 try data.write(to: mediaDir.appendingPathComponent(filename))
                 dto.faviconFile = filename
+                mediaFileCount += 1
             }
             if let path = entry.mediaArtworkPath,
                let data = MediaFileManager.load(path: path) {
                 let filename = "entry_\(entry.id.uuidString)_artwork.jpg"
                 try data.write(to: mediaDir.appendingPathComponent(filename))
                 dto.mediaArtworkFile = filename
+                mediaFileCount += 1
             }
             if entry.type == .journal, let imageData = entry.journalImageData {
                 let filename = "entry_\(entry.id.uuidString)_journal.jpg"
                 try imageData.write(to: mediaDir.appendingPathComponent(filename))
                 dto.journalImageFile = filename
+                mediaFileCount += 1
             }
             entryDTOs.append(dto)
         }
@@ -244,13 +347,44 @@ class DataExporter {
         }
         let archive = try Archive(url: zipURL, accessMode: .create)
         try archive.addEntry(with: "manifest.json", fileURL: manifestURL)
-        let mediaFiles = (try? FileManager.default.contentsOfDirectory(at: mediaDir, includingPropertiesForKeys: nil)) ?? []
+        let mediaFiles = (try? FileManager.default.contentsOfDirectory(
+            at: mediaDir,
+            includingPropertiesForKeys: nil
+        )) ?? []
         for file in mediaFiles {
             try archive.addEntry(with: "media/\(file.lastPathComponent)", fileURL: file)
         }
         try FileManager.default.removeItem(at: tempDir)
 
-        return zipURL
+        return ExportSummary(
+            entryCount: entries.count,
+            mediaFileCount: mediaFileCount,
+            exportURL: zipURL
+        )
+    }
+
+    // MARK: - Private Helpers
+
+    /// Collects all media file paths referenced by an entry.
+    /// Used by the iCloud sync check to know which files to inspect.
+    private static func mediaPaths(for entry: Entry) -> [String] {
+        [
+            entry.imagePath,
+            entry.audioPath,
+            entry.previewImagePath,
+            entry.faviconPath,
+            entry.mediaArtworkPath
+        ].compactMap { $0 }
+        // Note: journalImageData is stored in SwiftData directly, not as a file path,
+        // so it is always available and does not need an iCloud download check
+    }
+
+    /// Returns true if a file exists in iCloud but has not been downloaded to this device.
+    private static func isFileNotDownloaded(_ url: URL) -> Bool {
+        guard FileManager.default.fileExists(atPath: url.path) else { return false }
+        let resourceValues = try? url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
+        let status = resourceValues?.ubiquitousItemDownloadingStatus
+        return status == .notDownloaded
     }
 
     private static func formattedDate() -> String {

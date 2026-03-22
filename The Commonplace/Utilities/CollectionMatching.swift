@@ -9,7 +9,7 @@ func collectionMatches(entry: Entry, collection: Collection) -> Bool {
         guard collection.filterTypes.contains(entry.type.rawValue) else { return false }
     }
     if !collection.filterTags.isEmpty {
-        let hasTag = collection.filterTags.contains(where: { entry.tags.contains($0) })
+        let hasTag = collection.filterTags.contains(where: { entry.tagNames.contains($0) })
         guard hasTag else { return false }
     }
     if let range = DateFilterRange(rawValue: collection.filterDateRange) {

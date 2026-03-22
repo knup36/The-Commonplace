@@ -79,7 +79,8 @@ struct JournalBlockView: View {
             ImagePicker(image: $journalImage).ignoresSafeArea()
         }
         .onChange(of: journalImage) { _, newImage in
-            if let image = newImage, let data = image.jpegData(compressionQuality: 0.8) {
+            if let image = newImage,
+               let data = ImageProcessor.resizeAndCompress(image: image) {
                 getOrCreateTodayEntry().journalImageData = data
                 journalImage = nil
             }

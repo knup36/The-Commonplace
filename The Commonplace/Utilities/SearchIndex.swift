@@ -13,7 +13,7 @@ class SearchIndex {
     }
     
     private let schemaVersion = 3
-
+    
     private func setup() {
         do {
             let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -69,7 +69,7 @@ class SearchIndex {
                     arguments: [
                         entry.id.uuidString,
                         entry.text,
-                        entry.tags.joined(separator: " "),
+                        entry.tagNames.joined(separator: " "),
                         entry.transcript ?? "",
                         entry.extractedText ?? "",
                         entry.markdownContent ?? "",
@@ -110,8 +110,8 @@ class SearchIndex {
             let ftsQuery = query.trimmingCharacters(in: .whitespaces) + "*"
             let rows = try db.read { db in
                 try Row.fetchAll(db,
-                    sql: "SELECT entry_id FROM entry_search WHERE entry_search MATCH ?",
-                    arguments: [ftsQuery]
+                                 sql: "SELECT entry_id FROM entry_search WHERE entry_search MATCH ?",
+                                 arguments: [ftsQuery]
                 )
             }
             let ids = rows.compactMap { row -> UUID? in
@@ -128,13 +128,29 @@ class SearchIndex {
     // MARK: - Backfill
     
     func backfillIfNeeded(entries: [Entry]) {
-        let key = "searchIndexBackfilled"
-        guard !UserDefaults.standard.bool(forKey: key) else { return }
-        print("SearchIndex: starting backfill for \(entries.count) entries")
-        for entry in entries {
-            index(entry: entry)
+        guard let db else { return }
+        do {
+            // Get all entry IDs currently in the index
+            let indexedIDs: Set<String> = try db.read { db in
+                let rows = try Row.fetchAll(db, sql: "SELECT entry_id FROM entry_search")
+                return Set(rows.compactMap { $0["entry_id"] as? String })
+            }
+            
+            // Find entries not yet in the index
+            let missing = entries.filter { !indexedIDs.contains($0.id.uuidString) }
+            
+            guard !missing.isEmpty else {
+                print("SearchIndex: all \(entries.count) entries already indexed")
+                return
+            }
+            
+            print("SearchIndex: indexing \(missing.count) missing entries")
+            for entry in missing {
+                index(entry: entry)
+            }
+            print("SearchIndex: backfill complete")
+        } catch {
+            print("SearchIndex backfill failed: \(error)")
         }
-        UserDefaults.standard.set(true, forKey: key)
-        print("SearchIndex: backfill complete")
     }
 }

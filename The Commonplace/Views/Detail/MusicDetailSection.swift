@@ -1,14 +1,24 @@
-import SwiftUI
-import LinkPresentation
-
-// MARK: - MusicDetailSection
+// MusicDetailSection.swift
+// Commonplace
+//
 // Displays the music section within EntryDetailView.
 // Shown when entry.type == .music.
+//
 // Handles two states:
 //   1. No URL yet — shows a text field to paste an Apple Music link
 //   2. URL exists — shows MusicEntryView, fetch status, and Open in Apple Music button
-// Auto-saves URL when an Apple Music link is detected while typing
+//
+// Auto-saves URL when an Apple Music link is detected while typing.
+// Fetches metadata via iTunes Search API including trackId for full playback.
+//
+// Key change from previous version:
+//   Now saves entry.musicTrackID from iTunes API trackId field,
+//   enabling full Apple Music playback via MusicPlayerService.
+//
 // Screen: Entry Detail (tap any music entry in the Feed or Collections tab)
+
+import SwiftUI
+import LinkPresentation
 
 struct MusicDetailSection: View {
     @Bindable var entry: Entry
@@ -69,32 +79,14 @@ struct MusicDetailSection: View {
             if entry.type == .music && entry.url != nil && entry.linkTitle == nil {
                 isExtracting = true
                 Task {
-                    guard let urlString = entry.url else { isExtracting = false; return }
-                    let fetcher = await LinkPreviewFetcher()
-                    await fetcher.fetch(urlString: urlString)
-                    if let metadata = await fetcher.metadata {
-                        entry.linkTitle = metadata.title
-                    }
-                    if let searchTerm = entry.linkTitle?.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-                       let apiURL = URL(string: "https://itunes.apple.com/search?term=\(searchTerm)&limit=1&entity=song") {
-                        if let (apiData, _) = try? await URLSession.shared.data(from: apiURL),
-                           let json = try? JSONSerialization.jsonObject(with: apiData) as? [String: Any],
-                           let results = json["results"] as? [[String: Any]],
-                           let first = results.first {
-                            await MainActor.run {
-                                entry.mediaArtist = first["artistName"] as? String
-                                entry.mediaAlbum = first["collectionName"] as? String
-                                entry.previewURL = first["previewUrl"] as? String
-                            }
-                        }
-                    }
+                    await fetchMusicMetadata(urlString: entry.url)
                     isExtracting = false
                 }
             }
         }
     }
 
-    // MARK: - Helpers
+    // MARK: - Save URL
 
     func saveMusicURL() {
         guard !linkURLText.isEmpty else { return }
@@ -103,34 +95,58 @@ struct MusicDetailSection: View {
         linkFieldFocused = false
         isExtracting = true
         Task {
-            let fetcher = await LinkPreviewFetcher()
-            await fetcher.fetch(urlString: urlString)
-            if let metadata = await fetcher.metadata {
-                entry.linkTitle = metadata.title
+            await fetchMusicMetadata(urlString: urlString)
+            isExtracting = false
+        }
+    }
+
+    // MARK: - Fetch Metadata
+
+    /// Fetches song metadata from iTunes Search API and saves to entry.
+    /// Saves trackId as musicTrackID for full Apple Music playback via MusicPlayerService.
+    func fetchMusicMetadata(urlString: String?) async {
+        guard let urlString else { return }
+
+        let fetcher = await LinkPreviewFetcher()
+        await fetcher.fetch(urlString: urlString)
+        if let metadata = await fetcher.metadata {
+            await MainActor.run { entry.linkTitle = metadata.title }
+        }
+
+        guard let searchTerm = entry.linkTitle?.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let apiURL = URL(string: "https://itunes.apple.com/search?term=\(searchTerm)&limit=1&entity=song")
+        else { return }
+
+        guard let (apiData, _) = try? await URLSession.shared.data(from: apiURL),
+              let json = try? JSONSerialization.jsonObject(with: apiData) as? [String: Any],
+              let results = json["results"] as? [[String: Any]],
+              let first = results.first
+        else { return }
+
+        await MainActor.run {
+            entry.mediaArtist = first["artistName"] as? String
+            entry.mediaAlbum = first["collectionName"] as? String
+            entry.previewURL = first["previewUrl"] as? String
+
+            // Save Apple Music track ID for full playback via MusicPlayerService
+            if let trackID = first["trackId"] as? Int {
+                entry.musicTrackID = String(trackID)
             }
-            if let searchTerm = entry.linkTitle?.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-               let apiURL = URL(string: "https://itunes.apple.com/search?term=\(searchTerm)&limit=1&entity=song") {
-                if let (apiData, _) = try? await URLSession.shared.data(from: apiURL),
-                   let json = try? JSONSerialization.jsonObject(with: apiData) as? [String: Any],
-                   let results = json["results"] as? [[String: Any]],
-                   let first = results.first {
-                    await MainActor.run {
-                        entry.mediaArtist = first["artistName"] as? String
-                        entry.mediaAlbum = first["collectionName"] as? String
-                        entry.previewURL = first["previewUrl"] as? String
-                    }
-                    if let artworkURLString = first["artworkUrl100"] as? String {
-                        let hdArtworkURL = artworkURLString.replacingOccurrences(of: "100x100bb", with: "600x600bb")
-                        if let artworkURL = URL(string: hdArtworkURL),
-                           let (artworkData, _) = try? await URLSession.shared.data(from: artworkURL) {
-                            await MainActor.run {
-                                entry.mediaArtworkPath = try? MediaFileManager.save(artworkData, type: .image, id: "\(entry.id.uuidString)_artwork")
-                            }
-                        }
-                    }
+        }
+
+        // Fetch and save artwork
+        if let artworkURLString = first["artworkUrl100"] as? String {
+            let hdArtworkURL = artworkURLString.replacingOccurrences(of: "100x100bb", with: "600x600bb")
+            if let artworkURL = URL(string: hdArtworkURL),
+               let (artworkData, _) = try? await URLSession.shared.data(from: artworkURL) {
+                await MainActor.run {
+                    entry.mediaArtworkPath = try? MediaFileManager.save(
+                        artworkData,
+                        type: .image,
+                        id: "\(entry.id.uuidString)_artwork"
+                    )
                 }
             }
-            isExtracting = false
         }
     }
 }

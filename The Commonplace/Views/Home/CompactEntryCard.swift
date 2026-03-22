@@ -1,0 +1,304 @@
+// CompactEntryCard.swift
+// Commonplace
+//
+// Compact card view for entries shown in HomeDashboardView.
+// Wider than tall (160×120pts) — landscape orientation like Shortcuts app.
+// Shows just enough content to identify the entry at a glance.
+// Tapping navigates to the full entry detail view.
+//
+// Card content per entry type:
+//   .text     — first 2-3 lines of text
+//   .photo    — thumbnail image filling card
+//   .audio    — waveform icon + play indicator
+//   .link     — favicon + link title
+//   .journal  — date of journal entry
+//   .location — location name + category icon
+//   .sticky   — list title + X/X progress
+//   .music    — album artwork + music note icon
+//
+// Background color uses entry.type.accentColor at low opacity,
+// consistent with the feed card design language.
+
+import SwiftUI
+
+struct CompactEntryCard: View {
+    let entry: Entry
+    var style: any AppThemeStyle
+
+    private let cardWidth: CGFloat = 160
+    private let cardHeight: CGFloat = 80
+    
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            // Background — hidden for photo and music which use full bleed images
+            if entry.type != .photo && entry.type != .music {
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(entry.type.cardColor)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .strokeBorder(entry.type.accentColor.opacity(0.4), lineWidth: 0.5)
+                    )
+            }
+            
+            // Content
+            if entry.type == .photo || entry.type == .music {
+                cardContent
+            } else {
+                cardContent
+                    .padding(12)
+            }
+        }
+        .frame(width: cardWidth, height: cardHeight)
+        .contentShape(RoundedRectangle(cornerRadius: 14))
+        
+    }
+    
+    @ViewBuilder
+    var cardContent: some View {
+        switch entry.type {
+        case .text:
+            textCard
+        case .photo:
+            photoCard
+        case .audio:
+            audioCard
+        case .link:
+            linkCard
+        case .journal:
+            journalCard
+        case .location:
+            locationCard
+        case .sticky:
+            stickyCard
+        case .music:
+            musicCard
+        }
+    }
+
+    // MARK: - Text Card
+
+    var textCard: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(entry.text.isEmpty ? "Empty note" : entry.text)
+                .font(style.usesSerifFonts ? .system(.caption, design: .serif) : .caption)
+                .foregroundStyle(style.primaryText)
+                .lineLimit(3)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    // MARK: - Photo Card
+
+    var photoCard: some View {
+        Group {
+            if let path = entry.imagePath,
+               let data = MediaFileManager.load(path: path),
+               let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 160, height: 80)
+                    .clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .contentShape(RoundedRectangle(cornerRadius: 14))
+            } else {
+                VStack(spacing: 6) {
+                    Image(systemName: "photo.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(entry.type.accentColor)
+                    if !entry.text.isEmpty {
+                        Text(entry.text)
+                            .font(.caption)
+                            .foregroundStyle(style.secondaryText)
+                            .lineLimit(2)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+    }
+
+    // MARK: - Audio Card
+
+    var audioCard: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Image(systemName: "waveform")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(entry.type.accentColor)
+            Spacer()
+            Image(systemName: "play.circle.fill")
+                .font(.system(size: 28))
+                .foregroundStyle(entry.type.accentColor)
+                .frame(maxWidth: .infinity, alignment: .center)
+            Spacer()
+            if let transcript = entry.transcript, !transcript.isEmpty {
+                Text(transcript)
+                    .font(.caption2)
+                    .foregroundStyle(style.secondaryText)
+                    .lineLimit(2)
+            }
+        }
+    }
+
+    // MARK: - Link Card
+
+    var linkCard: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                if let faviconPath = entry.faviconPath,
+                   let data = MediaFileManager.load(path: faviconPath),
+                   let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .frame(width: 12, height: 12)
+                        .clipShape(RoundedRectangle(cornerRadius: 2))
+                } else {
+                    Image(systemName: "link")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(entry.type.accentColor)
+                }
+            }
+            Spacer()
+            Text(entry.linkTitle ?? entry.url ?? "Link")
+                .font(style.usesSerifFonts ? .system(.caption, design: .serif) : .caption)
+                .fontWeight(.medium)
+                .foregroundStyle(style.primaryText)
+                .lineLimit(3)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    // MARK: - Journal Card
+
+    var journalCard: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 4) {
+                if !entry.weatherEmoji.isEmpty { Text(entry.weatherEmoji).font(.body) }
+                if !entry.moodEmoji.isEmpty { Text(entry.moodEmoji).font(.body) }
+                if !entry.vibeEmoji.isEmpty { Text(entry.vibeEmoji).font(.body) }
+            }
+            Spacer()
+            Text(entry.createdAt.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
+                .font(style.usesSerifFonts ? .system(.caption, design: .serif) : .caption)
+                .fontWeight(.medium)
+                .foregroundStyle(style.primaryText)
+        }
+    }
+
+    // MARK: - Location Card
+
+    var locationCard: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Image(systemName: "mappin.circle.fill")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(entry.type.accentColor)
+            Spacer()
+            Text(entry.locationName ?? "Unknown Location")
+                .font(style.usesSerifFonts ? .system(.caption, design: .serif) : .caption)
+                .fontWeight(.medium)
+                .foregroundStyle(style.primaryText)
+                .lineLimit(2)
+            if let address = entry.locationAddress {
+                Text(address)
+                    .font(.caption2)
+                    .foregroundStyle(style.secondaryText)
+                    .lineLimit(1)
+            }
+        }
+    }
+
+    // MARK: - Sticky Card
+
+    var stickyCard: some View {
+        let total = entry.stickyItems.count
+        let checked = entry.stickyChecked.count
+
+        return VStack(alignment: .leading, spacing: 4) {
+            if let title = entry.stickyTitle, !title.isEmpty {
+                Text(title)
+                    .font(style.usesSerifFonts ? .system(.caption, design: .serif) : .caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(style.primaryText)
+                    .lineLimit(2)
+            }
+            Spacer()
+            if total > 0 {
+                HStack(spacing: 4) {
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(entry.type.accentColor.opacity(0.2))
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(entry.type.accentColor)
+                                .frame(width: total > 0 ? geo.size.width * CGFloat(checked) / CGFloat(total) : 0)
+                        }
+                    }
+                    .frame(height: 4)
+                    Text("\(checked)/\(total)")
+                        .font(.caption2)
+                        .foregroundStyle(style.secondaryText)
+                        .fixedSize()
+                }
+            }
+        }
+    }
+
+    // MARK: - Music Card
+
+    var musicCard: some View {
+        ZStack(alignment: .bottomLeading) {
+            if let artworkPath = entry.mediaArtworkPath,
+               let data = MediaFileManager.load(path: artworkPath),
+               let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 160, height: 80)
+                    .clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .contentShape(RoundedRectangle(cornerRadius: 14))
+                    .overlay(
+                        LinearGradient(
+                            colors: [.clear, .black.opacity(0.5)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                    )
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(entry.text.isEmpty ? (entry.mediaAlbum ?? "Music") : entry.text)
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                    if let artist = entry.mediaArtist {
+                        Text(artist)
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.7))
+                            .lineLimit(1)
+                    }
+                }
+                .padding(10)
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    Image(systemName: "music.note")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(entry.type.accentColor)
+                    Spacer()
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 28))
+                        .foregroundStyle(entry.type.accentColor)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                    Spacer()
+                    if let album = entry.mediaAlbum {
+                        Text(album)
+                            .font(.caption2)
+                            .foregroundStyle(style.secondaryText)
+                            .lineLimit(1)
+                    }
+                }
+                .padding(12)
+            }
+        }
+    }
+}

@@ -27,8 +27,10 @@ class ThemeManager: ObservableObject {
     
     var style: any AppThemeStyle {
         switch current {
-        case .inkwell: return InkwellStyle()
-        case .system:  return SystemStyle()
+        case .inkwell:
+            return InkwellStyle()
+        case .system:
+            return SystemStyle()
         }
     }
     var colorScheme: ColorScheme? {
@@ -246,6 +248,8 @@ struct InkwellStyle: AppThemeStyle {
     
     // Behavior
     var usesSerifFonts: Bool { true }
+    
+    
 }
 
 // MARK: - System Style
@@ -275,4 +279,5 @@ struct SystemStyle: AppThemeStyle {
     
     // Behavior
     var usesSerifFonts: Bool { false }
+    
 }

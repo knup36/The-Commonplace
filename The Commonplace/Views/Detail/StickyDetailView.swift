@@ -49,7 +49,7 @@ struct StickyDetailView: View {
                 Divider().overlay(style.surface)
                 itemsList
                 Divider().overlay(style.surface)
-                TagInputView(tags: $entry.tags, accentColor: accentColor, style: style)
+                TagInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
                 Divider().overlay(style.surface)
                 EntryMetadataFooter(entry: entry, style: style, accentColor: accentColor)
             }

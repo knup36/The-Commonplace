@@ -11,6 +11,7 @@ struct LibraryView: View {
     @Query var allCollections: [Collection]
     @Query var allEntries: [Entry]
     @Query var allEntryTags: [Entry]
+    @Query var allTagObjects: [Tag]
     @Environment(\.modelContext) var modelContext
     @Environment(\.editMode) var editMode
     @EnvironmentObject var themeManager: ThemeManager
@@ -19,6 +20,7 @@ struct LibraryView: View {
     @State private var navigationPath = NavigationPath()
     @State private var showingAddCollection = false
     @State private var currentSort: CollectionSort = .custom
+    @State private var currentTagSort: TagSort = .name
     @State private var collectionToEdit: Collection? = nil
     
     var style: any AppThemeStyle { themeManager.style }
@@ -31,6 +33,10 @@ struct LibraryView: View {
         case entryCount = "Entry Count"
         case dateCreated = "Date Created"
         case recentlyModified = "Recently Modified"
+    }
+    enum TagSort: String, CaseIterable {
+        case name = "Name"
+        case entryCount = "Entry Count"
     }
     
     var displayedCollections: [Collection] {
@@ -74,13 +80,17 @@ struct LibraryView: View {
     var allTags: [(tag: String, count: Int)] {
         var tagCounts: [String: Int] = [:]
         for entry in allEntries {
-            for tag in entry.tags {
+            for tag in entry.tagNames {
                 tagCounts[tag, default: 0] += 1
             }
         }
-        return tagCounts
-            .map { (tag: $0.key, count: $0.value) }
-            .sorted { $0.tag < $1.tag }
+        let mapped = tagCounts.map { (tag: $0.key, count: $0.value) }
+        switch currentTagSort {
+        case .name:
+            return mapped.sorted { $0.tag < $1.tag }
+        case .entryCount:
+            return mapped.sorted { $0.count > $1.count }
+        }
     }
     
     // MARK: - Body
@@ -194,38 +204,56 @@ struct LibraryView: View {
                         .padding(.top, 80)
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
-                    } else {
-                        ForEach(allTags, id: \.tag) { item in
+                    }
+                    ForEach(allTags, id: \.tag) { item in
+                        ZStack {
                             NavigationLink(destination: TagFeedView(tag: item.tag)) {
-                                HStack {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "number")
-                                            .font(.caption)
-                                            .foregroundStyle(style.accent)
-                                        Text(item.tag)
-                                            .font(style.body)
-                                            .foregroundStyle(style.primaryText)
-                                    }
-                                    Spacer()
-                                    Text("\(item.count)")
-                                        .font(.subheadline)
-                                        .fontWeight(.semibold)
-                                        .foregroundStyle(style.accent)
-                                        .padding(.trailing, -12)
-                                }
-                                .padding(.vertical, 4)
-                                .padding(.horizontal, 10)
+                                EmptyView()
                             }
-                            .listRowBackground(
-                                style.usesSerifFonts
-                                ? style.surface
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    .padding(.vertical, 2)
-                                    .padding(.horizontal, 16)
-                                : nil
-                            )
-                            .listRowInsets(EdgeInsets(top: 3, leading: 16, bottom: 3, trailing: 24))
-                            .listRowSeparator(style.usesSerifFonts ? .hidden : .visible)
+                            .opacity(0)
+                            HStack {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "number")
+                                        .font(.caption)
+                                        .foregroundStyle(style.accent)
+                                    Text(item.tag)
+                                        .font(style.body)
+                                        .foregroundStyle(style.primaryText)
+                                }
+                                Spacer()
+                                Text("\(item.count)")
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(style.accent)
+                                    .padding(.trailing, -12)
+                            }
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 10)
+                        }
+                        .listRowBackground(
+                            style.usesSerifFonts
+                            ? style.surface
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .padding(.vertical, 2)
+                                .padding(.horizontal, 16)
+                            : nil
+                        )
+                        .listRowInsets(EdgeInsets(top: 3, leading: 16, bottom: 3, trailing: 24))
+                        .listRowSeparator(style.usesSerifFonts ? .hidden : .visible)
+                        .buttonStyle(.plain)
+                        .swipeActions(edge: .leading) {
+                            Button {
+                                if let tag = allTagObjects.first(where: { $0.name == item.tag }) {
+                                    tag.isPinned.toggle()
+                                }
+                            } label: {
+                                let isPinned = allTagObjects.first(where: { $0.name == item.tag })?.isPinned == true
+                                Label(
+                                    isPinned ? "Unbookmark" : "Bookmark",
+                                    systemImage: isPinned ? "bookmark.slash.fill" : "bookmark.fill"
+                                )
+                            }
+                            .tint(.orange)
                         }
                     }
                 }
@@ -244,14 +272,21 @@ struct LibraryView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 16) {
                         Menu {
-                            Picker("Sort", selection: $currentSort) {
-                                ForEach(CollectionSort.allCases, id: \.self) { sort in
-                                    Label(sort.rawValue, systemImage: iconForSort(sort))
-                                        .tag(sort)
+                            if selectedTab == 0 {
+                                Picker("Sort", selection: $currentSort) {
+                                    ForEach(CollectionSort.allCases, id: \.self) { sort in
+                                        Label(sort.rawValue, systemImage: iconForSort(sort))
+                                            .tag(sort)
+                                    }
+                                }
+                            } else {
+                                Picker("Sort", selection: $currentTagSort) {
+                                    Label("Name", systemImage: "textformat.abc").tag(TagSort.name)
+                                    Label("Entry Count", systemImage: "number").tag(TagSort.entryCount)
                                 }
                             }
                         } label: {
-                            Image(systemName: currentSort == .custom ? "arrow.up.arrow.down" : "arrow.up.arrow.down.circle.fill")
+                            Image(systemName: (selectedTab == 0 ? currentSort != .custom : currentTagSort != .name) ? "arrow.up.arrow.down.circle.fill" : "arrow.up.arrow.down")
                                 .foregroundStyle(style.accent)
                         }
                         if selectedTab == 0 {
@@ -279,4 +314,5 @@ struct LibraryView: View {
             }
         }
     }
+    
 }

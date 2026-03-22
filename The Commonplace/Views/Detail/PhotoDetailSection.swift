@@ -1,26 +1,36 @@
-import SwiftUI
-import PhotosUI
-
-// MARK: - PhotoDetailSection
+// PhotoDetailSection.swift
+// Commonplace
+//
 // Displays the photo section within EntryDetailView.
 // Shown when entry.type == .photo.
+//
 // Handles three states:
 //   1. No photo yet — shows PhotosPicker to choose one
 //   2. Photo exists — shows the image with option to change it
 //   3. Analyzing — shows progress indicator while Vision runs OCR
+//
+// Image handling:
+//   All photos are processed through ImageProcessor before saving —
+//   resized to max 1200px longest side and compressed to 0.6 JPEG quality.
+//   The original full-res photo remains in the user's camera roll.
+//   VisionService receives the same compressed data for OCR analysis.
+//
 // Also includes extracted text section (collapsible OCR results)
 // Screen: Entry Detail (tap any photo entry in the Feed or Collections tab)
+
+import SwiftUI
+import PhotosUI
 
 struct PhotoDetailSection: View {
     @Bindable var entry: Entry
     var style: any AppThemeStyle
     var accentColor: Color
-    
+
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @State private var isAnalyzing = false
     @State private var showingExtractedText = false
     @State private var showingFullScreenImage = false
-    
+
     var body: some View {
         if entry.type == .photo {
             if let path = entry.imagePath,
@@ -41,15 +51,7 @@ struct PhotoDetailSection: View {
                 }
                 .onChange(of: selectedPhotoItem) { _, newItem in
                     Task {
-                        if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                            entry.imagePath = try? MediaFileManager.save(data, type: .image, id: entry.id.uuidString)
-                            entry.extractedText = nil
-                            isAnalyzing = true
-                            let result = await VisionService.analyze(imageData: data)
-                            entry.extractedText = result.extractedText.isEmpty ? nil : result.extractedText
-                            entry.visionTags = result.tags
-                            isAnalyzing = false
-                        }
+                        await savePhoto(from: newItem, clearExtractedText: true)
                     }
                 }
             } else {
@@ -63,18 +65,11 @@ struct PhotoDetailSection: View {
                 }
                 .onChange(of: selectedPhotoItem) { _, newItem in
                     Task {
-                        if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                            entry.imagePath = try? MediaFileManager.save(data, type: .image, id: entry.id.uuidString)
-                            isAnalyzing = true
-                            let result = await VisionService.analyze(imageData: data)
-                            entry.extractedText = result.extractedText.isEmpty ? nil : result.extractedText
-                            entry.visionTags = result.tags
-                            isAnalyzing = false
-                        }
+                        await savePhoto(from: newItem, clearExtractedText: false)
                     }
                 }
             }
-            
+
             // Analyzing indicator
             if isAnalyzing {
                 HStack(spacing: 8) {
@@ -84,7 +79,7 @@ struct PhotoDetailSection: View {
                         .foregroundStyle(style.secondaryText)
                 }
             }
-            
+
             // Extracted text section
             if let extractedText = entry.extractedText, !extractedText.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
@@ -116,5 +111,29 @@ struct PhotoDetailSection: View {
                 }
             }
         }
+    }
+
+    // MARK: - Private Helpers
+
+    /// Loads a photo from the picker, processes it through ImageProcessor,
+    /// saves it to the iCloud container, and runs Vision OCR analysis.
+    private func savePhoto(from item: PhotosPickerItem?, clearExtractedText: Bool) async {
+        guard let item,
+              let rawData = try? await item.loadTransferable(type: Data.self),
+              let uiImage = UIImage(data: rawData),
+              let processedData = ImageProcessor.resizeAndCompress(image: uiImage)
+        else { return }
+
+        entry.imagePath = try? MediaFileManager.save(processedData, type: .image, id: entry.id.uuidString)
+
+        if clearExtractedText {
+            entry.extractedText = nil
+        }
+
+        isAnalyzing = true
+        let result = await VisionService.analyze(imageData: processedData)
+        entry.extractedText = result.extractedText.isEmpty ? nil : result.extractedText
+        entry.visionTags = result.tags
+        isAnalyzing = false
     }
 }

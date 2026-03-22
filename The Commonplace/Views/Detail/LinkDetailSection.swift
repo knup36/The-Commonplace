@@ -32,6 +32,15 @@ struct LinkDetailSection: View {
                     .padding(12)
                     .background(accentColor.opacity(0.08))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .onAppear {
+                        linkFieldFocused = true
+                        // Check clipboard for a URL
+                        if let clip = UIPasteboard.general.string,
+                           clip.hasPrefix("http") || clip.hasPrefix("www"),
+                           linkURLText.isEmpty {
+                            linkURLText = clip
+                        }
+                    }
                     .onChange(of: linkURLText) { _, newValue in
                         if newValue.contains(".") && (newValue.hasPrefix("http") || newValue.hasPrefix("www")) {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {

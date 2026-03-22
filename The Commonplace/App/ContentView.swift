@@ -10,6 +10,7 @@ struct ContentView: View {
     @State private var previousTab = 0
 
     @Environment(\.modelContext) var modelContext
+    @EnvironmentObject var themeManager: ThemeManager
 
     init() {
         let navBarAppearance = UINavigationBarAppearance()
@@ -37,7 +38,7 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            HomeView()
+            HomeDashboardView()
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
                 }
@@ -75,6 +76,6 @@ struct ContentView: View {
                 createDefaultCollectionsIfNeeded(context: modelContext)
             }
         }
-        .fontDesign(.rounded)
+        .fontDesign(themeManager.current == .inkwell ? .serif : .rounded)
     }
 }

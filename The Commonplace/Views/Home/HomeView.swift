@@ -1,14 +1,17 @@
-import SwiftUI
-import SwiftData
-
-// MARK: - HomeView
+// HomeView.swift
+// Commonplace
+//
 // Personal dashboard — the main entry point of the app.
 // Shows pinned collections, pages, and tags.
 // Screen: Home tab (leftmost tab)
 
+import SwiftUI
+import SwiftData
+
 struct HomeView: View {
     @Query var allCollections: [Collection]
     @Query(sort: \Entry.createdAt, order: .reverse) var allEntries: [Entry]
+    @Query var allTags: [Tag]
     
     var favoritedEntries: [Entry] {
         allEntries
@@ -33,9 +36,21 @@ struct HomeView: View {
             .prefix(5)
             .map { $0 }
     }
+    var pinnedTags: [Tag] {
+        allTags
+            .filter { $0.isPinned }
+            .sorted { $0.createdAt < $1.createdAt }
+            .prefix(5)
+            .map { $0 }
+    }
+
+    func entryCount(for tag: Tag) -> Int {
+        allEntries.filter { $0.tagNames.contains(tag.name) }.count
+    }
 
     var hasAnyPinned: Bool {
-        !pinnedCollections.isEmpty || !pinnedEntries.isEmpty || !favoritedEntries.isEmpty
+        !pinnedCollections.isEmpty || !pinnedEntries.isEmpty ||
+        !favoritedEntries.isEmpty || !pinnedTags.isEmpty
     }
 
     var body: some View {
@@ -67,6 +82,11 @@ struct HomeView: View {
                 // Favorites Section
                 if !favoritedEntries.isEmpty {
                     favoritesSection
+                }
+
+                // Tags section
+                if !pinnedTags.isEmpty {
+                    tagsSection
                 }
 
                 // Empty state
@@ -157,9 +177,8 @@ struct HomeView: View {
             .padding(.horizontal, 8)
             .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 12, trailing: 16))
         }
-        
     }
-    
+
 // MARK: Favorites Section
     
     var favoritesSection: some View {
@@ -218,4 +237,60 @@ struct HomeView: View {
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
     }
+    
+    // MARK: - Tags Section
+
+    var tagsSection: some View {
+        Section {
+            ForEach(pinnedTags) { tag in
+                NavigationLink(destination: TagFeedView(tag: tag.name)) {
+                    HStack {
+                        HStack(spacing: 6) {
+                            Image(systemName: "number")
+                                .font(.caption)
+                                .foregroundStyle(style.accent)
+                            Text(tag.name)
+                                .font(style.body)
+                                .foregroundStyle(style.primaryText)
+                        }
+                        Spacer()
+                        Text("\(entryCount(for: tag))")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(style.accent)
+                    }
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 10)
+                }
+                .listRowBackground(
+                    style.usesSerifFonts
+                    ? style.surface
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .padding(.vertical, 2)
+                        .padding(.horizontal, 16)
+                    : nil
+                )
+                .listRowInsets(EdgeInsets(top: 3, leading: 16, bottom: 3, trailing: 24))
+                .listRowSeparator(style.usesSerifFonts ? .hidden : .visible)
+            }
+            Color.clear
+                .frame(height: 50)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+        } header: {
+            HStack(spacing: 6) {
+                Image(systemName: "tag.fill")
+                    .font(.caption)
+                    .foregroundStyle(style.accent)
+                Text("Tags")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(style.primaryText)
+                Spacer()
+            }
+            .padding(.horizontal, 8)
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 12, trailing: 16))
+        }
+    }
 }
+
