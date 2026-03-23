@@ -69,6 +69,7 @@ class DataExporter {
         var mediaAlbum: String?
         var previewURL: String?
         var mediaArtworkFile: String?
+        var musicTrackID: String?
         // Journal fields
         var weatherEmoji: String?
         var moodEmoji: String?

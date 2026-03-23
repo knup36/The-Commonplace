@@ -30,10 +30,10 @@ struct SettingsView: View {
     @Query var allEntries: [Entry]
     @Query var allCollections: [Collection]
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     @State private var showingAddHabit = false
     @State private var habitToEdit: Habit? = nil
-
+    
     // Export state
     @State private var isExporting = false
     @State private var exportURL: URL? = nil
@@ -44,7 +44,11 @@ struct SettingsView: View {
     @State private var unsyncedFileCount = 0
     @State private var isDownloadingFiles = false
     @State private var exportStatusMessage = "Preparing export..."
-
+    @State private var isExportingMarkdown = false
+    @State private var markdownExportMessage: String? = nil
+    @State private var markdownExportURL: URL? = nil
+    @State private var showingMarkdownShareSheet = false
+    
     // Import state
     @State private var isImporting = false
     @State private var importResult: DataImporter.ImportResult? = nil
@@ -52,14 +56,14 @@ struct SettingsView: View {
     @State private var importError: String? = nil
     @State private var showingImportError = false
     @State private var showingImportFilePicker = false
-
+    
     var style: any AppThemeStyle { themeManager.style }
     var accent: Color { style.accent }
-
+    
     var body: some View {
         NavigationStack {
             Form {
-
+                
                 // MARK: - Appearance
                 Section {
                     ForEach(AppTheme.allCases, id: \.self) { theme in
@@ -87,7 +91,7 @@ struct SettingsView: View {
                     Text("Inkwell uses a warm dark theme inspired by leather-bound books and candlelight.")
                         .foregroundStyle(style.tertiaryText)
                 }
-
+                
                 // MARK: - Habits
                 Section {
                     ForEach(habits) { habit in
@@ -127,7 +131,7 @@ struct SettingsView: View {
                             habit.order = index
                         }
                     }
-
+                    
                     Button {
                         showingAddHabit = true
                     } label: {
@@ -141,7 +145,7 @@ struct SettingsView: View {
                     Text("These habits appear on your Today page every day, ready to check off.")
                         .foregroundStyle(style.tertiaryText)
                 }
-
+                
                 // MARK: - About
                 Section {
                     HStack {
@@ -151,11 +155,15 @@ struct SettingsView: View {
                         Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
                             .foregroundStyle(style.tertiaryText)
                     }
+                    NavigationLink(destination: ReleaseNotesView()) {
+                        Text("What's New")
+                            .foregroundStyle(style.primaryText)
+                    }
                 } header: {
                     Text("About")
                         .foregroundStyle(style.tertiaryText)
                 }
-
+                
                 // MARK: - Data
                 Section {
                     Button {
@@ -173,7 +181,23 @@ struct SettingsView: View {
                         }
                     }
                     .disabled(isExporting)
-
+                    
+                    Button {
+                        exportMarkdown()
+                    } label: {
+                        if isExportingMarkdown {
+                            HStack(spacing: 10) {
+                                ProgressView()
+                                Text("Exporting archive...")
+                                    .foregroundStyle(style.primaryText)
+                            }
+                        } else {
+                            Label("Export Markdown Archive", systemImage: "doc.plaintext.fill")
+                                .foregroundStyle(accent)
+                        }
+                    }
+                    .disabled(isExportingMarkdown)
+                    
                     Button {
                         showingImportFilePicker = true
                     } label: {
@@ -189,12 +213,12 @@ struct SettingsView: View {
                         }
                     }
                     .disabled(isImporting)
-
+                    
                 } header: {
                     Text("Data")
                         .foregroundStyle(style.tertiaryText)
                 } footer: {
-                    Text("Export creates a .commonplace archive including all entries, photos, audio, collections, habits, and journal data. Import merges data into your existing library.")
+                    Text("Export All Data creates a .commonplace backup archive. Export Markdown Archive saves a human-readable archive to iCloud Drive for the last 30 days. Import merges data into your existing library.")
                         .foregroundStyle(style.tertiaryText)
                 }
             }
@@ -220,6 +244,16 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showingShareSheet) {
                 if let url = exportURL {
+                    ShareSheet(url: url)
+                }
+            }
+            .sheet(isPresented: $showingMarkdownShareSheet) {
+                if let url = markdownExportURL {
+                    ShareSheet(url: url)
+                }
+            }
+            .sheet(isPresented: $showingMarkdownShareSheet) {
+                if let url = markdownExportURL {
                     ShareSheet(url: url)
                 }
             }
@@ -262,9 +296,9 @@ struct SettingsView: View {
             }
         }
     }
-
+    
     // MARK: - Export Flow
-
+    
     /// Entry point when the user taps Export.
     /// Checks for unsynced iCloud files first — warns the user if any are found.
     func startExportFlow() {
@@ -283,7 +317,7 @@ struct SettingsView: View {
             }
         }
     }
-
+    
     /// Triggers iCloud download for all pending files, then exports.
     func downloadThenExport() {
         exportStatusMessage = "Downloading files from iCloud..."
@@ -299,7 +333,7 @@ struct SettingsView: View {
             }
         }
     }
-
+    
     /// Runs the actual export and shows the share sheet on success.
     func performExport() {
         exportStatusMessage = "Preparing export..."
@@ -329,9 +363,45 @@ struct SettingsView: View {
             }
         }
     }
-
+    
+    /// Exports entries as markdown files, presents share sheet to save ZIP.
+    func exportMarkdown() {
+        isExportingMarkdown = true
+        Task {
+            do {
+                let result = try MarkdownExporter.export(entries: allEntries)
+                await MainActor.run {
+                    isExportingMarkdown = false
+                    markdownExportURL = result.zipURL
+                    exportSummary = result.message
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        let url = result.zipURL
+                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                           let rootVC = windowScene.windows.first?.rootViewController {
+                            var topVC = rootVC
+                            while let presented = topVC.presentedViewController {
+                                topVC = presented
+                            }
+                            let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+                            topVC.present(activityVC, animated: true)
+                        }
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        showingExportSummary = true
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isExportingMarkdown = false
+                    importError = "Markdown export failed: \(error.localizedDescription)"
+                    showingImportError = true
+                }
+            }
+        }
+    }
+    
     // MARK: - Import
-
+    
     func handleImport(result: Result<[URL], Error>) {
         switch result {
         case .success(let urls):
@@ -364,10 +434,10 @@ struct SettingsView: View {
 
 struct ShareSheet: UIViewControllerRepresentable {
     let url: URL
-
+    
     func makeUIViewController(context: Context) -> UIActivityViewController {
         UIActivityViewController(activityItems: [url], applicationActivities: nil)
     }
-
+    
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }

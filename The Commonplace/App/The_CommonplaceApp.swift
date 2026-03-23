@@ -59,6 +59,8 @@ struct CommonplaceApp: App {
 
     @StateObject private var themeManager = ThemeManager()
 
+    @Environment(\.scenePhase) var scenePhase
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -66,6 +68,12 @@ struct CommonplaceApp: App {
                 .preferredColorScheme(themeManager.colorScheme)
                 .task {
                     await startupTasks()
+                }
+                .onChange(of: scenePhase) { _, newPhase in
+                    if newPhase == .active {
+                        let context = container.mainContext
+                        ShareExtensionIngestor.ingestPendingEntries(context: context)
+                    }
                 }
         }
         .modelContainer(container)
@@ -79,8 +87,20 @@ struct CommonplaceApp: App {
             let entries = try context.fetch(FetchDescriptor<Entry>())
             SearchIndex.shared.backfillIfNeeded(entries: entries)
             TagMigrationService.migrateIfNeeded(context: context)
+            
+            // Debug — check App Group container
+            if let url = AppGroupContainer.pendingEntriesURL {
+                print("📦 App Group pending folder: \(url.path)")
+                let files = (try? FileManager.default.contentsOfDirectory(atPath: url.path)) ?? []
+                print("📦 Pending files: \(files)")
+            } else {
+                print("📦 App Group container unavailable!")
+            }
+            
+            ShareExtensionIngestor.ingestPendingEntries(context: context)
         } catch {
             print("Backfill fetch failed: \(error)")
+            
         }
     }
 }

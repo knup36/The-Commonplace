@@ -100,6 +100,8 @@ class DataImporter {
             entry.mediaArtist = dto.mediaArtist
             entry.mediaAlbum = dto.mediaAlbum
             entry.previewURL = dto.previewURL
+            entry.tagNames = dto.tags
+            entry.musicTrackID = dto.musicTrackID
 
             // Journal fields
             if type == .journal {
