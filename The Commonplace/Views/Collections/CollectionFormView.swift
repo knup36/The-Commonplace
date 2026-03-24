@@ -12,10 +12,10 @@ struct CollectionFormView: View {
     @Environment(\.dismiss) var dismiss
     @Query var entries: [Entry]
     @Query var collections: [Collection]
-
+    
     // If nil, we're creating. If set, we're editing.
     var collection: Collection? = nil
-
+    
     // Form state
     @State private var name = ""
     @State private var selectedIcon = "folder.fill"
@@ -31,31 +31,32 @@ struct CollectionFormView: View {
     @State private var newTagFilter = ""
     @State private var locationFilterEnabled = false
     @State private var favoritesOnly = false
-
+    @State private var selectedMediaStatuses: Set<String> = []
+    
     var isEditing: Bool { collection != nil }
     var canSave: Bool { !name.isEmpty }
-
+    
     var allTags: [String] {
         Array(Set(entries.flatMap { $0.tagNames })).sorted()
     }
-
+    
     // MARK: - Body
-
+    
     var body: some View {
         NavigationStack {
             Form {
                 Section("Name") {
                     TextField("Collection name", text: $name)
                 }
-
+                
                 Section("Color") {
                     colorPickerGrid
                 }
-
+                
                 Section("Icon") {
                     IconPickerView(selectedIcon: $selectedIcon, accentColor: Color(hex: selectedColorHex))
                 }
-
+                
                 Section("Filter by Type") {
                     ForEach(EntryType.allCases, id: \.self) { type in
                         HStack {
@@ -76,7 +77,7 @@ struct CollectionFormView: View {
                         }
                     }
                 }
-
+                
                 Section("Filter by Tag") {
                     ForEach(Array(selectedTags).sorted(), id: \.self) { tag in
                         HStack {
@@ -93,7 +94,7 @@ struct CollectionFormView: View {
                             .buttonStyle(.plain)
                         }
                     }
-
+                    
                     HStack {
                         TextField("Add tag filter...", text: $newTagFilter)
                             .autocorrectionDisabled()
@@ -107,7 +108,7 @@ struct CollectionFormView: View {
                             .buttonStyle(.plain)
                         }
                     }
-
+                    
                     let suggestions = allTags.filter {
                         !selectedTags.contains($0) &&
                         (newTagFilter.isEmpty || $0.localizedCaseInsensitiveContains(newTagFilter))
@@ -133,7 +134,7 @@ struct CollectionFormView: View {
                         }
                     }
                 }
-
+                
                 Section("Filter by Location") {
                     LocationRadiusPickerView(
                         locationName: $filterLocationName,
@@ -143,14 +144,37 @@ struct CollectionFormView: View {
                         isExpandedExternal: $locationFilterEnabled
                     )
                 }
-
+                
+                if selectedTypes.contains("media") {
+                    Section("Filter by Watch Status") {
+                        ForEach([("wantTo", "Want to Watch", "bookmark"), ("inProgress", "In Progress", "play.circle"), ("finished", "Finished", "checkmark.circle")], id: \.0) { value, label, icon in
+                            HStack {
+                                Label(label, systemImage: selectedMediaStatuses.contains(value) ? "\(icon).fill" : icon)
+                                Spacer()
+                                if selectedMediaStatuses.contains(value) {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(Color(hex: selectedColorHex))
+                                }
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                if selectedMediaStatuses.contains(value) {
+                                    selectedMediaStatuses.remove(value)
+                                } else {
+                                    selectedMediaStatuses.insert(value)
+                                }
+                            }
+                        }
+                    }
+                }
+                
                 Section("Filter by Favorites") {
                     Toggle(isOn: $favoritesOnly) {
                         Label("Favorites Only", systemImage: "star.fill")
                             .foregroundStyle(.yellow)
                     }
                 }
-
+                
                 Section("Filter by Text") {
                     TextField("e.g. .bsky, recipe, @username", text: $filterSearchText)
                         .autocorrectionDisabled()
@@ -161,7 +185,7 @@ struct CollectionFormView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-
+                
                 Section("Filter by Date") {
                     Picker("Date Range", selection: $selectedDateRange) {
                         Text("All Time").tag(DateFilterRange.allTime)
@@ -205,14 +229,15 @@ struct CollectionFormView: View {
                     filterLocationRadius = collection.filterLocationRadius
                     locationFilterEnabled = collection.filterLocationLatitude != nil
                     favoritesOnly = collection.filterSearchText == "__favorites__"
+                    selectedMediaStatuses = Set(collection.filterMediaStatus)
                     filterSearchText = collection.filterSearchText == "__favorites__" ? "" : (collection.filterSearchText ?? "")
                 }
             }
         }
     }
-
+    
     // MARK: - Color Picker
-
+    
     var colorPickerGrid: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 10), spacing: 10) {
             ForEach(CuratedColors.all, id: \.hex) { color in
@@ -231,16 +256,16 @@ struct CollectionFormView: View {
         }
         .padding(.vertical, 4)
     }
-
+    
     // MARK: - Helpers
-
+    
     func addTagFilter() {
         let trimmed = newTagFilter.trimmingCharacters(in: .whitespaces).lowercased()
         guard !trimmed.isEmpty else { return }
         selectedTags.insert(trimmed)
         newTagFilter = ""
     }
-
+    
     func saveNew() {
         let c = Collection(
             name: name,
@@ -256,9 +281,10 @@ struct CollectionFormView: View {
         c.filterLocationLongitude = filterLocationLongitude
         c.filterLocationRadius = filterLocationRadius
         c.filterSearchText = favoritesOnly ? "__favorites__" : (filterSearchText.isEmpty ? nil : filterSearchText)
+        c.filterMediaStatus = Array(selectedMediaStatuses)
         modelContext.insert(c)
     }
-
+    
     func saveEdits() {
         guard let collection else { return }
         collection.name = name
@@ -272,5 +298,6 @@ struct CollectionFormView: View {
         collection.filterLocationLongitude = filterLocationLongitude
         collection.filterLocationRadius = filterLocationRadius
         collection.filterSearchText = favoritesOnly ? "__favorites__" : (filterSearchText.isEmpty ? nil : filterSearchText)
+        collection.filterMediaStatus = Array(selectedMediaStatuses)
     }
 }

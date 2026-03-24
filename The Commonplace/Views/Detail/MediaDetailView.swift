@@ -55,7 +55,7 @@ struct MediaDetailView: View {
                 }
             }
         }
-        .background(style.background)
+        .background(entry.type.cardColor.ignoresSafeArea())
         .navigationTitle(isPopulated ? (entry.mediaTitle ?? "Media") : "New Media Entry")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
@@ -372,8 +372,18 @@ struct MediaDetailView: View {
         }
     }
     
+    func statusColor(for value: String) -> Color {
+        switch value {
+        case "wantTo":     return InkwellTheme.mediaAccent   // red
+        case "inProgress": return InkwellTheme.stickyAccent  // amber/yellow
+        case "finished":   return InkwellTheme.locationAccent // green
+        default:           return entry.type.accentColor
+        }
+    }
+    
     func statusButton(label: String, value: String, icon: String) -> some View {
         let isSelected = entry.mediaStatus == value
+        let color = statusColor(for: value)
         return Button {
             entry.mediaStatus = value
             try? modelContext.save()
@@ -381,24 +391,22 @@ struct MediaDetailView: View {
             VStack(spacing: 6) {
                 Image(systemName: isSelected ? "\(icon).fill" : icon)
                     .font(.system(size: 20))
-                    .foregroundStyle(isSelected ? entry.type.accentColor : style.secondaryText)
+                    .foregroundStyle(isSelected ? color : style.secondaryText)
                 Text(label)
                     .font(.caption2)
                     .fontWeight(isSelected ? .semibold : .regular)
-                    .foregroundStyle(isSelected ? entry.type.accentColor : style.secondaryText)
+                    .foregroundStyle(isSelected ? color : style.secondaryText)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
-            .background(isSelected
-                        ? entry.type.accentColor.opacity(0.15)
-                        : style.surface)
+            .background(isSelected ? color.opacity(0.15) : style.surface)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
                     .strokeBorder(
-                        isSelected ? entry.type.accentColor.opacity(0.4) : Color.clear,
+                        isSelected ? color.opacity(0.4) : Color.clear,
                         lineWidth: 1
                     )
             )

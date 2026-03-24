@@ -37,6 +37,11 @@ func collectionMatches(entry: Entry, collection: Collection) -> Bool {
         let distanceMiles = entryLocation.distance(from: filterLocation) / 1609.34
         guard distanceMiles <= radius else { return false }
     }
+    if !collection.filterMediaStatus.isEmpty {
+        guard entry.type == .media,
+              let status = entry.mediaStatus,
+              collection.filterMediaStatus.contains(status) else { return false }
+    }
     if let searchText = collection.filterSearchText,
        !searchText.isEmpty,
        searchText != "__favorites__" {
@@ -47,8 +52,8 @@ func collectionMatches(entry: Entry, collection: Collection) -> Bool {
                 entry.locationName?.localizedCaseInsensitiveContains(searchText) == true ||
                 entry.locationAddress?.localizedCaseInsensitiveContains(searchText) == true ||
                 entry.captureLocationName?.localizedCaseInsensitiveContains(searchText) == true ||
-                            entry.locationCategory?.localizedCaseInsensitiveContains(searchText) == true
-                    else { return false }
+                entry.locationCategory?.localizedCaseInsensitiveContains(searchText) == true
+        else { return false }
     }
     return true
 }

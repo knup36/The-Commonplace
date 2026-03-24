@@ -109,8 +109,9 @@ class DataExporter {
         var filterLocationLatitude: Double?
         var filterLocationLongitude: Double?
         var filterLocationRadius: Double?
+        var filterMediaStatus: [String]
     }
-
+    
     struct HabitDTO: Codable {
         var id: String
         var name: String
@@ -350,10 +351,11 @@ class DataExporter {
                 filterLocationName: c.filterLocationName,
                 filterLocationLatitude: c.filterLocationLatitude,
                 filterLocationLongitude: c.filterLocationLongitude,
-                filterLocationRadius: c.filterLocationRadius
+                filterLocationRadius: c.filterLocationRadius,
+                filterMediaStatus: c.filterMediaStatus
             )
         }
-
+        
         // Build habit DTOs
         let habitDTOs = habits.map { h in
             HabitDTO(id: h.id.uuidString, name: h.name, icon: h.icon, order: h.order)

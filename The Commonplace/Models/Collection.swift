@@ -23,6 +23,7 @@ class Collection {
     var filterLocationLatitude: Double? = nil
     var filterLocationLongitude: Double? = nil
     var filterLocationRadius: Double? = nil
+    var filterMediaStatus: [String] = []
     
     init(name: String, icon: String = "folder.fill", colorHex: String = "#007AFF", order: Int = 0) {
         self.id = UUID()

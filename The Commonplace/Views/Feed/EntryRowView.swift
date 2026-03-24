@@ -266,6 +266,16 @@ struct EntryRowView: View {
                                 .foregroundStyle(style.secondaryText)
                         }
                     }
+                    if let status = entry.mediaStatus {
+                                    Text(mediaStatusLabel(for: status).uppercased())
+                                        .font(.system(size: 8, weight: .semibold))
+                                        .kerning(0.6)
+                                        .foregroundStyle(mediaStatusColor(for: status))
+                                        .padding(.horizontal, 7)
+                                        .padding(.vertical, 3)
+                                        .background(mediaStatusColor(for: status).opacity(0.15))
+                                        .clipShape(Capsule())
+                                }
                 }
                 Spacer()
             }
@@ -362,3 +372,22 @@ struct EntryRowView: View {
         .shadow(color: style.usesSerifFonts ? Color.black.opacity(0.4) : Color.clear, radius: 6, x: 0, y: 3)
     }
 }
+// MARK: Helpers
+
+func mediaStatusLabel(for status: String) -> String {
+        switch status {
+        case "wantTo":     return "Want to Watch"
+        case "inProgress": return "In Progress"
+        case "finished":   return "Finished"
+        default:           return status
+        }
+    }
+
+    func mediaStatusColor(for status: String) -> Color {
+        switch status {
+        case "wantTo":     return InkwellTheme.mediaAccent
+        case "inProgress": return InkwellTheme.stickyAccent
+        case "finished":   return InkwellTheme.locationAccent
+        default:           return InkwellTheme.inkSecondary
+        }
+    }

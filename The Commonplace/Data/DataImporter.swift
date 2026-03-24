@@ -77,10 +77,11 @@ class DataImporter {
             collection.filterLocationLatitude = dto.filterLocationLatitude
             collection.filterLocationLongitude = dto.filterLocationLongitude
             collection.filterLocationRadius = dto.filterLocationRadius
+            collection.filterMediaStatus = dto.filterMediaStatus
             modelContext.insert(collection)
             collectionsImported += 1
         }
-
+        
         // Import Entries
         let existingEntryIDs = Set((try? modelContext.fetch(FetchDescriptor<Entry>()))?.map { $0.id.uuidString } ?? [])
         for dto in manifest.entries {
