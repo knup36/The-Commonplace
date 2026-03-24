@@ -22,7 +22,7 @@ struct ReleaseNotesView: View {
     let releases: [Release] = [
         Release(
             version: "1.5",
-            title: "Lights, Camera, Commonplace",
+            title: "I'll Have What She's Having",
             notes: [
                 "Media entry type — track movies and TV shows you're watching",
                 "Search any title and pull in cover art, genre, runtime, and more automatically",
@@ -35,7 +35,7 @@ struct ReleaseNotesView: View {
         ),
         Release(
             version: "1.4",
-            title: "Share It",
+            title: "Sharing is Caring",
             notes: [
                 "Share Extension — save links, images, text, and music directly from any app",
                 "Apple Music links captured automatically with full track metadata",
@@ -46,7 +46,7 @@ struct ReleaseNotesView: View {
         ),
         Release(
             version: "1.3",
-            title: "The Big One",
+            title: "Big Kahuna Burger",
             notes: [
                 "New Home dashboard with horizontal quick-access cards",
                 "Full Apple Music playback — tap to play without leaving the app",
@@ -60,7 +60,7 @@ struct ReleaseNotesView: View {
         ),
         Release(
             version: "1.2",
-            title: "Inkwell",
+            title: "Music To My Ears",
             notes: [
                 "Inkwell — a warm dark theme inspired by leather-bound books",
                 "Music entry type — save and preview Apple Music tracks",
@@ -69,13 +69,20 @@ struct ReleaseNotesView: View {
         ),
         Release(
             version: "1.1",
-            title: "Collections",
+            title: "Gotta Catch 'em All",
             notes: [
                 "Collections — organize entries with custom filters and icons",
                 "Performance improvements throughout the app",
                 "Faster launch and smoother scrolling"
             ]
-        )
+        ),
+        Release(
+            version: "1.0",
+            title: "Now Presenting!",
+            notes: [
+                "Initial Release"
+            ]
+        ),
     ]
 
     var body: some View {
