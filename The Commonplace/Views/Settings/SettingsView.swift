@@ -1,9 +1,11 @@
 // SettingsView.swift
 // Commonplace
 //
-// App settings screen presented as a modal sheet.
+// App settings screen presented as a full NavigationLink destination from TodayView.
+// Does NOT contain its own NavigationStack — it lives inside TodayView's stack.
+//
 // Sections: Appearance (theme picker), Daily Habits (add/edit/reorder/delete),
-// About (version number), Data (export and import).
+// About (version number, what's new), Data (export and import).
 //
 // Export flow:
 //   1. Check if any iCloud media files are not yet downloaded to device
@@ -24,15 +26,13 @@ import UniformTypeIdentifiers
 // MARK: - SettingsView
 
 struct SettingsView: View {
-    @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) var modelContext
     @Query(sort: \Habit.order) var habits: [Habit]
     @Query var allEntries: [Entry]
     @Query var allCollections: [Collection]
     @EnvironmentObject var themeManager: ThemeManager
     
-    @State private var showingAddHabit = false
-    @State private var habitToEdit: Habit? = nil
+    // Habit management moved to HabitSettingsView
     
     // Export state
     @State private var isExporting = false
@@ -45,9 +45,7 @@ struct SettingsView: View {
     @State private var isDownloadingFiles = false
     @State private var exportStatusMessage = "Preparing export..."
     @State private var isExportingMarkdown = false
-    @State private var markdownExportMessage: String? = nil
     @State private var markdownExportURL: URL? = nil
-    @State private var showingMarkdownShareSheet = false
     
     // Import state
     @State private var isImporting = false
@@ -60,247 +58,180 @@ struct SettingsView: View {
     var style: any AppThemeStyle { themeManager.style }
     var accent: Color { style.accent }
     
+    // MARK: - Body
+    
     var body: some View {
-        NavigationStack {
-            Form {
-                
-                // MARK: - Appearance
-                Section {
-                    ForEach(AppTheme.allCases, id: \.self) { theme in
-                        Button {
-                            themeManager.current = theme
-                        } label: {
-                            HStack {
-                                Image(systemName: theme.icon)
-                                    .foregroundStyle(accent)
-                                    .frame(width: 24)
-                                Text(theme.label)
-                                    .foregroundStyle(style.primaryText)
-                                Spacer()
-                                if themeManager.current == theme {
-                                    Image(systemName: "checkmark")
-                                        .foregroundStyle(accent)
-                                }
-                            }
-                        }
-                    }
-                } header: {
-                    Text("Appearance")
-                        .foregroundStyle(style.tertiaryText)
-                } footer: {
-                    Text("Inkwell uses a warm dark theme inspired by leather-bound books and candlelight.")
-                        .foregroundStyle(style.tertiaryText)
-                }
-                
-                // MARK: - Habits
-                Section {
-                    ForEach(habits) { habit in
-                        Button {
-                            habitToEdit = habit
-                        } label: {
-                            HStack(spacing: 12) {
-                                ZStack {
-                                    Circle()
-                                        .fill(accent.opacity(0.12))
-                                        .frame(width: 36, height: 36)
-                                        .overlay(
-                                            style.usesSerifFonts
-                                            ? Circle().strokeBorder(accent.opacity(0.3), lineWidth: 0.5)
-                                            : nil
-                                        )
-                                    Image(systemName: habit.icon)
-                                        .font(.system(size: 16))
-                                        .foregroundStyle(accent)
-                                }
-                                Text(habit.name)
-                                    .font(style.body)
-                                    .foregroundStyle(style.primaryText)
-                            }
-                        }
-                        .foregroundStyle(style.primaryText)
-                    }
-                    .onDelete { indexSet in
-                        for index in indexSet {
-                            modelContext.delete(habits[index])
-                        }
-                    }
-                    .onMove { from, to in
-                        var reordered = habits
-                        reordered.move(fromOffsets: from, toOffset: to)
-                        for (index, habit) in reordered.enumerated() {
-                            habit.order = index
-                        }
-                    }
-                    
-                    Button {
-                        showingAddHabit = true
-                    } label: {
-                        Label("Add Habit", systemImage: "plus.circle.fill")
-                            .foregroundStyle(accent)
-                    }
-                } header: {
-                    Text("Daily Habits")
-                        .foregroundStyle(style.tertiaryText)
-                } footer: {
-                    Text("These habits appear on your Today page every day, ready to check off.")
-                        .foregroundStyle(style.tertiaryText)
-                }
-                
-                // MARK: - About
-                Section {
+        Form {
+            appearanceSection
+            habitsSection
+            aboutSection
+            dataSection
+        }
+        .navigationTitle("Settings")
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showingShareSheet) {
+            if let url = exportURL {
+                ShareSheet(url: url)
+            }
+        }
+        // Habit sheets handled in HabitSettingsView
+        .fileImporter(
+            isPresented: $showingImportFilePicker,
+            allowedContentTypes: [.init(filenameExtension: "commonplace") ?? .data],
+            allowsMultipleSelection: false
+        ) { result in
+            handleImport(result: result)
+        }
+        .alert("Some Files Not Downloaded", isPresented: $showingUnsyncedWarning) {
+            Button("Download & Export") { downloadThenExport() }
+            Button("Export Anyway") { performExport() }
+            Button("Cancel", role: .cancel) { isExporting = false }
+        } message: {
+            Text("\(unsyncedFileCount) media \(unsyncedFileCount == 1 ? "file is" : "files are") stored in iCloud but not yet downloaded to this device. They will be missing from the export unless you download them first.")
+        }
+        .alert("Ready to Save", isPresented: $showingExportSummary) {
+            Button("Save Backup") { showingShareSheet = true }
+            Button("Cancel", role: .cancel) { exportURL = nil }
+        } message: {
+            Text(exportSummary ?? "")
+        }
+        .alert("Import Complete", isPresented: $showingImportResult) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(importResult?.summary ?? "")
+        }
+        .alert("Import Failed", isPresented: $showingImportError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(importError ?? "An unknown error occurred.")
+        }
+    }
+    
+    // MARK: - Sections
+    
+    var appearanceSection: some View {
+        Section {
+            ForEach(AppTheme.allCases, id: \.self) { theme in
+                Button {
+                    themeManager.current = theme
+                } label: {
                     HStack {
-                        Text("Version")
+                        Image(systemName: theme.icon)
+                            .foregroundStyle(accent)
+                            .frame(width: 24)
+                        Text(theme.label)
                             .foregroundStyle(style.primaryText)
                         Spacer()
-                        Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
-                            .foregroundStyle(style.tertiaryText)
+                        if themeManager.current == theme {
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(accent)
+                        }
                     }
-                    NavigationLink(destination: ReleaseNotesView()) {
-                        Text("What's New")
+                }
+            }
+        } header: {
+            Text("Appearance")
+                .foregroundStyle(style.tertiaryText)
+        } footer: {
+            Text("Inkwell uses a warm dark theme inspired by leather-bound books and candlelight.")
+                .foregroundStyle(style.tertiaryText)
+        }
+    }
+    
+    var habitsSection: some View {
+            Section {
+                NavigationLink(destination: HabitSettingsView()) {
+                    Label("Daily Habits", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(style.primaryText)
+                }
+            } header: {
+                Text("Habits")
+                    .foregroundStyle(style.tertiaryText)
+            } footer: {
+                Text("Habits appear on your Today page every day, ready to check off.")
+                    .foregroundStyle(style.tertiaryText)
+            }
+        }
+    
+    var aboutSection: some View {
+        Section {
+            HStack {
+                Text("Version")
+                    .foregroundStyle(style.primaryText)
+                Spacer()
+                Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
+                    .foregroundStyle(style.tertiaryText)
+            }
+            NavigationLink(destination: ReleaseNotesView()) {
+                Text("What's New")
+                    .foregroundStyle(style.primaryText)
+            }
+        } header: {
+            Text("About")
+                .foregroundStyle(style.tertiaryText)
+        }
+    }
+    
+    var dataSection: some View {
+        Section {
+            Button {
+                startExportFlow()
+            } label: {
+                if isExporting {
+                    HStack(spacing: 10) {
+                        ProgressView()
+                        Text(exportStatusMessage)
                             .foregroundStyle(style.primaryText)
                     }
-                } header: {
-                    Text("About")
-                        .foregroundStyle(style.tertiaryText)
-                }
-                
-                // MARK: - Data
-                Section {
-                    Button {
-                        startExportFlow()
-                    } label: {
-                        if isExporting {
-                            HStack(spacing: 10) {
-                                ProgressView()
-                                Text(exportStatusMessage)
-                                    .foregroundStyle(style.primaryText)
-                            }
-                        } else {
-                            Label("Export All Data", systemImage: "arrow.up.doc.fill")
-                                .foregroundStyle(accent)
-                        }
-                    }
-                    .disabled(isExporting)
-                    
-                    Button {
-                        exportMarkdown()
-                    } label: {
-                        if isExportingMarkdown {
-                            HStack(spacing: 10) {
-                                ProgressView()
-                                Text("Exporting archive...")
-                                    .foregroundStyle(style.primaryText)
-                            }
-                        } else {
-                            Label("Export Markdown Archive", systemImage: "doc.plaintext.fill")
-                                .foregroundStyle(accent)
-                        }
-                    }
-                    .disabled(isExportingMarkdown)
-                    
-                    Button {
-                        showingImportFilePicker = true
-                    } label: {
-                        if isImporting {
-                            HStack(spacing: 10) {
-                                ProgressView()
-                                Text("Importing...")
-                                    .foregroundStyle(style.primaryText)
-                            }
-                        } else {
-                            Label("Import Data", systemImage: "arrow.down.doc.fill")
-                                .foregroundStyle(accent)
-                        }
-                    }
-                    .disabled(isImporting)
-                    
-                } header: {
-                    Text("Data")
-                        .foregroundStyle(style.tertiaryText)
-                } footer: {
-                    Text("Export All Data creates a .commonplace backup archive. Export Markdown Archive saves a human-readable archive to iCloud Drive for the last 30 days. Import merges data into your existing library.")
-                        .foregroundStyle(style.tertiaryText)
-                }
-            }
-            .scrollContentBackground(style.usesSerifFonts ? .hidden : .visible)
-            .background(style.usesSerifFonts ? style.background : Color(uiColor: .systemGroupedBackground))
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    EditButton()
-                        .foregroundStyle(accent)
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { dismiss() }
+                } else {
+                    Label("Export All Data", systemImage: "arrow.up.doc.fill")
                         .foregroundStyle(accent)
                 }
             }
-            .sheet(isPresented: $showingAddHabit) {
-                AddHabitView()
-            }
-            .sheet(item: $habitToEdit) { habit in
-                AddHabitView(habit: habit)
-            }
-            .sheet(isPresented: $showingShareSheet) {
-                if let url = exportURL {
-                    ShareSheet(url: url)
+            .disabled(isExporting)
+            
+            Button {
+                exportMarkdown()
+            } label: {
+                if isExportingMarkdown {
+                    HStack(spacing: 10) {
+                        ProgressView()
+                        Text("Exporting archive...")
+                            .foregroundStyle(style.primaryText)
+                    }
+                } else {
+                    Label("Export Markdown Archive", systemImage: "doc.text.fill")
+                        .foregroundStyle(accent)
                 }
             }
-            .sheet(isPresented: $showingMarkdownShareSheet) {
-                if let url = markdownExportURL {
-                    ShareSheet(url: url)
+            .disabled(isExportingMarkdown)
+            
+            Button {
+                showingImportFilePicker = true
+            } label: {
+                if isImporting {
+                    HStack(spacing: 10) {
+                        ProgressView()
+                        Text("Importing...")
+                            .foregroundStyle(style.primaryText)
+                    }
+                } else {
+                    Label("Import Archive", systemImage: "arrow.down.doc.fill")
+                        .foregroundStyle(accent)
                 }
             }
-            .sheet(isPresented: $showingMarkdownShareSheet) {
-                if let url = markdownExportURL {
-                    ShareSheet(url: url)
-                }
-            }
-            .fileImporter(
-                isPresented: $showingImportFilePicker,
-                allowedContentTypes: [.init(filenameExtension: "commonplace") ?? .data],
-                allowsMultipleSelection: false
-            ) { result in
-                handleImport(result: result)
-            }
-            // iCloud unsynced files warning
-            .alert("Some Files Not Downloaded", isPresented: $showingUnsyncedWarning) {
-                Button("Download & Export") {
-                    downloadThenExport()
-                }
-                Button("Export Anyway") {
-                    performExport()
-                }
-                Button("Cancel", role: .cancel) {
-                    isExporting = false
-                }
-            } message: {
-                Text("\(unsyncedFileCount) media \(unsyncedFileCount == 1 ? "file is" : "files are") stored in iCloud but not yet downloaded to this device. They will be missing from the export unless you download them first.")
-            }
-            // Export success summary
-            .alert("Export Complete", isPresented: $showingExportSummary) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(exportSummary ?? "")
-            }
-            .alert("Import Complete", isPresented: $showingImportResult) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(importResult?.summary ?? "")
-            }
-            .alert("Import Failed", isPresented: $showingImportError) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(importError ?? "An unknown error occurred.")
-            }
+            .disabled(isImporting)
+        } header: {
+            Text("Data")
+                .foregroundStyle(style.tertiaryText)
+        } footer: {
+            Text("Export All Data creates a .commonplace archive for backup and restore. Markdown Archive exports a human-readable ZIP for use in Obsidian, Bear, or any text editor.")
+                .foregroundStyle(style.tertiaryText)
         }
     }
     
     // MARK: - Export Flow
     
-    /// Entry point when the user taps Export.
-    /// Checks for unsynced iCloud files first — warns the user if any are found.
     func startExportFlow() {
         isExporting = true
         exportStatusMessage = "Checking iCloud sync..."
@@ -310,7 +241,6 @@ struct SettingsView: View {
                 if unsynced > 0 {
                     unsyncedFileCount = unsynced
                     showingUnsyncedWarning = true
-                    // isExporting stays true — spinner stays visible behind the alert
                 } else {
                     performExport()
                 }
@@ -318,14 +248,12 @@ struct SettingsView: View {
         }
     }
     
-    /// Triggers iCloud download for all pending files, then exports.
     func downloadThenExport() {
         exportStatusMessage = "Downloading files from iCloud..."
         Task {
             let success = await DataExporter.downloadUnsyncedFiles(entries: allEntries)
             await MainActor.run {
                 if !success {
-                    // Timed out — warn the user but let them proceed
                     importError = "Some files could not be downloaded in time. The export may be incomplete."
                     showingImportError = true
                 }
@@ -334,7 +262,6 @@ struct SettingsView: View {
         }
     }
     
-    /// Runs the actual export and shows the share sheet on success.
     func performExport() {
         exportStatusMessage = "Preparing export..."
         Task {
@@ -348,11 +275,7 @@ struct SettingsView: View {
                     exportURL = summary.exportURL
                     exportSummary = summary.message
                     isExporting = false
-                    showingShareSheet = true
-                    // Show summary after share sheet is dismissed
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        showingExportSummary = true
-                    }
+                    showingExportSummary = true
                 }
             } catch {
                 await MainActor.run {
@@ -364,7 +287,6 @@ struct SettingsView: View {
         }
     }
     
-    /// Exports entries as markdown files, presents share sheet to save ZIP.
     func exportMarkdown() {
         isExportingMarkdown = true
         Task {
@@ -386,9 +308,7 @@ struct SettingsView: View {
                             topVC.present(activityVC, animated: true)
                         }
                     }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        showingExportSummary = true
-                    }
+                    // Summary shown after share sheet dismisses via onDismiss
                 }
             } catch {
                 await MainActor.run {
@@ -409,10 +329,10 @@ struct SettingsView: View {
             isImporting = true
             Task {
                 do {
-                    let result = try DataImporter.importArchive(from: url, modelContext: modelContext)
+                    let importedResult = try DataImporter.importArchive(from: url, modelContext: modelContext)
                     await MainActor.run {
                         isImporting = false
-                        importResult = result
+                        importResult = importedResult
                         showingImportResult = true
                     }
                 } catch {

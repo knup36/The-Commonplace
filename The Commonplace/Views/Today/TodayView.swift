@@ -12,7 +12,7 @@ struct TodayView: View {
     @Query var entries: [Entry]
     @EnvironmentObject var themeManager: ThemeManager
 
-    @State private var showingSettings = false
+    // Settings is now a NavigationLink destination — no sheet state needed
     @State private var selectedTab = 0
     @State private var keyboardVisible = false
 
@@ -87,15 +87,10 @@ struct TodayView: View {
                             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                         }
                         .foregroundStyle(style.accent)
-                    } else {
-                        Button { showingSettings = true } label: {
-                            Image(systemName: "gearshape.fill")
-                                .foregroundStyle(style.accent)
-                        }
                     }
                 }
             }
-            .sheet(isPresented: $showingSettings) { SettingsView() }
+            // Settings presented via NavigationLink — no sheet needed
         }
     }
 

@@ -172,8 +172,16 @@ struct HomeDashboardView: View {
             }
             .background(style.background)
             .navigationBarTitleDisplayMode(.inline)
-        }
-    }
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarTrailing) {
+                                NavigationLink(destination: SettingsView()) {
+                                    Image(systemName: "gearshape.fill")
+                                        .foregroundStyle(style.accent)
+                                }
+                            }
+                        }
+                    }
+                }
 
     // MARK: - Horizontal Section Builder
 
