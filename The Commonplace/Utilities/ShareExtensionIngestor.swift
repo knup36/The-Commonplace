@@ -9,10 +9,21 @@
 //   1. Check App Group container for pending JSON files
 //   2. Convert each SharedEntry to a SwiftData Entry
 //   3. Save media files to iCloud container via MediaFileManager
-//   4. Index entry in GRDB search index
-//   5. Delete the pending JSON file
+//   4. Save to SwiftData context
+//   5. Index entry in GRDB search index (AFTER save — ensures data is committed)
+//   6. For async types (link, music): re-index after metadata fetch completes
+//   7. Delete the pending JSON file
 //
 // Safe to call on every launch — does nothing if no pending entries exist.
+//
+// Note: .media entries are never created via the share extension.
+// Media (movies/TV) are always added directly within the app.
+//
+// Search indexing note:
+//   index(entry:) is called AFTER context.save() to ensure SwiftData has committed
+//   the entry before indexing. For link and music entries, index(entry:) is called
+//   a second time after async metadata fetching completes, so the index always
+//   reflects the final populated state of the entry.
 
 import SwiftData
 import Foundation
@@ -44,7 +55,8 @@ struct ShareExtensionIngestor {
             switch entryType {
             case .link:
                 entry.url = shared.url
-                // Fetch link preview and article content in background
+                // Fetch link preview and article content in background.
+                // Re-indexes after metadata arrives so search reflects full content.
                 if let urlString = shared.url {
                     Task {
                         let fetcher = await LinkPreviewFetcher()
@@ -76,6 +88,8 @@ struct ShareExtensionIngestor {
                             entry.markdownContent = "__failed__"
                         }
                         try? context.save()
+                        // Re-index now that link title and markdown content are populated
+                        SearchIndex.shared.index(entry: entry)
                     }
                 }
                 
@@ -111,8 +125,8 @@ struct ShareExtensionIngestor {
                         else { return }
                         
                         await MainActor.run {
-                            entry.mediaArtist = first["artistName"] as? String
-                            entry.mediaAlbum = first["collectionName"] as? String
+                            entry.musicArtist = first["artistName"] as? String
+                            entry.musicAlbum = first["collectionName"] as? String
                             entry.previewURL = first["previewUrl"] as? String
                             if let trackID = first["trackId"] as? Int {
                                 entry.musicTrackID = String(trackID)
@@ -124,12 +138,14 @@ struct ShareExtensionIngestor {
                             if let artworkURL = URL(string: hdURL),
                                let (artworkData, _) = try? await URLSession.shared.data(from: artworkURL) {
                                 await MainActor.run {
-                                    entry.mediaArtworkPath = try? MediaFileManager.save(
+                                    entry.musicArtworkPath = try? MediaFileManager.save(
                                         artworkData,
                                         type: .image,
                                         id: "\(entry.id.uuidString)_artwork"
                                     )
                                     try? context.save()
+                                    // Re-index now that artist, album and track info are populated
+                                    SearchIndex.shared.index(entry: entry)
                                 }
                             }
                         }
@@ -148,9 +164,6 @@ struct ShareExtensionIngestor {
                 }
                 
             case .location:
-                // Parse location from Maps URL if available
-                entry.url = shared.url
-            case .location:
                 entry.url = shared.url
                 print("📍 Location URL: \(shared.url ?? "nil")")
                 entry.locationName = shared.locationName
@@ -160,8 +173,8 @@ struct ShareExtensionIngestor {
                     entry.locationLatitude = lat
                     entry.locationLongitude = lon
                 }
-                
-            case .text, .audio, .journal, .sticky:
+
+            case .text, .audio, .journal, .sticky, .media:
                 break
             }
             
@@ -175,8 +188,12 @@ struct ShareExtensionIngestor {
                     context.insert(tag)
                 }
             }
-            
-            // Index in search
+
+            // Save BEFORE indexing — ensures SwiftData has committed the entry
+            // so the index reflects the actual persisted state
+            try? context.save()
+
+            // Initial index — captures all synchronously available fields
             SearchIndex.shared.index(entry: entry)
             
             // Clean up pending file
@@ -185,7 +202,6 @@ struct ShareExtensionIngestor {
             print("ShareExtensionIngestor: ingested \(entryType.rawValue) entry")
         }
         
-        try? context.save()
         print("ShareExtensionIngestor: ingestion complete")
     }
 }

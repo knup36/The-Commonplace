@@ -1,3 +1,23 @@
+// SearchIndex.swift
+// Commonplace
+//
+// Full-text search index powered by GRDB/SQLite FTS5.
+// Maintains a separate search database alongside SwiftData.
+//
+// Indexed fields per entry:
+//   text, tags, transcript, extracted_text, markdown_content,
+//   link_title, location_name, music_artist, music_album,
+//   sticky_title, sticky_items, media_title, media_genre
+//
+// Schema versioning: bump schemaVersion any time columns are added or removed.
+// A version change drops and recreates the table and triggers a full backfill.
+//
+// Backfill strategy:
+//   - On every launch, any entry with no index record gets indexed (catches missed entries)
+//   - Additionally, all entries created or modified in the last 24 hours are re-indexed
+//     to catch timing issues where indexing ran before metadata was fully fetched
+//     (e.g. share extension entries where link/music metadata arrives asynchronously)
+
 import Foundation
 import GRDB
 
@@ -12,7 +32,8 @@ class SearchIndex {
         setup()
     }
     
-    private let schemaVersion = 3
+    // Bump this any time columns are added or removed from entry_search
+    private let schemaVersion = 4
     
     private func setup() {
         do {
@@ -24,7 +45,7 @@ class SearchIndex {
             
             try db?.write { db in
                 if currentVersion < schemaVersion {
-                    // Schema changed — drop and recreate
+                    // Schema changed — drop and recreate, backfill will re-index everything
                     try db.execute(sql: "DROP TABLE IF EXISTS entry_search")
                     UserDefaults.standard.removeObject(forKey: "searchIndexBackfilled")
                 }
@@ -37,10 +58,12 @@ class SearchIndex {
                     t.column("markdown_content")
                     t.column("link_title")
                     t.column("location_name")
-                    t.column("media_artist")
-                    t.column("media_album")
+                    t.column("music_artist")
+                    t.column("music_album")
                     t.column("sticky_title")
                     t.column("sticky_items")
+                    t.column("media_title")
+                    t.column("media_genre")
                 }
             }
             UserDefaults.standard.set(schemaVersion, forKey: "searchIndexSchemaVersion")
@@ -48,6 +71,7 @@ class SearchIndex {
             print("SearchIndex setup failed: \(error)")
         }
     }
+
     // MARK: - Indexing
     
     func index(entry: Entry) {
@@ -62,9 +86,9 @@ class SearchIndex {
                     sql: """
                         INSERT INTO entry_search
                         (entry_id, text, tags, transcript, extracted_text,
-                         markdown_content, link_title, location_name, media_artist, media_album,
-                         sticky_title, sticky_items)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         markdown_content, link_title, location_name, music_artist, music_album,
+                         sticky_title, sticky_items, media_title, media_genre)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                     arguments: [
                         entry.id.uuidString,
@@ -75,10 +99,12 @@ class SearchIndex {
                         entry.markdownContent ?? "",
                         entry.linkTitle ?? "",
                         entry.locationName ?? "",
-                        entry.mediaArtist ?? "",
-                        entry.mediaAlbum ?? "",
-                        entry.stickyTitle ?? "",                    // ADD THIS
-                        entry.stickyItems.joined(separator: " ")   // ADD THIS
+                        entry.musicArtist ?? "",
+                        entry.musicAlbum ?? "",
+                        entry.stickyTitle ?? "",
+                        entry.stickyItems.joined(separator: " "),
+                        entry.mediaTitle ?? "",
+                        entry.mediaGenre ?? ""
                     ]
                 )
             }
@@ -136,19 +162,29 @@ class SearchIndex {
                 return Set(rows.compactMap { $0["entry_id"] as? String })
             }
             
-            // Find entries not yet in the index
+            // 1. Index any entries completely missing from the index
             let missing = entries.filter { !indexedIDs.contains($0.id.uuidString) }
-            
-            guard !missing.isEmpty else {
-                print("SearchIndex: all \(entries.count) entries already indexed")
-                return
+            if !missing.isEmpty {
+                print("SearchIndex: indexing \(missing.count) missing entries")
+                for entry in missing { index(entry: entry) }
             }
             
-            print("SearchIndex: indexing \(missing.count) missing entries")
-            for entry in missing {
-                index(entry: entry)
+            // 2. Re-index all entries from the last 24 hours
+            // This catches entries where indexing ran before async metadata
+            // (link previews, music artwork etc.) had finished fetching
+            let cutoff = Date().addingTimeInterval(-86400)
+            let recent = entries.filter { $0.createdAt >= cutoff }
+            if !recent.isEmpty {
+                print("SearchIndex: re-indexing \(recent.count) recent entries to catch async metadata")
+                for entry in recent { index(entry: entry) }
             }
-            print("SearchIndex: backfill complete")
+
+            let total = Set(missing + recent).count
+            if total == 0 {
+                print("SearchIndex: all \(entries.count) entries already indexed and up to date")
+            } else {
+                print("SearchIndex: backfill complete — processed \(total) entries")
+            }
         } catch {
             print("SearchIndex backfill failed: \(error)")
         }

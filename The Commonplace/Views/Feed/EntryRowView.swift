@@ -21,7 +21,7 @@ import SwiftUI
 
 struct ShimmerView: View {
     @State private var phase: CGFloat = -1
-
+    
     var body: some View {
         GeometryReader { geo in
             let gradient = LinearGradient(
@@ -54,10 +54,10 @@ struct ShimmerView: View {
 
 struct AsyncMediaImage: View {
     let path: String
-
+    
     @State private var imageData: Data? = nil
     @State private var isLoaded = false
-
+    
     var body: some View {
         Group {
             if let data = imageData {
@@ -109,26 +109,37 @@ struct AsyncMediaImage: View {
 struct EntryRowView: View {
     let entry: Entry
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     var style: any AppThemeStyle { themeManager.style }
-
+    
     // MARK: - Sub-views
-
+    
     @ViewBuilder
-    var typeLabel: some View {
-        if style.usesSerifFonts {
-            HStack(spacing: 5) {
-                Circle()
-                    .fill(entry.type.accentColor)
-                    .frame(width: 5, height: 5)
-                Text(entry.type.displayName.uppercased())
-                    .font(.system(size: 9, weight: .medium))
-                    .kerning(0.8)
-                    .foregroundStyle(entry.type.accentColor)
+        var typeLabel: some View {
+            if style.usesSerifFonts {
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(entry.type.accentColor)
+                        .frame(width: 5, height: 5)
+                    Text(typeLabelText.uppercased())
+                        .font(.system(size: 9, weight: .medium))
+                        .kerning(0.8)
+                        .foregroundStyle(entry.type.accentColor)
+                }
             }
         }
-    }
 
+        var typeLabelText: String {
+            if entry.type == .media {
+                switch entry.mediaType {
+                case "movie": return "Movie"
+                case "tv":    return "TV Show"
+                default:      return "Media"
+                }
+            }
+            return entry.type.displayName
+        }
+    
     var metadataColumn: some View {
         HStack(spacing: 6) {
             Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
@@ -150,7 +161,7 @@ struct EntryRowView: View {
         }
         .fixedSize()
     }
-
+    
     @ViewBuilder
     var cardContent: some View {
         switch entry.type {
@@ -201,9 +212,66 @@ struct EntryRowView: View {
             }
         case .music:
             MusicEntryView(entry: entry)
+        case .media:
+            HStack(spacing: 10) {
+                // Poster thumbnail
+                if let path = entry.mediaCoverPath,
+                   let data = MediaFileManager.load(path: path),
+                   let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 50, height: 75)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                } else {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(entry.type.accentColor.opacity(0.2))
+                        .frame(width: 50, height: 75)
+                        .overlay(
+                            Image(systemName: "film.fill")
+                                .foregroundStyle(entry.type.accentColor)
+                        )
+                }
+                // Title + metadata
+                VStack(alignment: .leading, spacing: 4) {
+                    if let title = entry.mediaTitle {
+                        Text(title)
+                            .font(style.usesSerifFonts ? .system(.body, design: .serif) : .body)
+                            .fontWeight(.medium)
+                            .foregroundStyle(style.primaryText)
+                            .lineLimit(2)
+                    }
+                    HStack(spacing: 6) {
+                        if let year = entry.mediaYear, !year.isEmpty {
+                            Text(year)
+                                .font(.caption)
+                                .foregroundStyle(style.secondaryText)
+                        }
+                        if let genre = entry.mediaGenre, !genre.isEmpty {
+                            Text("· \(genre)")
+                                .font(.caption)
+                                .foregroundStyle(style.secondaryText)
+                        }
+                        if let runtime = entry.mediaRuntime, entry.mediaType == "movie" {
+                            let hours = runtime / 60
+                            let mins = runtime % 60
+                            let label = hours > 0 ? "\(hours)h \(mins)m" : "\(mins)m"
+                            Text("· \(label)")
+                                .font(.caption)
+                                .foregroundStyle(style.secondaryText)
+                        }
+                        if let seasons = entry.mediaSeasons, entry.mediaType == "tv" {
+                            Text("· \(seasons) \(seasons == 1 ? "Season" : "Seasons")")
+                                .font(.caption)
+                                .foregroundStyle(style.secondaryText)
+                        }
+                    }
+                }
+                Spacer()
+            }
         }
     }
-
+    
     func noteText(italic: Bool) -> some View {
         Text(entry.text)
             .font(style.body)
@@ -212,7 +280,7 @@ struct EntryRowView: View {
             .foregroundStyle(style.secondaryText)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
-
+    
     @ViewBuilder
     var tagsRow: some View {
         HStack(alignment: .bottom, spacing: 8) {
@@ -251,9 +319,9 @@ struct EntryRowView: View {
             metadataColumn
         }
     }
-
+    
     // MARK: - Body
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ZStack(alignment: .topTrailing) {
@@ -268,6 +336,7 @@ struct EntryRowView: View {
                     }
                 }
                 typeLabel
+                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
             Divider()
                 .overlay(style.usesSerifFonts ? InkwellTheme.cardBorderTop : Color(uiColor: .separator))

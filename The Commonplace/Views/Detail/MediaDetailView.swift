@@ -1,0 +1,645 @@
+// MediaDetailView.swift
+// Commonplace
+//
+// Detail view for .media entries (movies and TV shows).
+// Operates in two modes depending on whether TMDB metadata has been selected:
+//
+//   Empty state — shows a segmented Movie/TV picker and TMDB search.
+//   The user searches, picks a result, and metadata is fetched and locked in.
+//
+//   Populated state — shows cover art, locked metadata (title, year, genre),
+//   a status picker (Want to Watch / In Progress / Finished), 5-star rating,
+//   a general notes field, and a timestamped media log for diary-style entries.
+//
+// TMDB metadata (title, year, genre, overview, cover art) is locked once selected.
+// Status, rating, notes, and log entries are always editable.
+//
+// Media log entries are stored in entry.mediaLog as "ISO8601date::note text" strings,
+// consistent with the stickyItems pattern used elsewhere in the app.
+
+import SwiftUI
+import SwiftData
+
+struct MediaDetailView: View {
+    @Bindable var entry: Entry
+    @Environment(\.modelContext) var modelContext
+    @EnvironmentObject var themeManager: ThemeManager
+    var style: any AppThemeStyle { themeManager.style }
+    
+    // MARK: - Search State
+    @State private var selectedMediaType: TMDBMediaType = .movie
+    @State private var searchQuery: String = ""
+    @State private var searchResults: [TMDBSearchResult] = []
+    @State private var isSearching: Bool = false
+    @State private var searchError: String? = nil
+    
+    // MARK: - Log State
+    @State private var newLogText: String = ""
+    @State private var showingLogInput: Bool = false
+    
+    // MARK: - Cover Art
+    @State private var coverImage: UIImage? = nil
+    
+    // Whether metadata has been selected from TMDB
+    var isPopulated: Bool { entry.mediaTitle != nil }
+    
+    // MARK: - Body
+    
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                if isPopulated {
+                    populatedView
+                } else {
+                    emptySearchView
+                }
+            }
+        }
+        .background(style.background)
+        .navigationTitle(isPopulated ? (entry.mediaTitle ?? "Media") : "New Media Entry")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            loadCoverImage()
+        }
+    }
+    
+    // MARK: - Empty / Search State
+    
+    var emptySearchView: some View {
+        VStack(spacing: 24) {
+            // Hero prompt
+            VStack(spacing: 12) {
+                Image(systemName: "film.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(entry.type.accentColor)
+                Text("What are you watching?")
+                    .font(style.usesSerifFonts
+                          ? .system(.title2, design: .serif)
+                          : .title2)
+                    .fontWeight(.bold)
+                    .foregroundStyle(style.primaryText)
+                Text("Search for a movie or TV show to get started.")
+                    .font(style.usesSerifFonts
+                          ? .system(.subheadline, design: .serif)
+                          : .subheadline)
+                    .foregroundStyle(style.secondaryText)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.top, 40)
+            .padding(.horizontal, 24)
+            
+            // Movie / TV picker
+            Picker("Type", selection: $selectedMediaType) {
+                Text("Movie").tag(TMDBMediaType.movie)
+                Text("TV Show").tag(TMDBMediaType.tv)
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 24)
+            .onChange(of: selectedMediaType) { _, _ in
+                searchResults = []
+                if !searchQuery.isEmpty { performSearch() }
+            }
+            
+            // Search field
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(style.secondaryText)
+                TextField("Search title...", text: $searchQuery)
+                    .foregroundStyle(style.primaryText)
+                    .autocorrectionDisabled()
+                    .onSubmit { performSearch() }
+                if !searchQuery.isEmpty {
+                    Button {
+                        searchQuery = ""
+                        searchResults = []
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(style.secondaryText)
+                    }
+                }
+            }
+            .padding(12)
+            .background(style.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 24)
+            .onChange(of: searchQuery) { _, newValue in
+                if newValue.isEmpty { searchResults = [] }
+            }
+            
+            // Search button
+            Button {
+                performSearch()
+            } label: {
+                HStack {
+                    if isSearching {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Text("Search")
+                            .fontWeight(.semibold)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(entry.type.accentColor)
+                .foregroundStyle(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .padding(.horizontal, 24)
+            .disabled(searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearching)
+            
+            // Error
+            if let error = searchError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .padding(.horizontal, 24)
+            }
+            
+            // Results
+            if !searchResults.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Results")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(style.secondaryText)
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 8)
+                    
+                    ForEach(searchResults) { result in
+                        Button {
+                            selectResult(result)
+                        } label: {
+                            searchResultRow(result)
+                        }
+                        .buttonStyle(.plain)
+                        
+                        if result.id != searchResults.last?.id {
+                            Divider()
+                                .padding(.leading, 24 + 56 + 12)
+                        }
+                    }
+                }
+            }
+            
+            Spacer(minLength: 40)
+        }
+    }
+    
+    // MARK: - Search Result Row
+    
+    func searchResultRow(_ result: TMDBSearchResult) -> some View {
+        HStack(spacing: 12) {
+            // Poster thumbnail
+            AsyncImage(url: result.thumbnailURL) { image in
+                image
+                    .resizable()
+                    .scaledToFill()
+            } placeholder: {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(style.surface)
+                    .overlay(
+                        Image(systemName: "film")
+                            .foregroundStyle(style.secondaryText)
+                    )
+            }
+            .frame(width: 44, height: 66)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(result.title)
+                    .font(style.usesSerifFonts
+                          ? .system(.body, design: .serif)
+                          : .body)
+                    .fontWeight(.medium)
+                    .foregroundStyle(style.primaryText)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                HStack(spacing: 6) {
+                    if !result.year.isEmpty {
+                        Text(result.year)
+                            .font(.caption)
+                            .foregroundStyle(style.secondaryText)
+                    }
+                    Text(result.mediaType.displayName)
+                        .font(.caption)
+                        .foregroundStyle(style.secondaryText)
+                }
+            }
+            
+            Spacer()
+            
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(style.tertiaryText)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
+    }
+    
+    // MARK: - Populated View
+    
+    var populatedView: some View {
+        VStack(spacing: 0) {
+            // Cover art header
+            coverArtHeader
+            
+            VStack(spacing: 20) {
+                // Status picker
+                statusSection
+                
+                Divider()
+                    .padding(.horizontal, 20)
+                
+                // Rating
+                ratingSection
+                
+                Divider()
+                    .padding(.horizontal, 20)
+                
+                // Notes
+                notesSection
+                
+                Divider()
+                    .padding(.horizontal, 20)
+                
+                // Media log
+                logSection
+            }
+            .padding(.top, 20)
+            .padding(.bottom, 40)
+        }
+    }
+    
+    // MARK: - Cover Art Header
+    
+    var coverArtHeader: some View {
+        ZStack(alignment: .bottom) {
+            // Cover art or placeholder
+            Group {
+                if let image = coverImage {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    Rectangle()
+                        .fill(entry.type.cardColor)
+                        .overlay(
+                            Image(systemName: "film.fill")
+                                .font(.system(size: 48))
+                                .foregroundStyle(entry.type.accentColor.opacity(0.5))
+                        )
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 280)
+            .clipped()
+            
+            // Gradient overlay with metadata
+            LinearGradient(
+                colors: [.clear, .black.opacity(0.85)],
+                startPoint: .center,
+                endPoint: .bottom
+            )
+            .frame(height: 280)
+            
+            // Title + metadata overlaid on gradient
+            VStack(alignment: .leading, spacing: 4) {
+                if let title = entry.mediaTitle {
+                    Text(title)
+                        .font(style.usesSerifFonts
+                              ? .system(.title2, design: .serif)
+                              : .title2)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
+                }
+                HStack(spacing: 8) {
+                    if let year = entry.mediaYear, !year.isEmpty {
+                        Text(year)
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                    if let type = entry.mediaType {
+                        Text(type == "tv" ? "TV Show" : "Movie")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                    if let genre = entry.mediaGenre, !genre.isEmpty {
+                        Text("· \(genre)")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.7))
+                            .lineLimit(1)
+                    }
+                    if let runtime = entry.mediaRuntime, entry.mediaType == "movie" {
+                        let hours = runtime / 60
+                        let mins = runtime % 60
+                        let label = hours > 0 ? "\(hours)h \(mins)m" : "\(mins)m"
+                        Text("· \(label)")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                    if let seasons = entry.mediaSeasons, entry.mediaType == "tv" {
+                        Text("· \(seasons) \(seasons == 1 ? "Season" : "Seasons")")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
+        }
+    }
+    
+    // MARK: - Status Section
+    
+    var statusSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("STATUS")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundStyle(style.secondaryText)
+                .padding(.horizontal, 20)
+            
+            HStack(spacing: 10) {
+                statusButton(label: "Want to Watch", value: "wantTo",   icon: "bookmark")
+                statusButton(label: "In Progress",   value: "inProgress", icon: "play.circle")
+                statusButton(label: "Finished",      value: "finished", icon: "checkmark.circle")
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+    
+    func statusButton(label: String, value: String, icon: String) -> some View {
+        let isSelected = entry.mediaStatus == value
+        return Button {
+            entry.mediaStatus = value
+            try? modelContext.save()
+        } label: {
+            VStack(spacing: 6) {
+                Image(systemName: isSelected ? "\(icon).fill" : icon)
+                    .font(.system(size: 20))
+                    .foregroundStyle(isSelected ? entry.type.accentColor : style.secondaryText)
+                Text(label)
+                    .font(.caption2)
+                    .fontWeight(isSelected ? .semibold : .regular)
+                    .foregroundStyle(isSelected ? entry.type.accentColor : style.secondaryText)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(isSelected
+                        ? entry.type.accentColor.opacity(0.15)
+                        : style.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(
+                        isSelected ? entry.type.accentColor.opacity(0.4) : Color.clear,
+                        lineWidth: 1
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+    
+    // MARK: - Rating Section
+    
+    var ratingSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("YOUR RATING")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundStyle(style.secondaryText)
+                .padding(.horizontal, 20)
+            
+            HStack(spacing: 12) {
+                ForEach(1...5, id: \.self) { star in
+                    Button {
+                        // Tap same star to clear rating
+                        if entry.mediaRating == star {
+                            entry.mediaRating = 0
+                        } else {
+                            entry.mediaRating = star
+                        }
+                        try? modelContext.save()
+                    } label: {
+                        Image(systemName: (entry.mediaRating ?? 0) >= star
+                              ? "star.fill"
+                              : "star")
+                        .font(.system(size: 28))
+                        .foregroundStyle((entry.mediaRating ?? 0) >= star
+                                         ? .yellow
+                                         : style.secondaryText)
+                    }
+                    .buttonStyle(.plain)
+                }
+                Spacer()
+                if let rating = entry.mediaRating, rating > 0 {
+                    Text("\(rating)/5")
+                        .font(.subheadline)
+                        .foregroundStyle(style.secondaryText)
+                }
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+    
+    // MARK: - Notes Section
+    
+    var notesSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("NOTES")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundStyle(style.secondaryText)
+                .padding(.horizontal, 20)
+            
+            AutoResizingTextEditor(
+                text: Binding(
+                    get: { entry.text },
+                    set: { entry.text = $0; try? modelContext.save() }
+                ),
+                placeholder: "Add notes about this title...",
+                font: style.usesSerifFonts ? .system(.body, design: .serif) : .body
+            )
+            .padding(.horizontal, 20)
+        }
+    }
+    
+    // MARK: - Log Section
+    
+    var logSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("LOG")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(style.secondaryText)
+                Spacer()
+                Button {
+                    showingLogInput.toggle()
+                } label: {
+                    Image(systemName: "plus.circle")
+                        .foregroundStyle(entry.type.accentColor)
+                }
+            }
+            .padding(.horizontal, 20)
+            
+            // New log entry input
+            if showingLogInput {
+                VStack(spacing: 8) {
+                    AutoResizingTextEditor(
+                        text: $newLogText,
+                        placeholder: "What are you thinking?",
+                        font: style.usesSerifFonts ? .system(.body, design: .serif) : .body
+                    )
+                    .padding(.horizontal, 20)
+                    
+                    HStack {
+                        Spacer()
+                        Button("Cancel") {
+                            newLogText = ""
+                            showingLogInput = false
+                        }
+                        .foregroundStyle(style.secondaryText)
+                        .padding(.trailing, 8)
+                        
+                        Button("Add") {
+                            appendLogEntry()
+                        }
+                        .fontWeight(.semibold)
+                        .foregroundStyle(entry.type.accentColor)
+                        .disabled(newLogText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                    .padding(.horizontal, 20)
+                }
+                .padding(.vertical, 8)
+                .background(style.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal, 20)
+            }
+            
+            // Existing log entries
+            if entry.mediaLog.isEmpty && !showingLogInput {
+                Text("No log entries yet. Tap + to add one.")
+                    .font(.subheadline)
+                    .foregroundStyle(style.tertiaryText)
+                    .padding(.horizontal, 20)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(entry.mediaLog.reversed(), id: \.self) { logEntry in
+                        let parts = logEntry.components(separatedBy: "::")
+                        if parts.count == 2 {
+                            logEntryRow(dateString: parts[0], text: parts[1])
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    func logEntryRow(dateString: String, text: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if let date = ISO8601DateFormatter().date(from: dateString) {
+                Text(date.formatted(.dateTime.month(.abbreviated).day().year().hour().minute()))
+                    .font(.caption)
+                    .foregroundStyle(style.tertiaryText)
+            }
+            Text(text)
+                .font(style.usesSerifFonts ? .system(.body, design: .serif) : .body)
+                .foregroundStyle(style.primaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 20)
+    }
+    
+    // MARK: - Actions
+    
+    func performSearch() {
+        guard !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        isSearching = true
+        searchError = nil
+        searchResults = []
+        
+        Task {
+            do {
+                let results = try await TMDBService.search(query: searchQuery, type: selectedMediaType)
+                await MainActor.run {
+                    searchResults = results
+                    isSearching = false
+                    if results.isEmpty {
+                        searchError = "No results found. Try a different title."
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    searchError = "Search failed. Check your connection and try again."
+                    isSearching = false
+                }
+            }
+        }
+    }
+    
+    func selectResult(_ result: TMDBSearchResult) {
+        Task {
+            // Fetch full detail for genres
+            let detail = try? await TMDBService.fetchDetail(id: result.id, type: result.mediaType)
+            
+            // Download poster
+            var posterData: Data? = nil
+            if let url = result.posterURL {
+                posterData = await TMDBService.downloadPoster(from: url)
+            }
+            
+            await MainActor.run {
+                // Populate entry fields
+                entry.mediaTitle    = detail?.title ?? result.title
+                entry.mediaType     = result.mediaType.rawValue
+                entry.mediaYear     = detail?.year ?? result.year
+                entry.mediaOverview = detail?.overview ?? result.overview
+                entry.mediaGenre    = detail?.genres.first
+                entry.tmdbID        = result.id
+                entry.mediaRuntime  = detail?.runtime
+                entry.mediaSeasons  = detail?.seasons
+                entry.mediaStatus   = "wantTo" // default status
+                
+                // Save poster image
+                if let data = posterData {
+                    entry.mediaCoverPath = try? MediaFileManager.save(
+                        data,
+                        type: .image,
+                        id: "\(entry.id.uuidString)_cover"
+                    )
+                    coverImage = UIImage(data: data)
+                }
+                
+                // Index in search
+                SearchIndex.shared.index(entry: entry)
+                
+                try? modelContext.save()
+            }
+        }
+    }
+    
+    func appendLogEntry() {
+        let trimmed = newLogText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        
+        let dateString = ISO8601DateFormatter().string(from: Date())
+        entry.mediaLog.append("\(dateString)::\(trimmed)")
+        newLogText = ""
+        showingLogInput = false
+        try? modelContext.save()
+    }
+    
+    func loadCoverImage() {
+        guard let path = entry.mediaCoverPath,
+              let data = MediaFileManager.load(path: path) else { return }
+        coverImage = UIImage(data: data)
+    }
+}

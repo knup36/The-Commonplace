@@ -27,6 +27,7 @@
 //   .location — place name, address, coordinates
 //   .sticky   — title, checklist items with completion state
 //   .music    — track title, artist, album
+//   .media    — title, type, year, genre, status, rating, notes
 
 import Foundation
 import UIKit
@@ -326,9 +327,60 @@ struct MarkdownExporter {
         case .music:
             lines.append("### 🎵 Music — \(time)")
             if let title = entry.linkTitle { lines.append("**\(title)**") }
-            if let artist = entry.mediaArtist { lines.append("*\(artist)*") }
-            if let album = entry.mediaAlbum { lines.append(album) }
+            if let artist = entry.musicArtist { lines.append("*\(artist)*") }
+            if let album = entry.musicAlbum { lines.append(album) }
             if let url = entry.url { lines.append(url) }
+
+        case .media:
+            // Render movie/TV entry with metadata, status, rating, and any log entries
+            let typeLabel = entry.mediaType == "tv" ? "TV Show" : "Movie"
+            lines.append("### 🎬 \(typeLabel) — \(time)")
+            if let title = entry.mediaTitle {
+                var titleLine = "**\(title)**"
+                if let year = entry.mediaYear { titleLine += " (\(year))" }
+                lines.append(titleLine)
+            }
+            if let genre = entry.mediaGenre { lines.append("*\(genre)*") }
+            if let status = entry.mediaStatus {
+                let statusLabel: String
+                switch status {
+                case "wantTo":      statusLabel = "Want to Watch"
+                case "inProgress":  statusLabel = "In Progress"
+                case "finished":    statusLabel = "Finished"
+                default:            statusLabel = status
+                }
+                lines.append("**Status:** \(statusLabel)")
+            }
+            if let rating = entry.mediaRating, rating > 0 {
+                let stars = String(repeating: "★", count: rating) + String(repeating: "☆", count: 10 - rating)
+                lines.append("**Rating:** \(stars) (\(rating)/10)")
+            }
+            if let overview = entry.mediaOverview, !overview.isEmpty {
+                lines.append("")
+                lines.append(overview)
+            }
+            if !entry.text.isEmpty {
+                lines.append("")
+                lines.append(entry.text)
+            }
+            if !entry.mediaLog.isEmpty {
+                lines.append("")
+                lines.append("**Log:**")
+                for logEntry in entry.mediaLog {
+                    let parts = logEntry.components(separatedBy: "::")
+                    if parts.count == 2 {
+                        lines.append("- \(parts[0]): \(parts[1])")
+                    }
+                }
+            }
+            if let path = entry.mediaCoverPath,
+               let data = MediaFileManager.load(path: path) {
+                let filename = "\(entry.id.uuidString)_cover.jpg"
+                try data.write(to: mediaURL.appendingPathComponent(filename))
+                mediaFileCount += 1
+                lines.append("")
+                lines.append("![Cover](media/\(filename))")
+            }
         }
 
         // Tags
@@ -378,6 +430,7 @@ struct MarkdownExporter {
         | 📍 | Place |
         | ✅ | List |
         | 🎵 | Music |
+        | 🎬 | Media |
 
         ---
         *Exported by Commonplace — your personal archive*

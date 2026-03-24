@@ -31,7 +31,7 @@ struct CompactEntryCard: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             // Background — hidden for photo and music which use full bleed images
-            if entry.type != .photo && entry.type != .music {
+            if entry.type != .photo && entry.type != .music && entry.type != .media {
                 RoundedRectangle(cornerRadius: 14)
                     .fill(entry.type.cardColor)
                     .overlay(
@@ -41,7 +41,7 @@ struct CompactEntryCard: View {
             }
             
             // Content
-            if entry.type == .photo || entry.type == .music {
+            if entry.type == .photo || entry.type == .music || entry.type == .media {
                 cardContent
             } else {
                 cardContent
@@ -72,6 +72,8 @@ struct CompactEntryCard: View {
             stickyCard
         case .music:
             musicCard
+        case .media:
+            mediaCard
         }
     }
 
@@ -247,7 +249,7 @@ struct CompactEntryCard: View {
 
     var musicCard: some View {
         ZStack(alignment: .bottomLeading) {
-            if let artworkPath = entry.mediaArtworkPath,
+            if let artworkPath = entry.musicArtworkPath,
                let data = MediaFileManager.load(path: artworkPath),
                let uiImage = UIImage(data: data) {
                 Image(uiImage: uiImage)
@@ -266,12 +268,12 @@ struct CompactEntryCard: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                     )
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(entry.text.isEmpty ? (entry.mediaAlbum ?? "Music") : entry.text)
+                    Text(entry.text.isEmpty ? (entry.musicAlbum ?? "Music") : entry.text)
                         .font(.caption2)
                         .fontWeight(.medium)
                         .foregroundStyle(.white)
                         .lineLimit(1)
-                    if let artist = entry.mediaArtist {
+                    if let artist = entry.musicArtist {
                         Text(artist)
                             .font(.caption2)
                             .foregroundStyle(.white.opacity(0.7))
@@ -290,7 +292,7 @@ struct CompactEntryCard: View {
                         .foregroundStyle(entry.type.accentColor)
                         .frame(maxWidth: .infinity, alignment: .center)
                     Spacer()
-                    if let album = entry.mediaAlbum {
+                    if let album = entry.musicAlbum {
                         Text(album)
                             .font(.caption2)
                             .foregroundStyle(style.secondaryText)
@@ -298,6 +300,51 @@ struct CompactEntryCard: View {
                     }
                 }
                 .padding(12)
+            }
+        }
+    }
+    // MARK: - Media Card
+
+    var mediaCard: some View {
+        ZStack(alignment: .bottomLeading) {
+            if let coverPath = entry.mediaCoverPath,
+               let data = MediaFileManager.load(path: coverPath),
+               let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 160, height: 80)
+                    .clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .contentShape(RoundedRectangle(cornerRadius: 14))
+                    .overlay(
+                        LinearGradient(
+                            colors: [.clear, .black.opacity(0.5)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                    )
+                if let title = entry.mediaTitle {
+                    Text(title)
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
+                        .padding(10)
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    Image(systemName: "film.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(entry.type.accentColor)
+                    Spacer()
+                    Text(entry.mediaTitle ?? "Media")
+                        .font(style.usesSerifFonts ? .system(.caption, design: .serif) : .caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(style.primaryText)
+                        .lineLimit(2)
+                }
             }
         }
     }

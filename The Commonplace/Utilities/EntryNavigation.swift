@@ -10,6 +10,7 @@ func destinationView(for entry: Entry) -> some View {
     switch entry.type {
     case .location: LocationDetailView(entry: entry)
     case .sticky:   StickyDetailView(entry: entry)
+    case .media:    MediaDetailView(entry: entry)
     default:        EntryDetailView(entry: entry)
     }
 }

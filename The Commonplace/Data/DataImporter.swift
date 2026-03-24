@@ -1,3 +1,14 @@
+// DataImporter.swift
+// Commonplace
+//
+// Reads a .commonplace archive ZIP and imports entries, collections, and habits
+// into the current SwiftData context.
+//
+// Skips duplicates by checking existing IDs before inserting.
+// Handles legacy JournalEntry records from old archive formats.
+// Media files are extracted from the archive's media/ folder and saved
+// via MediaFileManager into the iCloud container.
+
 import Foundation
 import SwiftData
 import ZIPFoundation
@@ -97,8 +108,8 @@ class DataImporter {
             entry.stickyTitle = dto.stickyTitle
             entry.stickyItems = dto.stickyItems
             entry.stickyChecked = dto.stickyChecked
-            entry.mediaArtist = dto.mediaArtist
-            entry.mediaAlbum = dto.mediaAlbum
+            entry.musicArtist = dto.musicArtist
+            entry.musicAlbum = dto.musicAlbum
             entry.previewURL = dto.previewURL
             entry.tagNames = dto.tags
             entry.musicTrackID = dto.musicTrackID
@@ -113,6 +124,20 @@ class DataImporter {
                 entry.totalHabitsAtTime = dto.totalHabitsAtTime ?? 0
             }
 
+            // Media fields
+            if type == .media {
+                entry.mediaTitle = dto.mediaTitle
+                entry.mediaType = dto.mediaType
+                entry.mediaYear = dto.mediaYear
+                entry.mediaGenre = dto.mediaGenre
+                entry.mediaOverview = dto.mediaOverview
+                entry.mediaStatus = dto.mediaStatus
+                entry.mediaRating = dto.mediaRating
+                entry.mediaLog = dto.mediaLog ?? []
+                entry.tmdbID = dto.tmdbID
+            }
+
+            // Media files
             if let filename = dto.imageFile,
                let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
                 entry.imagePath = try? MediaFileManager.save(data, type: .image, id: entry.id.uuidString)
@@ -129,13 +154,17 @@ class DataImporter {
                let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
                 entry.faviconPath = try? MediaFileManager.save(data, type: .favicon, id: entry.id.uuidString)
             }
-            if let filename = dto.mediaArtworkFile,
+            if let filename = dto.musicArtworkFile,
                let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
-                entry.mediaArtworkPath = try? MediaFileManager.save(data, type: .image, id: "\(entry.id.uuidString)_artwork")
+                entry.musicArtworkPath = try? MediaFileManager.save(data, type: .image, id: "\(entry.id.uuidString)_artwork")
             }
             if let filename = dto.journalImageFile,
                let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
                 entry.journalImageData = data
+            }
+            if let filename = dto.mediaCoverFile,
+               let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
+                entry.mediaCoverPath = try? MediaFileManager.save(data, type: .image, id: "\(entry.id.uuidString)_cover")
             }
 
             modelContext.insert(entry)

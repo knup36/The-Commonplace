@@ -65,10 +65,10 @@ class DataExporter {
         var stickyTitle: String?
         var stickyItems: [String]
         var stickyChecked: [String]
-        var mediaArtist: String?
-        var mediaAlbum: String?
+        var musicArtist: String?
+        var musicAlbum: String?
         var previewURL: String?
-        var mediaArtworkFile: String?
+        var musicArtworkFile: String?
         var musicTrackID: String?
         // Journal fields
         var weatherEmoji: String?
@@ -78,6 +78,17 @@ class DataExporter {
         var totalHabitsAtTime: Int?
         var journalImageFile: String?
         var vibeEmoji: String?
+        // Media fields (v1.5)
+        var mediaTitle: String?
+        var mediaType: String?
+        var mediaYear: String?
+        var mediaGenre: String?
+        var mediaOverview: String?
+        var mediaCoverFile: String?
+        var mediaStatus: String?
+        var mediaRating: Int?
+        var mediaLog: [String]?
+        var tmdbID: Int?
     }
 
     struct CollectionDTO: Codable {
@@ -240,18 +251,32 @@ class DataExporter {
                 stickyTitle: entry.stickyTitle,
                 stickyItems: entry.stickyItems,
                 stickyChecked: entry.stickyChecked,
-                mediaArtist: entry.mediaArtist,
-                mediaAlbum: entry.mediaAlbum,
+                musicArtist: entry.musicArtist,
+                musicAlbum: entry.musicAlbum,
                 previewURL: entry.previewURL,
-                mediaArtworkFile: nil,
+                musicArtworkFile: nil,
+                musicTrackID: entry.musicTrackID,
                 weatherEmoji: entry.type == .journal ? entry.weatherEmoji : nil,
                 moodEmoji: entry.type == .journal ? entry.moodEmoji : nil,
                 completedHabits: entry.type == .journal ? entry.completedHabits : nil,
                 completedHabitSnapshots: entry.type == .journal ? entry.completedHabitSnapshots : nil,
                 totalHabitsAtTime: entry.type == .journal ? entry.totalHabitsAtTime : nil,
                 journalImageFile: nil,
-                vibeEmoji: entry.type == .journal ? entry.vibeEmoji : nil
+                vibeEmoji: entry.type == .journal ? entry.vibeEmoji : nil,
+                // Media fields
+                mediaTitle: entry.mediaTitle,
+                mediaType: entry.mediaType,
+                mediaYear: entry.mediaYear,
+                mediaGenre: entry.mediaGenre,
+                mediaOverview: entry.mediaOverview,
+                mediaCoverFile: nil,
+                mediaStatus: entry.mediaStatus,
+                mediaRating: entry.mediaRating,
+                mediaLog: entry.mediaLog.isEmpty ? nil : entry.mediaLog,
+                tmdbID: entry.tmdbID
             )
+
+            // Media files
             if let path = entry.imagePath,
                let data = MediaFileManager.load(path: path) {
                 let filename = "entry_\(entry.id.uuidString)_image.jpg"
@@ -280,11 +305,11 @@ class DataExporter {
                 dto.faviconFile = filename
                 mediaFileCount += 1
             }
-            if let path = entry.mediaArtworkPath,
+            if let path = entry.musicArtworkPath,
                let data = MediaFileManager.load(path: path) {
                 let filename = "entry_\(entry.id.uuidString)_artwork.jpg"
                 try data.write(to: mediaDir.appendingPathComponent(filename))
-                dto.mediaArtworkFile = filename
+                dto.musicArtworkFile = filename
                 mediaFileCount += 1
             }
             if entry.type == .journal, let imageData = entry.journalImageData {
@@ -293,6 +318,16 @@ class DataExporter {
                 dto.journalImageFile = filename
                 mediaFileCount += 1
             }
+            // Media cover art
+            if entry.type == .media,
+               let path = entry.mediaCoverPath,
+               let data = MediaFileManager.load(path: path) {
+                let filename = "entry_\(entry.id.uuidString)_cover.jpg"
+                try data.write(to: mediaDir.appendingPathComponent(filename))
+                dto.mediaCoverFile = filename
+                mediaFileCount += 1
+            }
+
             entryDTOs.append(dto)
         }
 
@@ -374,7 +409,8 @@ class DataExporter {
             entry.audioPath,
             entry.previewImagePath,
             entry.faviconPath,
-            entry.mediaArtworkPath
+            entry.musicArtworkPath,
+            entry.mediaCoverPath
         ].compactMap { $0 }
         // Note: journalImageData is stored in SwiftData directly, not as a file path,
         // so it is always available and does not need an iCloud download check

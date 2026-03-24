@@ -1,3 +1,17 @@
+// ThemeManager.swift
+// Commonplace
+//
+// Manages the active app theme and provides theme-aware colors and fonts.
+// Two themes are currently supported: System (adaptive) and Inkwell (warm dark).
+//
+// InkwellTheme provides static color constants and per-entry-type color functions
+// used throughout the app for card backgrounds, borders, and accent colors.
+//
+// To add a new entry type:
+//   1. Add accent, card, and border color constants to InkwellTheme
+//   2. Add a case to cardBackground(for:), cardBorderColor(for:), accentColor(for:)
+//   3. Add the hex mapping to collectionCardBackground and collectionAccentColor if needed
+
 import SwiftUI
 import Combine
 
@@ -69,6 +83,7 @@ struct InkwellTheme {
     static let locationAccent = Color(hex: "#58A870")
     static let stickyAccent   = Color(hex: "#B8A030")
     static let musicAccent    = Color(hex: "#C87858")
+    static let mediaAccent    = Color(hex: "#C85850") // Muted red — visually related to music
     
     // Entry card backgrounds
     static let textCard       = Color(hex: "#262626")
@@ -79,6 +94,7 @@ struct InkwellTheme {
     static let locationCard   = Color(hex: "#182820")
     static let stickyCard     = Color(hex: "#282408")
     static let musicCard      = Color(hex: "#2A1510")
+    static let mediaCard      = Color(hex: "#2E1A18") // Deep red-dark, distinct from music
     
     // Entry card borders
     static let textBorder     = Color(hex: "#363636")
@@ -89,6 +105,7 @@ struct InkwellTheme {
     static let locationBorder = Color(hex: "#203828")
     static let stickyBorder   = Color(hex: "#383410")
     static let musicBorder    = Color(hex: "#6A2020")
+    static let mediaBorder    = Color(hex: "#4A2020") // Slightly lighter red than music border
     
     static func cardBackground(for type: EntryType) -> Color {
         switch type {
@@ -100,6 +117,7 @@ struct InkwellTheme {
         case .location: return locationCard
         case .sticky:   return stickyCard
         case .music:    return musicCard
+        case .media:    return mediaCard
         }
     }
     
@@ -113,6 +131,7 @@ struct InkwellTheme {
         case .location: return locationBorder
         case .sticky:   return stickyBorder
         case .music:    return musicBorder
+        case .media:    return mediaBorder
         }
     }
     
@@ -126,8 +145,10 @@ struct InkwellTheme {
         case .location: return locationAccent
         case .sticky:   return stickyAccent
         case .music:    return musicAccent
+        case .media:    return mediaAccent
         }
     }
+
     // MARK: - Collection color mappings (muted Inkwell versions of the 20 curated colors)
     
     static func collectionCardBackground(for hex: String) -> Color {
@@ -192,6 +213,7 @@ struct InkwellTheme {
         }
     }
 }
+
 // MARK: - Theme Style Protocol
 
 protocol AppThemeStyle {
@@ -248,8 +270,6 @@ struct InkwellStyle: AppThemeStyle {
     
     // Behavior
     var usesSerifFonts: Bool { true }
-    
-    
 }
 
 // MARK: - System Style
@@ -279,5 +299,4 @@ struct SystemStyle: AppThemeStyle {
     
     // Behavior
     var usesSerifFonts: Bool { false }
-    
 }

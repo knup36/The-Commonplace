@@ -2,7 +2,7 @@
 // Commonplace
 //
 // SwiftData model representing a single captured entry (called a "page" in the UI).
-// All 8 entry types share this one model, differentiated by the `type` field.
+// All 9 entry types share this one model, differentiated by the `type` field.
 //
 // Tag migration note (v1.3):
 //   - `tags: [String]` has been renamed to `tagNames: [String]` to preserve
@@ -15,6 +15,12 @@
 //   - Entries are called "pages" in the UI
 //   - isPinned shows as "Bookmark" in the UI, not "Pin"
 //   - Stickies are checklists, not to-dos
+//
+// Media entry note (v1.5):
+//   - Music fields use `musicArtist`, `musicAlbum`, `musicArtworkPath` naming
+//     (renamed from `mediaArtist` etc. to avoid collision with the new .media type)
+//   - New .media fields use `tmdb*` prefix for API-sourced data and `mediaTitle`,
+//     `mediaType`, `mediaStatus`, `mediaRating`, `mediaLog` for user-facing fields
 
 import SwiftData
 import Foundation
@@ -49,11 +55,11 @@ class Entry {
     var markdownContent: String? = nil
     var faviconPath: String? = nil
 
-    // Music
-    var mediaArtist: String? = nil
-    var mediaAlbum: String? = nil
+    // Music (renamed from media* prefix in v1.5 to avoid collision with .media entry type)
+    var musicArtist: String? = nil
+    var musicAlbum: String? = nil
     var previewURL: String? = nil
-    var mediaArtworkPath: String? = nil
+    var musicArtworkPath: String? = nil
     var musicTrackID: String? = nil
 
     // Location entry fields
@@ -91,6 +97,23 @@ class Entry {
     var healthWorkoutCalories: Double? = nil
     var healthDataFetched: Bool = false
 
+    // Media (movies & TV — v1.5)
+    // mediaType: "movie" or "tv"
+    // mediaStatus: "wantTo", "inProgress", or "finished"
+    // mediaLog: timestamped notes, stored as "ISO8601date::note text" strings
+    var mediaTitle: String? = nil
+    var mediaType: String? = nil
+    var mediaYear: String? = nil
+    var mediaGenre: String? = nil
+    var mediaOverview: String? = nil
+    var mediaCoverPath: String? = nil
+    var mediaStatus: String? = nil
+    var mediaRating: Int? = nil
+    var mediaLog: [String] = []
+    var tmdbID: Int? = nil
+    var mediaRuntime: Int? = nil  // minutes — movies only
+    var mediaSeasons: Int? = nil  // season count — TV only
+
     init(type: EntryType = .text, text: String = "", tags: [String] = []) {
         self.id = UUID()
         self.createdAt = Date()
@@ -111,6 +134,7 @@ enum EntryType: String, Codable, CaseIterable {
     case location
     case sticky
     case music
+    case media
 
     var icon: String {
         switch self {
@@ -122,6 +146,7 @@ enum EntryType: String, Codable, CaseIterable {
         case .location: return "mappin.circle.fill"
         case .sticky:   return "checklist"
         case .music:    return "music.note"
+        case .media:    return "film.fill"
         }
     }
 
@@ -135,6 +160,7 @@ enum EntryType: String, Codable, CaseIterable {
         case .location: return "Place"
         case .sticky:   return "List"
         case .music:    return "Music"
+        case .media:    return "Media"
         }
     }
 
@@ -148,6 +174,7 @@ enum EntryType: String, Codable, CaseIterable {
         case .location: return InkwellTheme.collectionAccentColor(for: "#30D158")
         case .sticky:   return InkwellTheme.amber
         case .music:    return InkwellTheme.accentColor(for: .music)
+        case .media:    return InkwellTheme.collectionAccentColor(for: "#FF3B30")
         }
     }
 
