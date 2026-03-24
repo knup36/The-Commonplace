@@ -21,6 +21,19 @@ struct ReleaseNotesView: View {
 
     let releases: [Release] = [
         Release(
+            version: "1.5",
+            title: "Lights, Camera, Commonplace",
+            notes: [
+                "Media entry type — track movies and TV shows you're watching",
+                "Search any title and pull in cover art, genre, runtime, and more automatically",
+                "Mark anything as Want to Watch, In Progress, or Finished",
+                "Rate what you've watched with a five star rating",
+                "Keep a running log of thoughts as you watch",
+                "Filter collections by watch status to build your perfect watchlist",
+                "Share extension entries now appear in search immediately"
+            ]
+        ),
+        Release(
             version: "1.4",
             title: "Share It",
             notes: [
