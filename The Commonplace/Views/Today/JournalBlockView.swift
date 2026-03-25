@@ -14,36 +14,36 @@ struct JournalBlockView: View {
     @Query(sort: \Habit.order) var habits: [Habit]
     @StateObject private var locationManager = LocationManager()
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     @State private var dailyNoteText = ""
     @State private var showingVibePicker = false
     @State private var showingJournalPhotoPicker = false
     @State private var journalImage: UIImage? = nil
     @FocusState private var noteFieldFocused: Bool
-
+    
     var style: any AppThemeStyle { themeManager.style }
     var journalAccent: Color { InkwellTheme.journalAccent }
     var journalCardBg: Color { InkwellTheme.journalCard }
     var journalDivider: Color { InkwellTheme.journalBorder }
-
+    
     var today: Date { Calendar.current.startOfDay(for: Date()) }
-
+    
     // Single source of truth — today's journal Entry
     var todayEntry: Entry? {
         entries.first {
             Calendar.current.isDateInToday($0.createdAt) && $0.type == .journal
         }
     }
-
+    
     var dateString: String {
         Date().formatted(.dateTime.weekday(.wide).month(.wide).day())
     }
-
+    
     let weatherOptions = ["☀️", "🌤️", "⛅", "🌧️", "⛈️", "🌨️", "🌫️", "🌈"]
     let moodOptions = ["🤩", "😊", "😐", "😔", "😤", "😴", "🥲", "😌"]
-
+    
     // MARK: - Body
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             journalHeader
@@ -137,9 +137,9 @@ struct JournalBlockView: View {
             }
         }
     }
-
+    
     // MARK: - Sub-views
-
+    
     var journalHeader: some View {
         HStack {
             Text(dateString)
@@ -160,7 +160,7 @@ struct JournalBlockView: View {
             }
         }
     }
-
+    
     var habitsBlock: some View {
         VStack(alignment: .leading, spacing: 10) {
             Label("Habits", systemImage: "checkmark.circle.fill")
@@ -186,7 +186,7 @@ struct JournalBlockView: View {
             }
         }
     }
-
+    
     var dailyNoteBlock: some View {
         VStack(alignment: .leading, spacing: 6) {
             Label("Daily Note", systemImage: "pencil")
@@ -203,7 +203,7 @@ struct JournalBlockView: View {
             .onChange(of: dailyNoteText) { _, newValue in saveDailyNote(newValue) }
         }
     }
-
+    
     var dailyPhotoBlock: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Daily Photo", systemImage: "camera.fill")
@@ -246,7 +246,7 @@ struct JournalBlockView: View {
             }
         }
     }
-
+    
     @ViewBuilder
     func emojiPickerRow(label: String, icon: String, options: [String], selected: String, onSelect: @escaping (String) -> Void) -> some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -273,12 +273,11 @@ struct JournalBlockView: View {
             }
         }
     }
-
+    
     // MARK: - Helpers
-
+    
     func getOrCreateTodayEntry() -> Entry {
         if let existing = todayEntry {
-            // Keep totalHabitsAtTime in sync
             if existing.totalHabitsAtTime != habits.count {
                 existing.totalHabitsAtTime = habits.count
             }
@@ -293,12 +292,23 @@ struct JournalBlockView: View {
             entry.captureLocationName = locationManager.currentPlaceName
         }
         modelContext.insert(entry)
+        // Index immediately on creation
+        SearchIndex.shared.index(entry: entry)
         return entry
     }
-
-    func setWeather(_ emoji: String) { getOrCreateTodayEntry().weatherEmoji = emoji }
-    func setMood(_ emoji: String) { getOrCreateTodayEntry().moodEmoji = emoji }
-
+    
+    func setWeather(_ emoji: String) {
+        let entry = getOrCreateTodayEntry()
+        entry.weatherEmoji = emoji
+        SearchIndex.shared.index(entry: entry)
+    }
+    
+    func setMood(_ emoji: String) {
+        let entry = getOrCreateTodayEntry()
+        entry.moodEmoji = emoji
+        SearchIndex.shared.index(entry: entry)
+    }
+    
     func toggleHabit(_ habit: Habit) {
         let entry = getOrCreateTodayEntry()
         let id = habit.id.uuidString
@@ -309,8 +319,9 @@ struct JournalBlockView: View {
             entry.completedHabits.append(id)
             entry.completedHabitSnapshots.append(habit.name)
         }
+        SearchIndex.shared.index(entry: entry)
     }
-
+    
     func saveDailyNote(_ text: String) {
         if let existing = todayEntry {
             existing.text = text
@@ -319,7 +330,7 @@ struct JournalBlockView: View {
             entry.text = text
         }
     }
-
+    
     func loadDailyNote() {
         dailyNoteText = todayEntry?.text ?? ""
     }

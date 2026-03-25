@@ -5,15 +5,15 @@ import LinkPresentation
 @main
 struct CommonplaceApp: App {
     let container: ModelContainer
-
+    
     init() {
         // Read saved theme before ThemeManager is available
         let savedTheme = UserDefaults.standard.string(forKey: "appTheme") ?? "System"
         let useRounded = savedTheme != "Inkwell"
-
+        
         let navBarAppearance = UINavigationBarAppearance()
         navBarAppearance.configureWithDefaultBackground()
-
+        
         if useRounded {
             // System theme — apply rounded font globally
             if let roundedDescriptor = UIFontDescriptor
@@ -38,7 +38,7 @@ struct CommonplaceApp: App {
         }
         UINavigationBar.appearance().standardAppearance = navBarAppearance
         UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
-
+        
         do {
             let schema = Schema([Entry.self, Collection.self, Habit.self, Tag.self])
             let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
@@ -56,11 +56,11 @@ struct CommonplaceApp: App {
             )
         }
     }
-
+    
     @StateObject private var themeManager = ThemeManager()
-
+    
     @Environment(\.scenePhase) var scenePhase
-
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -78,8 +78,9 @@ struct CommonplaceApp: App {
         }
         .modelContainer(container)
     }
+    
     // MARK: - Startup
-
+    
     @MainActor
     func startupTasks() async {
         do {
@@ -87,20 +88,8 @@ struct CommonplaceApp: App {
             let entries = try context.fetch(FetchDescriptor<Entry>())
             SearchIndex.shared.backfillIfNeeded(entries: entries)
             TagMigrationService.migrateIfNeeded(context: context)
-            
-            // Debug — check App Group container
-            if let url = AppGroupContainer.pendingEntriesURL {
-                print("📦 App Group pending folder: \(url.path)")
-                let files = (try? FileManager.default.contentsOfDirectory(atPath: url.path)) ?? []
-                print("📦 Pending files: \(files)")
-            } else {
-                print("📦 App Group container unavailable!")
-            }
-            
-            ShareExtensionIngestor.ingestPendingEntries(context: context)
         } catch {
             print("Backfill fetch failed: \(error)")
-            
         }
     }
 }
@@ -119,46 +108,6 @@ extension UIWindow {
 extension Notification.Name {
     static let deviceDidShake = Notification.Name("deviceDidShake")
     static let musicPlaybackStarted = Notification.Name("musicPlaybackStarted")
-
+    
 }
 
-// MARK: - Default collections
-func createDefaultCollectionsIfNeeded(context: ModelContext) {
-    Task { @MainActor in
-        do {
-            let descriptor = FetchDescriptor<Collection>()
-            let existing = try context.fetch(descriptor)
-            let existingNames = Set(existing.map { $0.name })
-            let defaults: [(name: String, icon: String, colorHex: String, type: String?, isFavorites: Bool)] = []
-
-            let nextOrder = existing.map { $0.order }.max().map { $0 + 1 } ?? 0
-            var created = 0
-
-            for (index, item) in defaults.enumerated() {
-                guard !existingNames.contains(item.name) else { continue }
-                let collection = Collection(
-                    name: item.name,
-                    icon: item.icon,
-                    colorHex: item.colorHex,
-                    order: nextOrder + index
-                )
-                if let type = item.type {
-                    collection.filterTypes = [type]
-                }
-                if item.isFavorites {
-                    collection.filterSearchText = "__favorites__"
-                }
-                collection.isSystem = true
-                context.insert(collection)
-                created += 1
-            }
-
-            if created > 0 {
-                try context.save()
-                print("Default collections: created \(created) missing collections")
-            }
-        } catch {
-            print("Default collections error: \(error)")
-        }
-    }
-}
