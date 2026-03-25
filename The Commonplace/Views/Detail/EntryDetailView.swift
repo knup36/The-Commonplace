@@ -54,6 +54,12 @@ struct EntryDetailView: View {
                         .foregroundStyle(style.accent)
                     }
                     Button {
+                        withAnimation { entry.isPinned.toggle() }
+                    } label: {
+                        Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
+                            .foregroundStyle(style.accent)
+                    }
+                    Button {
                         withAnimation { entry.isFavorited.toggle() }
                     } label: {
                         Image(systemName: entry.isFavorited ? "star.fill" : "star")

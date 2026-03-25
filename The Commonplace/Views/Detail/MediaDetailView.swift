@@ -58,6 +58,25 @@ struct MediaDetailView: View {
         .background(entry.type.cardColor.ignoresSafeArea())
         .navigationTitle(isPopulated ? (entry.mediaTitle ?? "Media") : "New Media Entry")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                HStack {
+                    Button {
+                        withAnimation { entry.isPinned.toggle() }
+                    } label: {
+                        Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
+                            .foregroundStyle(entry.type.accentColor)
+                    }
+                    Button {
+                        withAnimation { entry.isFavorited.toggle() }
+                    } label: {
+                        Image(systemName: entry.isFavorited ? "star.fill" : "star")
+                            .foregroundStyle(entry.type.accentColor)
+                    }
+                }
+            }
+        }
+        
         .onAppear {
             loadCoverImage()
         }
