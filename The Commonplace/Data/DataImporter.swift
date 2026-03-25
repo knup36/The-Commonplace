@@ -136,8 +136,10 @@ class DataImporter {
                 entry.mediaRating = dto.mediaRating
                 entry.mediaLog = dto.mediaLog ?? []
                 entry.tmdbID = dto.tmdbID
+                entry.mediaRuntime = dto.mediaRuntime
+                entry.mediaSeasons = dto.mediaSeasons
             }
-
+            
             // Media files
             if let filename = dto.imageFile,
                let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
@@ -207,16 +209,35 @@ class DataImporter {
                 }
             }
         }
-
+        
+        // Create Tag objects for any tagNames not already in SwiftData
+        // Same pattern as ShareExtensionIngestor and TagMigrationService
+        let existingTags = (try? modelContext.fetch(FetchDescriptor<Tag>())) ?? []
+        let existingTagNames = Set(existingTags.map { $0.name })
+        let allImportedTagNames = Set(manifest.entries.flatMap { $0.tags })
+        for tagName in allImportedTagNames where !existingTagNames.contains(tagName) {
+            let tag = Tag(name: tagName)
+            modelContext.insert(tag)
+        }
+        
+        // Index all imported entries in search
+        // Backfill will catch these on next launch too, but indexing here
+        // means search works immediately after import without restarting
+        let allEntries = (try? modelContext.fetch(FetchDescriptor<Entry>())) ?? []
+        let importedIDs = Set(manifest.entries.map { $0.id })
+        for entry in allEntries where importedIDs.contains(entry.id.uuidString) {
+            SearchIndex.shared.index(entry: entry)
+        }
+        
         try modelContext.save()
-
+        
         return ImportResult(
             entriesImported: entriesImported,
             collectionsImported: collectionsImported,
             habitsImported: habitsImported
         )
     }
-
+    
     enum ImportError: LocalizedError {
         case missingManifest
         var errorDescription: String? {

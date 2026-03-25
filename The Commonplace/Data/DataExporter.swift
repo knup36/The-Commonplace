@@ -89,8 +89,10 @@ class DataExporter {
         var mediaRating: Int?
         var mediaLog: [String]?
         var tmdbID: Int?
+        var mediaRuntime: Int?
+        var mediaSeasons: Int?
     }
-
+    
     struct CollectionDTO: Codable {
         var id: String
         var createdAt: Date
@@ -274,9 +276,11 @@ class DataExporter {
                 mediaStatus: entry.mediaStatus,
                 mediaRating: entry.mediaRating,
                 mediaLog: entry.mediaLog.isEmpty ? nil : entry.mediaLog,
-                tmdbID: entry.tmdbID
+                tmdbID: entry.tmdbID,
+                mediaRuntime: entry.mediaRuntime,
+                mediaSeasons: entry.mediaSeasons
             )
-
+            
             // Media files
             if let path = entry.imagePath,
                let data = MediaFileManager.load(path: path) {
