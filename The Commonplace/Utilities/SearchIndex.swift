@@ -4,17 +4,23 @@
 // Full-text search index powered by GRDB/SQLite FTS5.
 // Maintains a separate search database alongside SwiftData.
 //
-// Indexed fields per entry:
-//   text, tags, transcript, extracted_text, markdown_content,
-//   link_title, location_name, music_artist, music_album,
-//   sticky_title, sticky_items, media_title, media_genre
+// Indexed fields per entry type:
+//   All types:   text, tags, capture_location_name
+//   Photo:       extracted_text
+//   Audio:       transcript
+//   Link:        link_title, markdown_content, url
+//   Journal:     habit_snapshots, weather_emoji, mood_emoji, vibe_emoji
+//   Location:    location_name, location_address
+//   Sticky:      sticky_title, sticky_items (parsed — id:: prefix stripped)
+//   Music:       music_artist, music_album
+//   Media:       media_title, media_genre, media_overview
 //
 // Schema versioning: bump schemaVersion any time columns are added or removed.
 // A version change drops and recreates the table and triggers a full backfill.
 //
 // Backfill strategy:
 //   - On every launch, any entry with no index record gets indexed (catches missed entries)
-//   - Additionally, all entries created or modified in the last 24 hours are re-indexed
+//   - Additionally, all entries created in the last 24 hours are re-indexed
 //     to catch timing issues where indexing ran before metadata was fully fetched
 //     (e.g. share extension entries where link/music metadata arrives asynchronously)
 
@@ -33,7 +39,7 @@ class SearchIndex {
     }
     
     // Bump this any time columns are added or removed from entry_search
-    private let schemaVersion = 4
+    private let schemaVersion = 6
     
     private func setup() {
         do {
@@ -51,19 +57,35 @@ class SearchIndex {
                 }
                 try db.create(virtualTable: "entry_search", ifNotExists: true, using: FTS5()) { t in
                     t.column("entry_id")
+                    // Universal fields
                     t.column("text")
                     t.column("tags")
-                    t.column("transcript")
+                    t.column("capture_location_name")
+                    // Photo
                     t.column("extracted_text")
-                    t.column("markdown_content")
+                    // Audio
+                    t.column("transcript")
+                    // Link
                     t.column("link_title")
+                    t.column("markdown_content")
+                    t.column("url")
+                    // Journal
+                    t.column("habit_snapshots")
+                    t.column("journal_emojis")
+                    // Location
                     t.column("location_name")
-                    t.column("music_artist")
-                    t.column("music_album")
+                    t.column("location_address")
+                    // Sticky
                     t.column("sticky_title")
                     t.column("sticky_items")
+                    // Music
+                    t.column("music_artist")
+                    t.column("music_album")
+                    // Media
                     t.column("media_title")
                     t.column("media_genre")
+                    t.column("media_overview")
+                    t.column("media_log")
                 }
             }
             UserDefaults.standard.set(schemaVersion, forKey: "searchIndexSchemaVersion")
@@ -71,11 +93,33 @@ class SearchIndex {
             print("SearchIndex setup failed: \(error)")
         }
     }
-
+    
     // MARK: - Indexing
     
     func index(entry: Entry) {
         guard let db else { return }
+
+        // Parse sticky items — strip the "id::" prefix so item text is searchable
+                let parsedStickyItems = entry.stickyItems
+                    .compactMap { item -> String? in
+                        let parts = item.components(separatedBy: "::")
+                        return parts.count == 2 ? parts[1] : item
+                    }
+                    .joined(separator: " ")
+
+                // Parse media log — strip the "ISO8601date::" prefix so note text is searchable
+                let parsedMediaLog = entry.mediaLog
+                    .compactMap { item -> String? in
+                        let parts = item.components(separatedBy: "::")
+                        return parts.count == 2 ? parts[1] : item
+                    }
+                    .joined(separator: " ")
+
+        // Journal emojis — combine weather, mood, vibe into one searchable field
+        let journalEmojis = [entry.weatherEmoji, entry.moodEmoji, entry.vibeEmoji]
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+
         do {
             try db.write { db in
                 try db.execute(
@@ -85,26 +129,47 @@ class SearchIndex {
                 try db.execute(
                     sql: """
                         INSERT INTO entry_search
-                        (entry_id, text, tags, transcript, extracted_text,
-                         markdown_content, link_title, location_name, music_artist, music_album,
-                         sticky_title, sticky_items, media_title, media_genre)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (entry_id, text, tags, capture_location_name,
+                         extracted_text, transcript,
+                         link_title, markdown_content, url,
+                         habit_snapshots, journal_emojis,
+                         location_name, location_address,
+                         sticky_title, sticky_items,
+                         music_artist, music_album,
+                         media_title, media_genre, media_overview, media_log)
+                                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                     arguments: [
                         entry.id.uuidString,
+                        // Universal
                         entry.text,
                         entry.tagNames.joined(separator: " "),
-                        entry.transcript ?? "",
+                        entry.captureLocationName ?? "",
+                        // Photo
                         entry.extractedText ?? "",
-                        entry.markdownContent ?? "",
+                        // Audio
+                        entry.transcript ?? "",
+                        // Link
                         entry.linkTitle ?? "",
+                        entry.markdownContent ?? "",
+                        entry.url ?? "",
+                        // Journal
+                        entry.completedHabitSnapshots.joined(separator: " "),
+                        journalEmojis,
+                        // Location
                         entry.locationName ?? "",
+                        entry.locationAddress ?? "",
+                        // Sticky
+                        entry.stickyTitle ?? "",
+                        parsedStickyItems,
+                        // Music
                         entry.musicArtist ?? "",
                         entry.musicAlbum ?? "",
-                        entry.stickyTitle ?? "",
-                        entry.stickyItems.joined(separator: " "),
+                        // Media
                         entry.mediaTitle ?? "",
-                        entry.mediaGenre ?? ""
+                        entry.mediaGenre ?? "",
+                        entry.mediaOverview ?? "",
+                        parsedMediaLog
                     ]
                 )
             }
