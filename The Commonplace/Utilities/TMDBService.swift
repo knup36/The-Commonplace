@@ -139,11 +139,11 @@ struct TMDBService {
         var request = URLRequest(url: url)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "accept")
-
+        
         let (data, _) = try await URLSession.shared.data(for: request)
         let item = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         guard let item else { return nil }
-
+        
         let title: String
         let rawDate: String
         if type == .movie {
@@ -159,21 +159,21 @@ struct TMDBService {
         let posterPath = item["poster_path"] as? String
         let genreObjects = item["genres"] as? [[String: Any]] ?? []
         let genres = genreObjects.compactMap { $0["name"] as? String }
-
+        
         let runtime = item["runtime"] as? Int
-                let seasons = item["number_of_seasons"] as? Int
-
-                return TMDBDetail(
-                    id: id,
-                    title: title,
-                    year: year,
-                    overview: overview,
-                    genres: genres,
-                    posterPath: posterPath,
-                    mediaType: type,
-                    runtime: runtime,
-                    seasons: seasons
-                )
+        let seasons = item["number_of_seasons"] as? Int
+        
+        return TMDBDetail(
+            id: id,
+            title: title,
+            year: year,
+            overview: overview,
+            genres: genres,
+            posterPath: posterPath,
+            mediaType: type,
+            runtime: runtime,
+            seasons: seasons
+        )
     }
 
     // MARK: - Download Poster

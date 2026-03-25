@@ -266,6 +266,19 @@ struct MediaDetailView: View {
                 
                 // Media log
                 logSection
+                
+                // Tags
+                TagInputView(tags: $entry.tagNames, accentColor: entry.type.accentColor, style: style)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 4)
+                
+                Divider()
+                    .padding(.horizontal, 20)
+                
+                // Metadata footer
+                EntryMetadataFooter(entry: entry, style: style, accentColor: entry.type.accentColor)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 40)
             }
             .padding(.top, 20)
             .padding(.bottom, 40)
@@ -614,7 +627,7 @@ struct MediaDetailView: View {
                 entry.tmdbID        = result.id
                 entry.mediaRuntime  = detail?.runtime
                 entry.mediaSeasons  = detail?.seasons
-                entry.mediaStatus   = "wantTo" // default status
+                entry.mediaStatus   = "wantTo"
                 
                 // Save poster image
                 if let data = posterData {
