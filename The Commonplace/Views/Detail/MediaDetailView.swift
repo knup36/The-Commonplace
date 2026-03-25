@@ -32,6 +32,9 @@ struct MediaDetailView: View {
     @State private var searchResults: [TMDBSearchResult] = []
     @State private var isSearching: Bool = false
     @State private var searchError: String? = nil
+    @State private var saveTask: Task<Void, Never>? = nil
+    @State private var localRating: Int = 0
+    @State private var localStatus: String = "wantTo"
     
     // MARK: - Log State
     @State private var newLogText: String = ""
@@ -79,6 +82,8 @@ struct MediaDetailView: View {
         
         .onAppear {
             loadCoverImage()
+            localRating = entry.mediaRating ?? 0
+            localStatus = entry.mediaStatus ?? "wantTo"
         }
     }
     
@@ -414,11 +419,11 @@ struct MediaDetailView: View {
     }
     
     func statusButton(label: String, value: String, icon: String) -> some View {
-        let isSelected = entry.mediaStatus == value
+        let isSelected = localStatus == value
         let color = statusColor(for: value)
         return Button {
-            entry.mediaStatus = value
-            try? modelContext.save()
+            localStatus = value
+            scheduleSave()
         } label: {
             VStack(spacing: 6) {
                 Image(systemName: isSelected ? "\(icon).fill" : icon)
@@ -458,33 +463,23 @@ struct MediaDetailView: View {
             
             HStack(spacing: 12) {
                 ForEach(1...5, id: \.self) { star in
-                    Button {
-                        // Tap same star to clear rating
-                        if entry.mediaRating == star {
-                            entry.mediaRating = 0
-                        } else {
-                            entry.mediaRating = star
-                        }
-                        try? modelContext.save()
-                    } label: {
-                        Image(systemName: (entry.mediaRating ?? 0) >= star
-                              ? "star.fill"
-                              : "star")
+                    Image(systemName: localRating >= star ? "star.fill" : "star")
                         .font(.system(size: 28))
-                        .foregroundStyle((entry.mediaRating ?? 0) >= star
-                                         ? .yellow
-                                         : style.secondaryText)
-                    }
-                    .buttonStyle(.plain)
+                        .foregroundStyle(localRating >= star ? .yellow : style.secondaryText)
+                        .onTapGesture {
+                            localRating = localRating == star ? 0 : star
+                            scheduleSave()
+                        }
                 }
                 Spacer()
-                if let rating = entry.mediaRating, rating > 0 {
-                    Text("\(rating)/5")
+                if localRating > 0 {
+                    Text("\(localRating)/5")
                         .font(.subheadline)
                         .foregroundStyle(style.secondaryText)
                 }
             }
             .padding(.horizontal, 20)
+            .transaction { $0.animation = nil }
         }
     }
     
@@ -665,7 +660,18 @@ struct MediaDetailView: View {
             }
         }
     }
-    
+    func scheduleSave() {
+        saveTask?.cancel()
+        saveTask = Task {
+            try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                entry.mediaRating = localRating == 0 ? nil : localRating
+                entry.mediaStatus = localStatus
+                try? modelContext.save()
+            }
+        }
+    }
     func appendLogEntry() {
         let trimmed = newLogText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -682,4 +688,5 @@ struct MediaDetailView: View {
               let data = MediaFileManager.load(path: path) else { return }
         coverImage = UIImage(data: data)
     }
+    
 }

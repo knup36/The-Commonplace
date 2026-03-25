@@ -124,8 +124,8 @@ struct MusicDetailSection: View {
         else { return }
 
         await MainActor.run {
-            entry.mediaArtist = first["artistName"] as? String
-            entry.mediaAlbum = first["collectionName"] as? String
+            entry.musicArtist = first["artistName"] as? String
+            entry.musicAlbum = first["collectionName"] as? String
             entry.previewURL = first["previewUrl"] as? String
 
             // Save Apple Music track ID for full playback via MusicPlayerService
@@ -140,7 +140,7 @@ struct MusicDetailSection: View {
             if let artworkURL = URL(string: hdArtworkURL),
                let (artworkData, _) = try? await URLSession.shared.data(from: artworkURL) {
                 await MainActor.run {
-                    entry.mediaArtworkPath = try? MediaFileManager.save(
+                    entry.musicArtworkPath = try? MediaFileManager.save(
                         artworkData,
                         type: .image,
                         id: "\(entry.id.uuidString)_artwork"

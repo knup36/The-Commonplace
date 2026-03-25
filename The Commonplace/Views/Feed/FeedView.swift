@@ -34,6 +34,7 @@ struct FeedView: View {
         (.sticky,   "List",   "checklist",          Color(hex: "#FFD60A")),
         (.location, "Place",  "mappin.circle.fill", .green),
         (.music,    "Music",  "music.note",         .red),
+        (.media, "Media", "film.fill", .red),
     ]
 
     var style: any AppThemeStyle { themeManager.style }
@@ -436,9 +437,9 @@ struct FeedView: View {
         }
         .buttonStyle(.plain)
     }
-
+    
     // MARK: - Helpers
-
+    
     func createEntry(type: EntryType) {
         let entry = Entry(type: type, text: "", tags: [])
         if let location = locationManager.currentLocation {
@@ -447,10 +448,11 @@ struct FeedView: View {
             entry.captureLocationName = locationManager.currentPlaceName
         }
         modelContext.insert(entry)
+        try? modelContext.save()
         SearchIndex.shared.index(entry: entry)
         navigationPath.append(entry)
     }
-
+    
     func deleteEntries(at offsets: IndexSet) {
         for index in offsets {
             SearchIndex.shared.remove(entryID: filteredEntries[index].id)

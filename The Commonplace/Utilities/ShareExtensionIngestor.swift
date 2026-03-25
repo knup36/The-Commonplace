@@ -50,6 +50,9 @@ struct ShareExtensionIngestor {
             let entry = Entry(type: entryType, text: shared.text, tags: shared.tags)
             entry.createdAt = shared.createdAt
             entry.tagNames = shared.tags
+            entry.captureLatitude = shared.captureLatitude
+            entry.captureLongitude = shared.captureLongitude
+            entry.captureLocationName = shared.captureLocationName
             
             // Handle type-specific fields
             switch entryType {
@@ -161,8 +164,17 @@ struct ShareExtensionIngestor {
                         type: .image,
                         id: entry.id.uuidString
                     )
+                    // Run OCR on the saved image
+                    Task {
+                        let result = await VisionService.analyze(imageData: compressed)
+                        await MainActor.run {
+                            entry.extractedText = result.extractedText.isEmpty ? nil : result.extractedText
+                            entry.visionTags = result.tags
+                            try? context.save()
+                            SearchIndex.shared.index(entry: entry)
+                        }
+                    }
                 }
-                
             case .location:
                 entry.url = shared.url
                 print("📍 Location URL: \(shared.url ?? "nil")")

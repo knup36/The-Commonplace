@@ -82,6 +82,7 @@ struct TemplateConfirmView: View {
         case .location: return .green
         case .sticky:   return Color(hex: "#FFD60A")
         case .music:    return .red
+        case .media:    return .red
         }
     }
     
@@ -95,6 +96,7 @@ struct TemplateConfirmView: View {
         case .location: return "mappin.circle.fill"
         case .sticky:   return "checklist"
         case .music:    return "music.note"
+        case .media:    return "film.fill"
         }
     }
     

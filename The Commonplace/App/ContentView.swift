@@ -73,7 +73,6 @@ struct ContentView: View {
         }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                createDefaultCollectionsIfNeeded(context: modelContext)
             }
         }
         .fontDesign(themeManager.current == .inkwell ? .serif : .rounded)

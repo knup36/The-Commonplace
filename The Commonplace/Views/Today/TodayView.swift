@@ -54,6 +54,18 @@ struct TodayView: View {
                     titleHeader
                     segmentPicker
                     if selectedTab == 0 {
+                        if let entry = entries.first(where: {
+                            Calendar.current.isDateInToday($0.createdAt) && $0.type == .journal
+                        }),
+                           !entry.weatherEmoji.isEmpty,
+                           !entry.moodEmoji.isEmpty,
+                           !entry.vibeEmoji.isEmpty {
+                            JournalPromptCard(
+                                weather: entry.weatherEmoji,
+                                mood: entry.moodEmoji,
+                                vibe: entry.vibeEmoji
+                            )
+                        }
                         JournalBlockView()
                         capturedTodayBlock
                         emptyTodayBlock

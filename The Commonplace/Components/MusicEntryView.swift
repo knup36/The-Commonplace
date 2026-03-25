@@ -65,7 +65,7 @@ struct MusicEntryView: View {
 
     var artworkThumbnail: some View {
         Group {
-            if let path = entry.mediaArtworkPath,
+            if let path = entry.musicArtworkPath,
                let data = MediaFileManager.load(path: path),
                let uiImage = UIImage(data: data) {
                 Image(uiImage: uiImage)
@@ -101,13 +101,13 @@ struct MusicEntryView: View {
                     .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : .primary)
                     .lineLimit(2)
             }
-            if let artist = entry.mediaArtist, !artist.isEmpty {
+            if let artist = entry.musicArtist, !artist.isEmpty {
                 Text(artist)
                     .font(isInkwell ? .system(.caption, design: .serif) : .caption)
                     .foregroundStyle(isInkwell ? InkwellTheme.inkSecondary : .secondary)
                     .lineLimit(1)
             }
-            if let album = entry.mediaAlbum, !album.isEmpty {
+            if let album = entry.musicAlbum, !album.isEmpty {
                 Text(album)
                     .font(isInkwell ? .system(.caption, design: .serif) : .caption)
                     .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : Color(uiColor: .tertiaryLabel))
