@@ -13,10 +13,10 @@ struct TagInputView: View {
     @Environment(\.modelContext) var modelContext
     
     var allExistingTags: [String] {
-        Array(Set(entries.flatMap { $0.tagNames }))
-            .sorted()
-            .filter { !tags.contains($0) }
-    }
+            Array(Set(entries.flatMap { $0.tagNames }))
+                .sorted()
+                .filter { !tags.contains($0) && !$0.hasPrefix("@") }
+        }
     
     var suggestions: [String] {
         if inputText.isEmpty {
@@ -30,11 +30,12 @@ struct TagInputView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             
-            // Current tags
-            if !tags.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                        ForEach(tags, id: \.self) { tag in
+            // Current tags — exclude @ person tags (shown in PersonInputView instead)
+                        let visibleTags = tags.filter { !$0.hasPrefix("@") }
+                        if !visibleTags.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 6) {
+                                    ForEach(visibleTags, id: \.self) { tag in
                             HStack(spacing: 4) {
                                 Text(tag)
                                     .font(.caption)

@@ -40,10 +40,10 @@ struct CommonplaceApp: App {
         UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
         
         do {
-            let schema = Schema([Entry.self, Collection.self, Habit.self, Tag.self])
+            let schema = Schema([Entry.self, Collection.self, Habit.self, Tag.self, Person.self])
             let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
             container = try ModelContainer(
-                for: Entry.self, Collection.self, Habit.self, Tag.self,
+                for: Entry.self, Collection.self, Habit.self, Tag.self, Person.self,
                 configurations: config
             )
         } catch {
@@ -88,6 +88,7 @@ struct CommonplaceApp: App {
             let entries = try context.fetch(FetchDescriptor<Entry>())
             SearchIndex.shared.backfillIfNeeded(entries: entries)
             TagMigrationService.migrateIfNeeded(context: context)
+            PersonMigrationService.migrateIfNeeded(context: context)
         } catch {
             print("Backfill fetch failed: \(error)")
         }

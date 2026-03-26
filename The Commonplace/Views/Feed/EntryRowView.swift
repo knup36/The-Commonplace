@@ -300,9 +300,10 @@ struct EntryRowView: View {
                         .font(.caption)
                         .foregroundStyle(style.accent)
                 }
-                if !entry.tagNames.isEmpty {
+                let visibleTags = entry.tagNames.filter { !$0.hasPrefix("@") }
+                if !visibleTags.isEmpty {
                     HStack(spacing: 4) {
-                        ForEach(entry.tagNames.prefix(3), id: \.self) { tag in
+                        ForEach(visibleTags.prefix(3), id: \.self) { tag in
                             Text(tag)
                                 .font(.caption)
                                 .italic(style.usesSerifFonts)
@@ -317,8 +318,8 @@ struct EntryRowView: View {
                                     : nil
                                 )
                         }
-                        if entry.tagNames.count > 3 {
-                            Text("+\(entry.tagNames.count - 3)")
+                        if visibleTags.count > 3 {
+                            Text("+\(visibleTags.count - 3)")
                                 .font(.caption)
                                 .foregroundStyle(style.secondaryText)
                         }
