@@ -2,18 +2,17 @@
 // Commonplace
 //
 // Detail view for a Person object.
-// Shows a contact card header (avatar, name, bio, birthdate)
-// followed by a full feed of all entries tagged with this person.
+// Full bleed profile photo as background via .background modifier.
+// Name, birthday, and bio float over the photo.
+// Entry feed scrolls below.
 //
-// People are connected to entries via name matching:
+// Editing is done via PersonEditView, accessible from the Edit button.
+//
+// People connect to entries via name matching:
 //   entry.tagNames.contains("@" + person.name)
-//
-// Editing person metadata (photo, bio, birthdate) is done inline.
-// Profile photos are stored via MediaFileManager.
 
 import SwiftUI
 import SwiftData
-import PhotosUI
 
 struct PersonDetailView: View {
     @Bindable var person: Person
@@ -21,11 +20,7 @@ struct PersonDetailView: View {
     @Environment(\.modelContext) var modelContext
     @EnvironmentObject var themeManager: ThemeManager
     
-    @State private var bioText = ""
-    @State private var showingPhotoPicker = false
-    @State private var selectedPhotoItem: PhotosPickerItem? = nil
-    @State private var showingDatePicker = false
-    @FocusState private var bioFieldFocused: Bool
+    @State private var showingEditView = false
     
     var style: any AppThemeStyle { themeManager.style }
     var accent: Color { style.accent }
@@ -36,37 +31,114 @@ struct PersonDetailView: View {
             .sorted { $0.createdAt > $1.createdAt }
     }
     
+    // MARK: - Body
+    
     var body: some View {
-        List {
-            // Contact card header
-            contactCard
-                .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 16, trailing: 16))
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
+        ScrollView {
+            VStack(spacing: 0) {
+                // Transparent hero area — photo shows through
+                heroArea
+                
+                // Feed area — solid background
+                feedArea
+            }
+        }
+        .ignoresSafeArea(edges: .top)
+        .background(photoBackground)
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Edit") {
+                    showingEditView = true
+                }
+                .foregroundStyle(.white)
+            }
+        }
+        .sheet(isPresented: $showingEditView) {
+            PersonEditView(person: person)
+        }
+    }
+    
+    // MARK: - Photo Background
+    
+    @ViewBuilder
+    var photoBackground: some View {
+        if let path = person.profilePhotoPath,
+           let data = MediaFileManager.load(path: path),
+           let uiImage = UIImage(data: data) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
+        } else {
+            LinearGradient(
+                colors: [accent.opacity(0.7), accent.opacity(0.2)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            .overlay(
+                Text(String(person.name.prefix(1)).uppercased())
+                    .font(.system(size: 140, weight: .thin))
+                    .foregroundStyle(.white.opacity(0.2))
+            )
+        }
+    }
+    
+    // MARK: - Hero Area
+    
+    var heroArea: some View {
+        VStack(spacing: 6) {
+            Spacer()
+            Text(person.name)
+                .font(style.usesSerifFonts
+                      ? .system(.largeTitle, design: .serif)
+                      : .largeTitle)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+                .shadow(color: .black.opacity(0.6), radius: 4, x: 0, y: 2)
             
-            // Entry count header
+            if let birthdate = person.birthdate {
+                HStack(spacing: 4) {
+                    Image(systemName: "birthday.cake")
+                        .font(.caption)
+                    Text(birthdate.formatted(.dateTime.month(.wide).day().year()))
+                        .font(.subheadline)
+                }
+                .foregroundStyle(.white.opacity(0.85))
+                .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 1)
+            }
+            
+            if let bio = person.bio, !bio.isEmpty {
+                Text(bio)
+                    .font(style.usesSerifFonts
+                          ? .system(.body, design: .serif)
+                          : .body)
+                    .italic(style.usesSerifFonts)
+                    .foregroundStyle(.white.opacity(0.8))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                    .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 1)
+            }
+        }
+        .padding(.bottom, 24)
+        .frame(height: 420)
+    }
+    
+    // MARK: - Feed Area
+    
+    var feedArea: some View {
+        VStack(alignment: .leading, spacing: 0) {
             if !taggedEntries.isEmpty {
                 Text("\(taggedEntries.count) \(taggedEntries.count == 1 ? "entry" : "entries")")
                     .font(.caption)
                     .fontWeight(.semibold)
-                    .foregroundStyle(style.secondaryText)
-                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
-            }
-            
-            // Entry feed
-            ForEach(taggedEntries) { entry in
-                ZStack {
-                    NavigationLink(destination: destinationView(for: entry)) {
-                        EmptyView()
-                    }
-                    .opacity(0)
-                    EntryRowView(entry: entry)
-                }
-                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
+                    .foregroundStyle(.white.opacity(0.8))
+                    .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 1)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 20)
+                    .padding(.bottom, 8)
             }
             
             if taggedEntries.isEmpty {
@@ -79,145 +151,20 @@ struct PersonDetailView: View {
                         .foregroundStyle(style.tertiaryText)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.top, 40)
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-            }
-        }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .background(style.background)
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                if bioFieldFocused {
-                    Button("Done") {
-                        bioFieldFocused = false
-                    }
-                    .foregroundStyle(accent)
-                }
-            }
-        }
-        .onAppear { bioText = person.bio ?? "" }
-        .onChange(of: selectedPhotoItem) { _, newItem in
-            Task {
-                guard let newItem,
-                      let rawData = try? await newItem.loadTransferable(type: Data.self),
-                      let uiImage = UIImage(data: rawData),
-                      let processed = ImageProcessor.resizeAndCompress(image: uiImage) else { return }
-                person.profilePhotoPath = try? MediaFileManager.save(
-                    processed,
-                    type: .image,
-                    id: "\(person.id.uuidString)_avatar"
-                )
-            }
-        }
-    }
-    
-    // MARK: - Contact Card
-    
-    var contactCard: some View {
-        VStack(spacing: 16) {
-            // Avatar + photo picker
-            PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                ZStack(alignment: .bottomTrailing) {
-                    avatarView(size: 160)
-                    Image(systemName: "pencil.circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundStyle(accent)
-                        .background(Circle().fill(style.background).padding(2))
-                }
-            }
-            .buttonStyle(.plain)
-            
-            // Name
-            Text(person.name)
-                .font(style.usesSerifFonts
-                      ? .system(.title2, design: .serif)
-                      : .title2)
-                .fontWeight(.bold)
-                .foregroundStyle(style.primaryText)
-            
-            // Bio — always editable, saves on change
-            TextField("Add a bio...", text: $bioText, axis: .vertical)
-                .font(style.usesSerifFonts ? .system(.body, design: .serif) : .body)
-                .foregroundStyle(style.primaryText)
-                .multilineTextAlignment(.center)
-                .lineLimit(1...4)
-                .focused($bioFieldFocused)
-                .onChange(of: bioText) { _, newValue in
-                    person.bio = newValue.isEmpty ? nil : newValue
-                    try? modelContext.save()
-                }
-            
-            // Birthdate
-            if showingDatePicker {
-                VStack(spacing: 8) {
-                    DatePicker(
-                        "Birthday",
-                        selection: Binding(
-                            get: { person.birthdate ?? Date() },
-                            set: {
-                                person.birthdate = $0
-                                try? modelContext.save()
-                            }
-                        ),
-                        displayedComponents: .date
-                    )
-                    .datePickerStyle(.compact)
-                    .labelsHidden()
-                    
-                    Button("Done") {
-                        showingDatePicker = false
-                        try? modelContext.save()
-                    }
-                    .font(.caption)
-                    .foregroundStyle(accent)
-                }
+                .padding(.top, 60)
+                .padding(.bottom, 40)
             } else {
-                Button {
-                    showingDatePicker = true
-                } label: {
-                    if let birthdate = person.birthdate {
-                        Label(birthdate.formatted(.dateTime.month(.wide).day().year()), systemImage: "birthday.cake")
-                            .font(.caption)
-                            .foregroundStyle(style.secondaryText)
-                    } else {
-                        Label("Add birthday", systemImage: "birthday.cake")
-                            .font(.caption)
-                            .foregroundStyle(style.tertiaryText)
+                ForEach(taggedEntries) { entry in
+                    NavigationLink(destination: destinationView(for: entry)) {
+                        EntryRowView(entry: entry)
                     }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 4)
+                    .padding(.bottom, 4)
                 }
-                .buttonStyle(.plain)
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-    }
-    
-    // MARK: - Avatar
-    
-    func avatarView(size: CGFloat) -> some View {
-        Group {
-            if let path = person.profilePhotoPath,
-               let data = MediaFileManager.load(path: path),
-               let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: size, height: size)
-                    .clipShape(Circle())
-            } else {
-                Circle()
-                    .fill(accent.opacity(0.2))
-                    .frame(width: size, height: size)
-                    .overlay(
-                        Text(String(person.name.prefix(1)).uppercased())
-                            .font(.system(size: size * 0.4, weight: .semibold))
-                            .foregroundStyle(accent)
-                    )
-            }
-        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
