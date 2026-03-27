@@ -1,0 +1,72 @@
+{
+  "fill" : {
+    "automatic-gradient" : "extended-srgb:0.00000,0.47843,1.00000,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "image-name" : "Band.svg",
+          "name" : "Band",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              173.21484375,
+              -27.08872600371467
+            ]
+          }
+        },
+        {
+          "image-name" : "Bookmark.svg",
+          "name" : "Bookmark",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              143.140625,
+              401.94140625
+            ]
+          }
+        },
+        {
+          "image-name" : "Label.svg",
+          "name" : "Label",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              -23.951982655063716,
+              -175.17578125
+            ]
+          }
+        },
+        {
+          "glass-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : true
+            }
+          ],
+          "image-name" : "Book.svg",
+          "name" : "Book"
+        },
+        {
+          "image-name" : "Star.svg",
+          "name" : "Star"
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

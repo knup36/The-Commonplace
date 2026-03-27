@@ -21,6 +21,31 @@ struct ReleaseNotesView: View {
 
     let releases: [Release] = [
         Release(
+            version: "1.7",
+            title: "Power to the People",
+            notes: [
+                "Tag people on any entry using the new People section on entry detail views",
+                "People appear in the Library tab alongside Collections and Tags",
+                "Each person gets a full detail view with a photo background, bio, and birthday",
+                "Tap Edit to update a person's photo, name, bio, and birthday",
+                "All entries tagged with a person are collected on their detail page",
+                "People are automatically created the first time you tag someone"
+            ]
+        ),
+        Release(
+            version: "1.6.1",
+            title: "Under the Hood",
+            notes: [
+                "Search is now dramatically more complete — location, habits, journal emojis, link URLs, and media descriptions are all searchable",
+                "Photos shared via the share extension now get text extracted automatically",
+                "Location now appears correctly on entries saved via the share extension",
+                "Importing an archive now makes entries immediately searchable",
+                "Importing an archive now correctly restores all tags",
+                "Bookmark and favorite buttons added to all entry detail views",
+                "Media entry status and star rating now respond instantly with no lag"
+            ]
+        ),
+        Release(
             version: "1.6",
             title: "Good Morning. How are you?",
             notes: [

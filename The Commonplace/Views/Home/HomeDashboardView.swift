@@ -11,7 +11,6 @@
 // Sections:
 //   Bookmarks  — isPinned entries
 //   Collections — isPinned collections
-//   Favorites  — isFavorited entries
 //   Tags       — isPinned tags
 //
 // Cards are 160×120pts with entry accent color background.
@@ -28,55 +27,51 @@ struct HomeDashboardView: View {
     @Query(sort: \Entry.createdAt, order: .reverse) var allEntries: [Entry]
     @Query var allTags: [Tag]
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     var style: any AppThemeStyle { themeManager.style }
-
+    
     // Max cards per section (2 rows × 6 columns)
     private let maxCards = 12
     private let rows = [GridItem(.fixed(80), spacing: 10), GridItem(.fixed(80), spacing: 10)]
     
     // MARK: - Filtered Data
-
+    
     var pinnedEntries: [Entry] {
         allEntries.filter { $0.isPinned }
     }
-
+    
     var pinnedCollections: [Collection] {
         allCollections
             .filter { $0.isPinned }
             .sorted { $0.pinnedOrder < $1.pinnedOrder }
     }
-
-    var favoritedEntries: [Entry] {
-        allEntries.filter { $0.isFavorited }
-    }
-
+    
     var pinnedTags: [Tag] {
         allTags
             .filter { $0.isPinned }
             .sorted { $0.createdAt < $1.createdAt }
     }
-
+    
     var hasAnything: Bool {
         !pinnedEntries.isEmpty || !pinnedCollections.isEmpty ||
-        !favoritedEntries.isEmpty || !pinnedTags.isEmpty
+        !pinnedTags.isEmpty
     }
-
+    
     func entryCount(for collection: Collection) -> Int {
         allEntries.filter { collectionMatches(entry: $0, collection: collection) }.count
     }
-
+    
     func entryCount(for tag: Tag) -> Int {
         allEntries.filter { $0.tagNames.contains(tag.name) }.count
     }
-
+    
     // MARK: - Body
-
+    
     var body: some View {
         NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 28) {
-
+                    
                     // Title
                     Text("Home")
                         .font(style.usesSerifFonts
@@ -85,11 +80,11 @@ struct HomeDashboardView: View {
                         .foregroundStyle(style.primaryText)
                         .padding(.horizontal, 20)
                         .padding(.top, 16)
-
+                    
                     if !hasAnything {
                         emptyState
                     }
-
+                    
                     // Bookmarks section
                     if !pinnedEntries.isEmpty {
                         horizontalSection(
@@ -106,7 +101,7 @@ struct HomeDashboardView: View {
                             }
                         }
                     }
-
+                    
                     // Collections section
                     if !pinnedCollections.isEmpty {
                         horizontalSection(
@@ -127,24 +122,7 @@ struct HomeDashboardView: View {
                             }
                         }
                     }
-
-                    // Favorites section
-                    if !favoritedEntries.isEmpty {
-                        horizontalSection(
-                            title: "Favorites",
-                            icon: "star.fill",
-                            count: favoritedEntries.count,
-                            seeAllDestination: nil
-                        ) {
-                            ForEach(favoritedEntries.prefix(maxCards)) { entry in
-                                NavigationLink(destination: destinationView(for: entry)) {
-                                    CompactEntryCard(entry: entry, style: style)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
-
+                    
                     // Tags section
                     if !pinnedTags.isEmpty {
                         horizontalSection(
@@ -165,26 +143,26 @@ struct HomeDashboardView: View {
                             }
                         }
                     }
-
+                    
                     // Bottom padding
                     Color.clear.frame(height: 50)
                 }
             }
             .background(style.background)
             .navigationBarTitleDisplayMode(.inline)
-                        .toolbar {
-                            ToolbarItem(placement: .navigationBarTrailing) {
-                                NavigationLink(destination: SettingsView()) {
-                                    Image(systemName: "gearshape.fill")
-                                        .foregroundStyle(style.accent)
-                                }
-                            }
-                        }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    NavigationLink(destination: SettingsView()) {
+                        Image(systemName: "gearshape.fill")
+                            .foregroundStyle(style.accent)
                     }
                 }
-
+            }
+        }
+    }
+    
     // MARK: - Horizontal Section Builder
-
+    
     /// Builds a section with a header and a 2-row horizontal scroll grid.
     /// Shows a "See All" button in the header if count exceeds maxCards.
     @ViewBuilder
@@ -215,7 +193,7 @@ struct HomeDashboardView: View {
                 }
             }
             .padding(.horizontal, 20)
-
+            
             // 2-row horizontal grid
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHGrid(rows: rows, spacing: 10) {
@@ -227,9 +205,9 @@ struct HomeDashboardView: View {
             .scrollClipDisabled()
         }
     }
-
+    
     // MARK: - Empty State
-
+    
     var emptyState: some View {
         VStack(spacing: 12) {
             Image(systemName: "pin.slash")

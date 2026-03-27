@@ -73,13 +73,6 @@ struct FeedView: View {
             .listRowBackground(Color.clear)
             .swipeActions(edge: .leading, allowsFullSwipe: true) {
                 Button {
-                    withAnimation { entry.isFavorited.toggle() }
-                } label: {
-                    Label(entry.isFavorited ? "Unfavorite" : "Favorite",
-                          systemImage: entry.isFavorited ? "star.slash.fill" : "star.fill")
-                }
-                .tint(.yellow)
-                Button {
                     withAnimation { entry.isPinned.toggle() }
                 } label: {
                     Label(entry.isPinned ? "Unbookmark" : "Bookmark",

@@ -70,12 +70,6 @@ struct MediaDetailView: View {
                         Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
                             .foregroundStyle(entry.type.accentColor)
                     }
-                    Button {
-                        withAnimation { entry.isFavorited.toggle() }
-                    } label: {
-                        Image(systemName: entry.isFavorited ? "star.fill" : "star")
-                            .foregroundStyle(entry.type.accentColor)
-                    }
                 }
             }
         }
@@ -296,6 +290,10 @@ struct MediaDetailView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 4)
                 
+                // People
+                PersonInputView(tags: $entry.tagNames, accentColor: entry.type.accentColor, style: style)
+                    .padding(.horizontal, 20)
+                
                 Divider()
                     .padding(.horizontal, 20)
                 
@@ -312,82 +310,80 @@ struct MediaDetailView: View {
     // MARK: - Cover Art Header
     
     var coverArtHeader: some View {
-        ZStack(alignment: .bottom) {
-            // Cover art or placeholder
+        HStack(alignment: .top, spacing: 16) {
+            
+            // Poster — rectangular 2:3
             Group {
                 if let image = coverImage {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFill()
+                        .frame(width: 125, height: 188)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                 } else {
-                    Rectangle()
+                    RoundedRectangle(cornerRadius: 8)
                         .fill(entry.type.cardColor)
+                        .frame(width: 125, height: 188)
                         .overlay(
                             Image(systemName: "film.fill")
-                                .font(.system(size: 48))
+                                .font(.system(size: 32))
                                 .foregroundStyle(entry.type.accentColor.opacity(0.5))
                         )
                 }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 280)
-            .clipped()
             
-            // Gradient overlay with metadata
-            LinearGradient(
-                colors: [.clear, .black.opacity(0.85)],
-                startPoint: .center,
-                endPoint: .bottom
-            )
-            .frame(height: 280)
-            
-            // Title + metadata overlaid on gradient
-            VStack(alignment: .leading, spacing: 4) {
+            // Metadata column
+            VStack(alignment: .leading, spacing: 5) {
                 if let title = entry.mediaTitle {
                     Text(title)
                         .font(style.usesSerifFonts
-                              ? .system(.title2, design: .serif)
-                              : .title2)
+                              ? .system(.headline, design: .serif)
+                              : .headline)
                         .fontWeight(.bold)
-                        .foregroundStyle(.white)
-                        .lineLimit(2)
+                        .foregroundStyle(style.primaryText)
+                        .lineLimit(3)
                 }
-                HStack(spacing: 8) {
-                    if let year = entry.mediaYear, !year.isEmpty {
-                        Text(year)
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.8))
-                    }
-                    if let type = entry.mediaType {
-                        Text(type == "tv" ? "TV Show" : "Movie")
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.8))
-                    }
-                    if let genre = entry.mediaGenre, !genre.isEmpty {
-                        Text("· \(genre)")
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.7))
-                            .lineLimit(1)
-                    }
-                    if let runtime = entry.mediaRuntime, entry.mediaType == "movie" {
-                        let hours = runtime / 60
-                        let mins = runtime % 60
-                        let label = hours > 0 ? "\(hours)h \(mins)m" : "\(mins)m"
-                        Text("· \(label)")
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.7))
-                    }
-                    if let seasons = entry.mediaSeasons, entry.mediaType == "tv" {
-                        Text("· \(seasons) \(seasons == 1 ? "Season" : "Seasons")")
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.7))
-                    }
+                
+                Spacer().frame(height: 4)
+                
+                if let year = entry.mediaYear, !year.isEmpty {
+                    Text(year)
+                        .font(.subheadline)
+                        .foregroundStyle(style.secondaryText)
+                }
+                
+                if let type = entry.mediaType {
+                    Text(type == "tv" ? "Television Series" : "Movie")
+                        .font(.subheadline)
+                        .foregroundStyle(style.secondaryText)
+                }
+                
+                if let genre = entry.mediaGenre, !genre.isEmpty {
+                    Text(genre)
+                        .font(.subheadline)
+                        .foregroundStyle(style.secondaryText)
+                }
+                
+                if let runtime = entry.mediaRuntime, entry.mediaType == "movie" {
+                    let hours = runtime / 60
+                    let mins = runtime % 60
+                    Text(hours > 0 ? "\(hours)h \(mins)m" : "\(mins)m")
+                        .font(.subheadline)
+                        .foregroundStyle(style.secondaryText)
+                }
+                
+                if let seasons = entry.mediaSeasons, entry.mediaType == "tv" {
+                    Text("\(seasons) \(seasons == 1 ? "Season" : "Seasons")")
+                        .font(.subheadline)
+                        .foregroundStyle(style.secondaryText)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+            
+            Spacer()
         }
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+        .padding(.bottom, 8)
     }
     
     // MARK: - Status Section

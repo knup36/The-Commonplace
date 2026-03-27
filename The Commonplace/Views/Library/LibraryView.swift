@@ -404,6 +404,15 @@ struct LibraryView: View {
             .listRowInsets(EdgeInsets(top: 3, leading: 16, bottom: 3, trailing: 24))
             .listRowSeparator(style.usesSerifFonts ? .hidden : .visible)
             .buttonStyle(.plain)
+            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                Button {
+                    withAnimation { person.isPinned.toggle() }
+                } label: {
+                    Label(person.isPinned ? "Unbookmark" : "Bookmark",
+                          systemImage: person.isPinned ? "bookmark.slash.fill" : "bookmark.fill")
+                }
+                .tint(.orange)
+            }
             .swipeActions(edge: .trailing) {
                 Button(role: .destructive) {
                     modelContext.delete(person)

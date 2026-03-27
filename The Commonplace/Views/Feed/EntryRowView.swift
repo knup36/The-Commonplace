@@ -295,11 +295,6 @@ struct EntryRowView: View {
     var tagsRow: some View {
         HStack(alignment: .bottom, spacing: 8) {
             HStack(alignment: .center) {
-                if entry.isFavorited {
-                    Image(systemName: "star.fill")
-                        .font(.caption)
-                        .foregroundStyle(style.accent)
-                }
                 let visibleTags = entry.tagNames.filter { !$0.hasPrefix("@") }
                 if !visibleTags.isEmpty {
                     HStack(spacing: 4) {

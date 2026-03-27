@@ -30,6 +30,7 @@ struct EntryDetailView: View {
                 JournalMetadataSection(entry: entry, style: style, accentColor: entry.type.accentColor)
                 textContentSection
                 TagInputView(tags: $entry.tagNames, accentColor: entry.type.accentColor, style: style)
+                PersonInputView(tags: $entry.tagNames, accentColor: entry.type.accentColor, style: style)
                 Divider()
                 EntryMetadataFooter(entry: entry, style: style, accentColor: entry.type.accentColor)
             }
@@ -57,12 +58,6 @@ struct EntryDetailView: View {
                         withAnimation { entry.isPinned.toggle() }
                     } label: {
                         Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
-                            .foregroundStyle(style.accent)
-                    }
-                    Button {
-                        withAnimation { entry.isFavorited.toggle() }
-                    } label: {
-                        Image(systemName: entry.isFavorited ? "star.fill" : "star")
                             .foregroundStyle(style.accent)
                     }
                 }

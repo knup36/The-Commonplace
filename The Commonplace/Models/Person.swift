@@ -28,6 +28,7 @@ class Person {
     var bio: String? = nil
     var birthdate: Date? = nil
     var createdAt: Date = Date()
+    var isPinned: Bool = false
 
     init(name: String) {
         self.id = UUID()
