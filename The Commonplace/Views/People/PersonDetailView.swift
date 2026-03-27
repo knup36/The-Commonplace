@@ -21,31 +21,31 @@ struct PersonDetailView: View {
     @Query var allEntries: [Entry]
     @Environment(\.modelContext) var modelContext
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     @State private var showingEditView = false
-
+    
     var style: any AppThemeStyle { themeManager.style }
     var accent: Color { style.accent }
-
+    
     var taggedEntries: [Entry] {
         allEntries
             .filter { $0.tagNames.contains(person.tagString) }
             .sorted { $0.createdAt > $1.createdAt }
     }
-
+    
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 // Contact header
                 contactHeader
-
+                
                 // Divider
                 Divider()
                     .overlay(style.usesSerifFonts ? InkwellTheme.cardBorderTop : Color(uiColor: .separator))
                     .opacity(style.usesSerifFonts ? 0.6 : 1)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 12)
-
+                
                 // Entry count
                 if !taggedEntries.isEmpty {
                     Text("\(taggedEntries.count) \(taggedEntries.count == 1 ? "entry" : "entries")")
@@ -55,7 +55,7 @@ struct PersonDetailView: View {
                         .padding(.horizontal, 16)
                         .padding(.bottom, 8)
                 }
-
+                
                 // Entry feed
                 if taggedEntries.isEmpty {
                     VStack(spacing: 12) {
@@ -101,22 +101,38 @@ struct PersonDetailView: View {
             PersonEditView(person: person)
         }
     }
-
+    
     // MARK: - Contact Header
-
+    
     var contactHeader: some View {
         VStack(alignment: .center, spacing: 12) {
             // Avatar with gold border
             ZStack {
                 Circle()
-                    .strokeBorder(accent, lineWidth: 2)
+                    .strokeBorder(
+                        AngularGradient(
+                            colors: [
+                                Color(hex: "#C8903A"),
+                                Color(hex: "#F5D478"),
+                                Color(hex: "#C8903A"),
+                                Color(hex: "#8A6028"),
+                                Color(hex: "#C8903A"),
+                                Color(hex: "#F5D478"),
+                                Color(hex: "#C8903A")
+                            ],
+                            center: .center,
+                            startAngle: .degrees(0),
+                            endAngle: .degrees(360)
+                        ),
+                        lineWidth: 3.5
+                    )
                     .frame(width: 181, height: 181)
-
+                
                 avatarView(size: 175)
             }
             .padding(.top, 32)
             .padding(.bottom, 4)
-
+            
             // Name
             Text(person.name)
                 .font(style.usesSerifFonts
@@ -124,7 +140,7 @@ struct PersonDetailView: View {
                       : .title2)
                 .fontWeight(.bold)
                 .foregroundStyle(style.primaryText)
-
+            
             // Birthday
             if let birthdate = person.birthdate {
                 HStack(spacing: 5) {
@@ -136,7 +152,7 @@ struct PersonDetailView: View {
                         .foregroundStyle(style.secondaryText)
                 }
             }
-
+            
             // Bio
             if let bio = person.bio, !bio.isEmpty {
                 Text(bio)
@@ -152,9 +168,9 @@ struct PersonDetailView: View {
         .frame(maxWidth: .infinity)
         .padding(.bottom, 24)
     }
-
+    
     // MARK: - Avatar
-
+    
     func avatarView(size: CGFloat) -> some View {
         Group {
             if let path = person.profilePhotoPath,

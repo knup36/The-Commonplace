@@ -37,10 +37,8 @@ struct EntryDetailView: View {
             .padding()
         }
         .background(entry.type.cardColor.ignoresSafeArea())
-        .scrollDismissesKeyboard(.interactively)
-        .safeAreaInset(edge: .bottom) {
-            Color.clear.frame(height: 100)
-        }
+                .scrollDismissesKeyboard(.interactively)
+                .keyboardAvoiding()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -82,11 +80,15 @@ struct EntryDetailView: View {
     @ViewBuilder
     var textContentSection: some View {
         if isEditing {
-            AutoResizingTextEditor(text: $editText, minHeight: 32)
-                .focused($textFieldFocused)
-                .font(style.body)
-                .foregroundStyle(style.primaryText)
-                .onChange(of: editText) { _, newValue in entry.text = newValue }
+            CommonplaceTextEditor(
+                text: $editText,
+                placeholder: "Start writing...",
+                usesSerifFont: style.usesSerifFonts,
+                minHeight: 32
+            )
+            .focused($textFieldFocused)
+            .foregroundStyle(style.primaryText)
+            .onChange(of: editText) { _, newValue in entry.text = newValue }
         } else {
             Text(entry.text.isEmpty ? "Tap to add a note..." : entry.text)
                 .font(style.body)

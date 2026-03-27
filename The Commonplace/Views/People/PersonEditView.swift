@@ -15,7 +15,6 @@
 
 import SwiftUI
 import SwiftData
-import PhotosUI
 
 struct PersonEditView: View {
     @Bindable var person: Person
@@ -25,7 +24,8 @@ struct PersonEditView: View {
     
     @State private var nameText: String = ""
     @State private var bioText: String = ""
-    @State private var selectedPhotoItem: PhotosPickerItem? = nil
+    @State private var showingImagePicker = false
+    @State private var selectedImage: UIImage? = nil
     @State private var showingDatePicker = false
     
     var style: any AppThemeStyle { themeManager.style }
@@ -38,7 +38,9 @@ struct PersonEditView: View {
                 Section {
                     HStack {
                         Spacer()
-                        PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                        Button {
+                            showingImagePicker = true
+                        } label: {
                             ZStack(alignment: .bottomTrailing) {
                                 avatarView(size: 100)
                                 Circle()
@@ -147,19 +149,18 @@ struct PersonEditView: View {
                 nameText = person.name
                 bioText = person.bio ?? ""
             }
-            .onChange(of: selectedPhotoItem) { _, newItem in
-                Task {
-                    guard let newItem,
-                          let rawData = try? await newItem.loadTransferable(type: Data.self),
-                          let uiImage = UIImage(data: rawData),
-                          let processed = ImageProcessor.resizeAndCompress(image: uiImage) else { return }
-                    person.profilePhotoPath = try? MediaFileManager.save(
-                        processed,
-                        type: .image,
-                        id: "\(person.id.uuidString)_avatar"
-                    )
-                    try? modelContext.save()
-                }
+            .sheet(isPresented: $showingImagePicker) {
+                CroppingImagePicker(image: $selectedImage)
+            }
+            .onChange(of: selectedImage) { _, newImage in
+                guard let newImage,
+                      let processed = ImageProcessor.resizeAndCompress(image: newImage) else { return }
+                person.profilePhotoPath = try? MediaFileManager.save(
+                    processed,
+                    type: .image,
+                    id: "\(person.id.uuidString)_avatar"
+                )
+                try? modelContext.save()
             }
         }
     }

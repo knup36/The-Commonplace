@@ -11,20 +11,20 @@ struct TodayView: View {
     @Environment(\.modelContext) var modelContext
     @Query var entries: [Entry]
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     // Settings is now a NavigationLink destination — no sheet state needed
     @State private var selectedTab = 0
     @State private var keyboardVisible = false
-
+    
     var style: any AppThemeStyle { themeManager.style }
-
+    
     var todayEntries: [Entry] {
         entries
             .filter { Calendar.current.isDateInToday($0.createdAt) }
             .filter { $0.type != .journal }
             .sorted { $0.createdAt > $1.createdAt }
     }
-
+    
     var onThisDayEntries: [(yearsAgo: Int, entries: [Entry])] {
         let calendar = Calendar.current
         let today = Date()
@@ -44,9 +44,9 @@ struct TodayView: View {
             (yearsAgo: yearsAgo, entries: grouped[yearsAgo]!.sorted { $0.createdAt > $1.createdAt })
         }
     }
-
+    
     // MARK: - Body
-
+    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -81,33 +81,30 @@ struct TodayView: View {
                 .padding(.vertical)
             }
             .scrollDismissesKeyboard(.interactively)
+            .keyboardAvoiding()
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
                 keyboardVisible = true
             }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
                 keyboardVisible = false
-            }
-            .safeAreaInset(edge: .bottom) {
-                Color.clear.frame(height: 50)
-            }
-            .background(style.background)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    if keyboardVisible {
-                        Button("Done") {
-                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            }            .background(style.background)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        if keyboardVisible {
+                            Button("Done") {
+                                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                            }
+                            .foregroundStyle(style.accent)
                         }
-                        .foregroundStyle(style.accent)
                     }
                 }
-            }
             // Settings presented via NavigationLink — no sheet needed
         }
     }
-
+    
     // MARK: - Sub-views
-
+    
     var titleHeader: some View {
         HStack {
             Text(selectedTab == 0 ? "Today" : selectedTab == 1 ? "On This Day" : "Stats")
@@ -120,7 +117,7 @@ struct TodayView: View {
         .padding(.horizontal)
         .padding(.top, 4)
     }
-
+    
     var segmentPicker: some View {
         Picker("", selection: $selectedTab) {
             Text("Today").tag(0)
@@ -130,7 +127,7 @@ struct TodayView: View {
         .pickerStyle(.segmented)
         .padding(.horizontal)
     }
-
+    
     @ViewBuilder
     var capturedTodayBlock: some View {
         if !todayEntries.isEmpty {
@@ -149,7 +146,7 @@ struct TodayView: View {
             }
         }
     }
-
+    
     @ViewBuilder
     var emptyTodayBlock: some View {
         if todayEntries.isEmpty {
@@ -165,7 +162,7 @@ struct TodayView: View {
             .padding(.top, 20)
         }
     }
-
+    
     var onThisDayBlock: some View {
         VStack(alignment: .leading, spacing: 8) {
             if onThisDayEntries.isEmpty {

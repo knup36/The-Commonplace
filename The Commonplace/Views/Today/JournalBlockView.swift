@@ -192,12 +192,12 @@ struct JournalBlockView: View {
             Label("Daily Note", systemImage: "pencil")
                 .font(.subheadline).fontWeight(.medium)
                 .foregroundStyle(style.secondaryText)
-            AutoResizingTextEditor(
+            CommonplaceTextEditor(
                 text: $dailyNoteText,
                 placeholder: "How was your day...",
+                usesSerifFont: style.usesSerifFonts,
                 minHeight: 60
             )
-            .font(style.body)
             .foregroundStyle(style.primaryText)
             .focused($noteFieldFocused)
             .onChange(of: dailyNoteText) { _, newValue in saveDailyNote(newValue) }

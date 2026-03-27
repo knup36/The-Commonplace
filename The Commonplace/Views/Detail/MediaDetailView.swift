@@ -59,8 +59,8 @@ struct MediaDetailView: View {
             }
         }
         .background(entry.type.cardColor.ignoresSafeArea())
-        .navigationTitle(isPopulated ? (entry.mediaTitle ?? "Media") : "New Media Entry")
-        .navigationBarTitleDisplayMode(.inline)
+        .keyboardAvoiding()
+        .navigationTitle(isPopulated ? (entry.mediaTitle ?? "Media") : "New Media Entry")        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack {
@@ -489,16 +489,15 @@ struct MediaDetailView: View {
                 .foregroundStyle(style.secondaryText)
                 .padding(.horizontal, 20)
             
-            AutoResizingTextEditor(
+            CommonplaceTextEditor(
                 text: Binding(
                     get: { entry.text },
                     set: { entry.text = $0; try? modelContext.save() }
                 ),
                 placeholder: "Add notes about this title...",
-                font: style.usesSerifFonts ? .system(.body, design: .serif) : .body
+                usesSerifFont: style.usesSerifFonts
             )
-            .padding(.horizontal, 20)
-        }
+            .padding(.horizontal, 20)        }
     }
     
     // MARK: - Log Section
@@ -523,10 +522,10 @@ struct MediaDetailView: View {
             // New log entry input
             if showingLogInput {
                 VStack(spacing: 8) {
-                    AutoResizingTextEditor(
+                    CommonplaceTextEditor(
                         text: $newLogText,
                         placeholder: "What are you thinking?",
-                        font: style.usesSerifFonts ? .system(.body, design: .serif) : .body
+                        usesSerifFont: style.usesSerifFonts
                     )
                     .padding(.horizontal, 20)
                     
