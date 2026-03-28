@@ -16,6 +16,7 @@ struct EntryDetailView: View {
     
     @State private var isEditing = false
     @State private var editText = ""
+    @State private var showingDeleteConfirmation = false
     @FocusState private var textFieldFocused: Bool
     
     var style: any AppThemeStyle { themeManager.style }
@@ -52,16 +53,26 @@ struct EntryDetailView: View {
                         .bold()
                         .foregroundStyle(style.accent)
                     }
-                    Button {
-                        withAnimation { entry.isPinned.toggle() }
+                    Menu {
+                        Button {
+                            withAnimation { entry.isPinned.toggle() }
+                        } label: {
+                            Label(entry.isPinned ? "Unbookmark" : "Bookmark",
+                                  systemImage: entry.isPinned ? "bookmark.slash.fill" : "bookmark.fill")
+                        }
+                        Divider()
+                        Button(role: .destructive) {
+                            showingDeleteConfirmation = true
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
                     } label: {
-                        Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
+                        Image(systemName: "ellipsis.circle")
                             .foregroundStyle(style.accent)
                     }
                 }
             }
-        }
-        .onAppear {
+        }        .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 if entry.type == .text && entry.text.isEmpty {
                     editText = entry.text
@@ -72,6 +83,13 @@ struct EntryDetailView: View {
         }
         .onDisappear {
             SearchIndex.shared.index(entry: entry)
+        }
+        .confirmationDialog("Delete this entry?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                modelContext.delete(entry)
+                dismiss()
+            }
+            Button("Cancel", role: .cancel) {}
         }
     }
     

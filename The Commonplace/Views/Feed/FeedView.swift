@@ -13,8 +13,6 @@ struct FeedView: View {
     @Query(sort: \Entry.createdAt, order: .reverse) var entries: [Entry]
     @Environment(\.modelContext) var modelContext
     @StateObject private var locationManager = LocationManager()
-    @State private var searchText = ""
-    @State private var isSearching = false
     @State private var showingAddEntry = false
     @State private var showingTemplatePicker = false
     @State private var navigationPath = NavigationPath()
@@ -24,8 +22,7 @@ struct FeedView: View {
     @State private var filteredEntries: [Entry] = []
     @State private var visibleCount: Int = 50
     @EnvironmentObject var themeManager: ThemeManager
-    @FocusState private var searchFocused: Bool
-
+    
     let addTypes: [(type: EntryType, label: String, icon: String, color: Color)] = [
         (.text,     "Note",   "text.alignleft",    .gray),
         (.photo,    "Photo",  "camera.fill",        .pink),
@@ -36,65 +33,36 @@ struct FeedView: View {
         (.music,    "Music",  "music.note",         .red),
         (.media, "Media", "film.fill", .red),
     ]
-
+    
     var style: any AppThemeStyle { themeManager.style }
-
+    
     // MARK: - Feed Header
-
+    
     @ViewBuilder
     var feedHeader: some View {
-        if !isSearching && style.usesSerifFonts {
+        if style.usesSerifFonts {
             Text("Feed")
                 .font(.system(size: 34, weight: .bold, design: .serif))
                 .foregroundStyle(style.primaryText)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.leading, 8)
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
+                .padding(.leading, 24)
+                .padding(.top, 8)
                 .id("feed-title")
         }
     }
-
+    
     // MARK: - Entry Rows
-
+    
     @ViewBuilder
     var entryRows: some View {
         ForEach(filteredEntries) { entry in
-            ZStack {
-                NavigationLink(destination: destinationView(for: entry)) {
-                    EmptyView()
-                }
-                .opacity(0)
+            NavigationLink(destination: destinationView(for: entry)) {
                 EntryRowView(entry: entry)
             }
-            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-            .listRowSeparator(.hidden)
-            .listRowBackground(Color.clear)
-            .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                Button {
-                    withAnimation { entry.isPinned.toggle() }
-                } label: {
-                    Label(entry.isPinned ? "Unbookmark" : "Bookmark",
-                          systemImage: entry.isPinned ? "bookmark.slash.fill" : "bookmark.fill")
-                }
-                .tint(.orange)
-            }
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                Button(role: .destructive) {
-                    if let previous = deletedEntry {
-                        SearchIndex.shared.remove(entryID: previous.id)
-                        modelContext.delete(previous)
-                    }
-                    deletedEntry = entry
-                    showingUndoToast = true
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 4)
         }
-        .onDelete(perform: deleteEntries)
-        // Load More button — only shown when more entries exist beyond visibleCount
         let totalCount = entries.filter { $0.id != deletedEntry?.id }.count
         if visibleCount < totalCount {
             Button {
@@ -109,12 +77,10 @@ struct FeedView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
             }
-            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-            .listRowSeparator(.hidden)
-            .listRowBackground(Color.clear)
+            .padding(.horizontal, 16)
         }
     }
-
+    
     // MARK: - Body
     
     var filterButton: some View {
@@ -145,81 +111,41 @@ struct FeedView: View {
             }
         }
     }
-
+    
     var body: some View {
         ZStack(alignment: .bottom) {
             NavigationStack(path: $navigationPath) {
-                List {
-                    feedHeader
-                    entryRows
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        feedHeader
+                        entryRows
+                    }
                 }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
                 .background(style.background)
                 .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        if isSearching {
-                            HStack {
-                                Image(systemName: "magnifyingglass")
-                                    .foregroundStyle(.secondary)
-                                TextField("Search entries...", text: $searchText)
-                                    .focused($searchFocused)
-                                    .autocorrectionDisabled()
-                            }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Color(uiColor: .systemGray6))
-                            .clipShape(Capsule())
-                            .frame(width: 260)
-                        }
-                    }
                     ToolbarItem(placement: .navigationBarTrailing) {
                         HStack(spacing: 16) {
-                            if !showingAddEntry && !isSearching {
+                            if !showingAddEntry {
                                 filterButton
                             }
-                            if !showingAddEntry {
-                                Button {
-                                    withAnimation(.spring(response: 0.3)) {
-                                        isSearching.toggle()
-                                        if isSearching {
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                                searchFocused = true
-                                            }
-                                        } else {
-                                            searchText = ""
-                                            searchFocused = false
-                                            UIApplication.shared.sendAction(
-                                                #selector(UIResponder.resignFirstResponder),
-                                                to: nil, from: nil, for: nil
-                                            )
-                                        }
-                                    }
-                                } label: {
-                                    Image(systemName: isSearching ? "xmark.circle.fill" : "magnifyingglass")
-                                        .foregroundStyle(isSearching ? style.secondaryText : style.accent)
+                            Button {
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                                    showingAddEntry.toggle()
                                 }
+                            } label: {
+                                Image(systemName: "plus")
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(style.accent)
+                                    .rotationEffect(.degrees(showingAddEntry ? 45 : 0))
+                                    .animation(.spring(response: 0.4, dampingFraction: 0.65), value: showingAddEntry)
                             }
-                            if !isSearching {
-                                Button {
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                                        showingAddEntry.toggle()
-                                    }
-                                } label: {
-                                    Image(systemName: "plus")
-                                        .fontWeight(.medium)
-                                        .foregroundStyle(style.accent)
-                                        .rotationEffect(.degrees(showingAddEntry ? 45 : 0))
-                                        .animation(.spring(response: 0.4, dampingFraction: 0.65), value: showingAddEntry)
+                            .simultaneousGesture(
+                                LongPressGesture(minimumDuration: 0.5).onEnded { _ in
+                                    showingTemplatePicker = true
                                 }
-                                .simultaneousGesture(
-                                    LongPressGesture(minimumDuration: 0.5).onEnded { _ in
-                                        showingTemplatePicker = true
-                                    }
-                                )
-                            }
+                            )
                         }
                     }
                 }
@@ -265,11 +191,10 @@ struct FeedView: View {
                     updateFilter()
                 }
                 .onChange(of: entries) { _, _ in updateFilter() }
-                .onChange(of: searchText) { _, _ in visibleCount = 50; updateFilter() }
                 .onChange(of: filterType) { _, _ in visibleCount = 50; updateFilter() }
                 .onChange(of: deletedEntry) { _, _ in updateFilter() }
             }
-
+            
             // Undo toast
             if showingUndoToast, let entry = deletedEntry {
                 UndoToast(
@@ -295,9 +220,9 @@ struct FeedView: View {
             }
         }
     }
-
+    
     // MARK: - Add Entry Card
-
+    
     var addEntryCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("New Entry")
@@ -332,9 +257,9 @@ struct FeedView: View {
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 16)
     }
-
+    
     // MARK: - Entry Type Grid
-
+    
     var entryTypeGrid: some View {
         LazyVGrid(
             columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3),
@@ -355,9 +280,9 @@ struct FeedView: View {
             }
         }
     }
-
+    
     // MARK: - Entry Type Button
-
+    
     func entryTypeButton(item: (type: EntryType, label: String, icon: String, color: Color)) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12)
@@ -399,9 +324,9 @@ struct FeedView: View {
             }
         }
     }
-
+    
     // MARK: - Template Button
-
+    
     var templateButton: some View {
         Button {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
@@ -446,18 +371,12 @@ struct FeedView: View {
         navigationPath.append(entry)
     }
     
-    func deleteEntries(at offsets: IndexSet) {
-        for index in offsets {
-            SearchIndex.shared.remove(entryID: filteredEntries[index].id)
-            modelContext.delete(filteredEntries[index])
-        }
-    }
     func updateFilter() {
-        var base = searchText.isEmpty ? entries : entries.filter { entryMatchesSearch($0, searchText: searchText) }
-        if let filterType {
-            base = base.filter { $0.type == filterType }
+            var base = entries
+            if let filterType {
+                base = base.filter { $0.type == filterType }
+            }
+            base = base.filter { $0.id != deletedEntry?.id }
+            filteredEntries = Array(base.prefix(visibleCount))
         }
-        base = base.filter { $0.id != deletedEntry?.id }
-        filteredEntries = Array(base.prefix(visibleCount))
-    }
 }
