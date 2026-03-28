@@ -23,6 +23,7 @@ struct LibraryView: View {
     @State private var currentSort: CollectionSort = .custom
     @State private var currentTagSort: TagSort = .name
     @State private var collectionToEdit: Collection? = nil
+    @State private var reorderedCollections: [Collection] = []
     
     var style: any AppThemeStyle { themeManager.style }
     
@@ -43,7 +44,7 @@ struct LibraryView: View {
     var displayedCollections: [Collection] {
         switch currentSort {
         case .custom:
-            return allCollections.sorted { $0.order < $1.order }
+            return reorderedCollections
         case .name:
             return allCollections.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         case .entryCount:
@@ -184,14 +185,17 @@ struct LibraryView: View {
                         }
                         .onMove { from, to in
                             guard currentSort == .custom else { return }
-                            guard editMode?.wrappedValue.isEditing == true else { return }
-                            var reordered = displayedCollections
+                            var reordered = reorderedCollections.isEmpty
+                                ? allCollections.sorted { $0.order < $1.order }
+                                : reorderedCollections
                             reordered.move(fromOffsets: from, toOffset: to)
                             for (index, collection) in reordered.enumerated() {
                                 if !collection.isSystem {
                                     collection.order = index
                                 }
                             }
+                            reorderedCollections = reordered
+                            try? modelContext.save()
                         }
                     }
                     
@@ -276,6 +280,24 @@ struct LibraryView: View {
                 }
             }
             .listStyle(.plain)
+            .onAppear {
+                let sorted = allCollections.sorted { $0.order < $1.order }
+                // Fix collections that all have order 0
+                let needsInit = sorted.allSatisfy { $0.order == 0 }
+                if needsInit {
+                    for (index, collection) in sorted.enumerated() {
+                        collection.order = index
+                    }
+                    try? modelContext.save()
+                }
+                reorderedCollections = allCollections.sorted { $0.order < $1.order }
+            }
+            .onChange(of: allCollections) {
+                print("allCollections changed, reorderedCollections.isEmpty: \(reorderedCollections.isEmpty)")
+                if reorderedCollections.isEmpty {
+                    reorderedCollections = allCollections.sorted { $0.order < $1.order }
+                }
+            }
             .scrollContentBackground(.hidden)
             .background(style.background.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
