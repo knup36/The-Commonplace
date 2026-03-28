@@ -21,6 +21,20 @@ struct ReleaseNotesView: View {
 
     let releases: [Release] = [
         Release(
+            version: "1.7.1",
+            title: "The Wolf, The Fixer",
+            notes: [
+                "Typing in Inkwell theme now correctly shows the serif font in real time",
+                "Keyboard no longer covers text fields — content stays comfortably visible while typing",
+                "Home tab redesigned as a bookmarks dashboard — Collections, Entries, People, and Tags each get their own section",
+                "Favorites retired — everything is now a Bookmark for simplicity",
+                "Person detail page redesigned with centered avatar, gold ring, and elegant formal layout",
+                "Profile photos can now be cropped when setting a person's avatar",
+                "Media detail view now shows proper rectangular movie and TV posters",
+                "Sticky entries improved — new items animate in at the top, title field jumps straight to Add Item, return key clears correctly"
+            ]
+        ),
+        Release(
             version: "1.7",
             title: "Power to the People",
             notes: [

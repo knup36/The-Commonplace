@@ -8,14 +8,14 @@ import SwiftUI
 struct ContentView: View {
     @State private var selectedTab = 1
     @State private var previousTab = 0
-
+    
     @Environment(\.modelContext) var modelContext
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     init() {
         let navBarAppearance = UINavigationBarAppearance()
         navBarAppearance.configureWithDefaultBackground()
-
+        
         if let roundedDescriptor = UIFontDescriptor
             .preferredFontDescriptor(withTextStyle: .largeTitle)
             .withDesign(.rounded)?
@@ -35,7 +35,7 @@ struct ContentView: View {
         UINavigationBar.appearance().standardAppearance = navBarAppearance
         UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
     }
-
+    
     var body: some View {
         TabView(selection: $selectedTab) {
             HomeDashboardView()
@@ -43,25 +43,25 @@ struct ContentView: View {
                     Label("Home", systemImage: "house.fill")
                 }
                 .tag(0)
-
+            
             FeedView()
                 .tabItem {
                     Label("Feed", systemImage: "rectangle.stack.fill")
                 }
                 .tag(1)
-
+            
             SearchView()
                 .tabItem {
                     Label("Search", systemImage: "magnifyingglass")
                 }
                 .tag(2)
-
+            
             LibraryView()
                 .tabItem {
                     Label("Library", systemImage: "books.vertical.fill")
                 }
                 .tag(3)
-
+            
             TodayView()
                 .tabItem {
                     Label("Today", systemImage: "sun.max.fill")
@@ -70,6 +70,9 @@ struct ContentView: View {
         }
         .onChange(of: selectedTab) { old, new in
             previousTab = old
+            if old == 2 {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            }
         }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {

@@ -73,22 +73,31 @@ struct StickyDetailView: View {
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                if newItemFocused || isEditingTitle || focusedItemID != nil {                    Button("Done") {
-                    if isEditingTitle {
-                        entry.stickyTitle = editTitle.isEmpty ? nil : editTitle
-                        isEditingTitle = false
+                HStack {
+                    Button {
+                        withAnimation { entry.isPinned.toggle() }
+                    } label: {
+                        Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
+                            .foregroundStyle(accentColor)
                     }
-                    if newItemFocused {
-                        addItem()
+                    if newItemFocused || isEditingTitle || focusedItemID != nil {
+                        Button("Done") {
+                            if isEditingTitle {
+                                entry.stickyTitle = editTitle.isEmpty ? nil : editTitle
+                                isEditingTitle = false
+                            }
+                            if newItemFocused {
+                                addItem()
+                            }
+                            if focusedItemID != nil {
+                                saveEditingItem()
+                                focusedItemID = nil
+                            }
+                            newItemFocused = false
+                        }
+                        .bold()
+                        .foregroundStyle(style.accent)
                     }
-                    if focusedItemID != nil {
-                        saveEditingItem()
-                        focusedItemID = nil
-                    }
-                    newItemFocused = false
-                }
-                .bold()
-                .foregroundStyle(style.accent)
                 }
             }
         }

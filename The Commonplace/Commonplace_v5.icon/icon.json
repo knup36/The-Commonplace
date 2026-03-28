@@ -1,0 +1,94 @@
+{
+  "fill" : {
+    "automatic-gradient" : "extended-srgb:0.00000,0.47843,1.00000,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "image-name" : "Bookmark 7.svg",
+          "name" : "Bookmark 7",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              133.4335259050638,
+              392.21484375
+            ]
+          }
+        },
+        {
+          "image-name" : "Label 7.svg",
+          "name" : "Label 7",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              -13.768388905063716,
+              -188.8203125
+            ]
+          }
+        },
+        {
+          "image-name" : "Band 7.svg",
+          "name" : "Band 7",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              183.3984375,
+              -42.08872600371467
+            ]
+          }
+        },
+        {
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : {
+                "linear-gradient" : [
+                  "display-p3:0.28470,0.56343,0.29036,1.00000",
+                  "display-p3:0.35234,0.69731,0.35935,1.00000"
+                ],
+                "orientation" : {
+                  "start" : {
+                    "x" : 0.8277369619205298,
+                    "y" : 0.6214432061887255
+                  },
+                  "stop" : {
+                    "x" : 0.3019777007450331,
+                    "y" : 0.5
+                  }
+                }
+              }
+            }
+          ],
+          "image-name" : "Book Front.svg",
+          "name" : "Book Front",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              16,
+              -31
+            ]
+          }
+        },
+        {
+          "image-name" : "Book 7.svg",
+          "name" : "Book 7"
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}
