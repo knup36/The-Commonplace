@@ -89,11 +89,17 @@ struct CommonplaceApp: App {
             SearchIndex.shared.backfillIfNeeded(entries: entries)
             TagMigrationService.migrateIfNeeded(context: context)
             PersonMigrationService.migrateIfNeeded(context: context)
+            ShareExtensionIngestor.ingestPendingEntries(context: context)
+            Task.detached {
+                await HealthKitBackfillService.shared.backfillIfNeeded(
+                    entries: entries,
+                    context: context
+                )
+            }
         } catch {
             print("Backfill fetch failed: \(error)")
         }
-    }
-}
+    }}
 
 // MARK: - Shake gesture support
 extension UIWindow {

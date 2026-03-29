@@ -46,6 +46,18 @@ struct JournalMetadataSection: View {
                     }
                 }
 
+                if entry.healthDataFetched {
+                    ActivityRingsView(
+                        activeCalories: entry.healthActiveCalories ?? 0,
+                        exerciseMinutes: entry.healthExerciseMinutes ?? 0,
+                        standHours: entry.healthStandHours ?? 0,
+                        workoutName: entry.healthWorkoutName,
+                        workoutDuration: entry.healthWorkoutDuration,
+                        workoutCalories: entry.healthWorkoutCalories,
+                        style: style
+                    )
+                }
+
                 if !entry.completedHabitSnapshots.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Habits")
