@@ -23,22 +23,18 @@ struct TagFeedView: View {
     }
 
     var body: some View {
-        List {
-            ForEach(filteredEntries) { entry in
-                ZStack {
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(filteredEntries) { entry in
                     NavigationLink(destination: destinationView(for: entry)) {
-                        EmptyView()
+                        EntryRowView(entry: entry)
                     }
-                    .opacity(0)
-                    EntryRowView(entry: entry)
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 4)
                 }
-                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
             }
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
         .background(style.background)
         .navigationTitle(style.usesSerifFonts ? "" : tag)
         .navigationBarTitleDisplayMode(style.usesSerifFonts ? .inline : .large)
