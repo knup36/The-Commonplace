@@ -67,6 +67,8 @@ struct TodayView: View {
                             )
                         }
                         JournalBlockView()
+                        MoodTimelineView(entries: entries)
+                            .padding(.horizontal)
                         capturedTodayBlock
                         emptyTodayBlock
                     }
