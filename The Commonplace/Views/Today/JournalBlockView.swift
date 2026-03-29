@@ -39,8 +39,7 @@ struct JournalBlockView: View {
         Date().formatted(.dateTime.weekday(.wide).month(.wide).day())
     }
     
-    let weatherOptions = ["☀️", "🌤️", "⛅", "🌧️", "⛈️", "🌨️", "🌫️", "🌈"]
-    let moodOptions = ["🤩", "😊", "😐", "😔", "😤", "😴", "🥲", "😌"]
+    let weatherOptions = ["☀️", "🌤️", "⛅", "🌧️", "⛈️", "🌨️", "🌫️", "🌬️", "🌈"]
     
     // MARK: - Body
     
@@ -50,8 +49,7 @@ struct JournalBlockView: View {
             Divider().overlay(journalDivider)
             emojiPickerRow(label: "Weather", icon: "cloud.sun.fill", options: weatherOptions,
                            selected: todayEntry?.weatherEmoji ?? "", onSelect: { setWeather($0) })
-            emojiPickerRow(label: "Mood", icon: "face.smiling", options: moodOptions,
-                           selected: todayEntry?.moodEmoji ?? "", onSelect: { setMood($0) })
+            moodPickerRow
             Divider().overlay(journalDivider)
             vibeBlock
             Divider().overlay(journalDivider)
@@ -134,6 +132,58 @@ struct JournalBlockView: View {
                     )
                 )
                 .presentationDetents([.medium])
+            }
+        }
+        
+    }
+    var moodPickerRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: "face.smiling")
+                    .foregroundStyle(style.secondaryText)
+                if let moodEmoji = todayEntry?.moodEmoji, !moodEmoji.isEmpty,
+                   let label = MoodOption.label(for: moodEmoji) {
+                    Text("Mood: \(label) \(moodEmoji)")
+                        .font(.subheadline).fontWeight(.medium)
+                        .foregroundStyle(style.secondaryText)
+                    Button {
+                        todayEntry?.moodEmoji = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(style.tertiaryText)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Text("Mood")
+                        .font(.subheadline).fontWeight(.medium)
+                        .foregroundStyle(style.secondaryText)
+                }
+            }
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 9),
+                spacing: 4
+            ) {
+                ForEach(MoodOption.all, id: \.emoji) { mood in
+                    Text(mood.emoji)
+                        .font(.title2)
+                        .padding(4)
+                        .background(
+                            todayEntry?.moodEmoji == mood.emoji
+                            ? journalAccent.opacity(0.2)
+                            : Color.clear
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay(
+                            todayEntry?.moodEmoji == mood.emoji && style.usesSerifFonts
+                            ? RoundedRectangle(cornerRadius: 8)
+                                .strokeBorder(journalAccent.opacity(0.4), lineWidth: 0.5)
+                            : nil
+                        )
+                        .onTapGesture {
+                            setMood(todayEntry?.moodEmoji == mood.emoji ? "" : mood.emoji)
+                        }
+                }
             }
         }
     }
