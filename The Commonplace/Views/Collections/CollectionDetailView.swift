@@ -9,19 +9,19 @@ struct CollectionDetailView: View {
     @Query var entries: [Entry]
     @EnvironmentObject var themeManager: ThemeManager
     @State private var searchText = ""
-
+    
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color {
         InkwellTheme.collectionAccentColor(for: collection.colorHex)
     }
-
+    
     var hasNonTypeFilters: Bool {
         !collection.filterTags.isEmpty ||
         collection.filterSearchText != nil ||
         collection.filterLocationName != nil ||
         (DateFilterRange(rawValue: collection.filterDateRange) ?? .allTime) != .allTime
     }
-
+    
     var filteredEntries: [Entry] {
         let matched = entries
             .filter { collectionMatches(entry: $0, collection: collection) }
@@ -29,36 +29,34 @@ struct CollectionDetailView: View {
         if searchText.isEmpty { return matched }
         return matched.filter { entryMatchesSearch($0, searchText: searchText) }
     }
-
+    
     var body: some View {
-        List {
-            collectionHeader
-            if filteredEntries.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
-                        .font(.system(size: 40))
-                        .foregroundStyle(style.tertiaryText)
-                    Text("Nothing matches these filters")
-                        .font(style.subheadline)
-                        .foregroundStyle(style.tertiaryText)
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                collectionHeader
+                if filteredEntries.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                            .font(.system(size: 40))
+                            .foregroundStyle(style.tertiaryText)
+                        Text("Nothing matches these filters")
+                            .font(style.subheadline)
+                            .foregroundStyle(style.tertiaryText)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 60)
+                } else {
+                    entryRows
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.top, 60)
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-            } else {
-                entryRows
             }
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
         .background(style.background)
         .searchable(text: $searchText, prompt: "Search collection...")
         .navigationBarTitleDisplayMode(.inline)
     }
-
+    
     // MARK: - Sub-views
-
+    
     var collectionHeader: some View {
         HStack(spacing: 12) {
             ZStack {
@@ -78,36 +76,35 @@ struct CollectionDetailView: View {
                     .font(.title2)
                     .foregroundStyle(accentColor)
             }
-
+            
             VStack(alignment: .leading, spacing: 4) {
                 Text(collection.name)
                     .font(style.title)
                     .fontWeight(.bold)
                     .foregroundStyle(style.primaryText)
-
+                
                 if hasNonTypeFilters {
                     filterChips
                 }
             }
-
+            
             Spacer()
-
+            
             Text("\(filteredEntries.count)")
                 .font(.title)
                 .fontWeight(.bold)
                 .foregroundStyle(accentColor)
         }
-        .padding(.vertical, 4)
-        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 16, trailing: 16))
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 16)
     }
-
+    
     var filterChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
                 filterChip(icon: nil, label: "Collection")
-
+                
                 if !collection.filterTypes.isEmpty {
                     ForEach(collection.filterTypes, id: \.self) { type in
                         filterChip(icon: EntryType(rawValue: type)?.icon, label: type.capitalized)
@@ -133,7 +130,7 @@ struct CollectionDetailView: View {
             }
         }
     }
-
+    
     func filterChip(icon: String?, label: String) -> some View {
         HStack(spacing: 3) {
             if let icon {
@@ -143,20 +140,16 @@ struct CollectionDetailView: View {
         }
         .foregroundStyle(style.secondaryText)
     }
-
+    
     @ViewBuilder
     var entryRows: some View {
         ForEach(filteredEntries) { entry in
-            ZStack {
-                NavigationLink(destination: destinationView(for: entry)) {
-                    EmptyView()
-                }
-                .opacity(0)
+            NavigationLink(destination: destinationView(for: entry)) {
                 EntryRowView(entry: entry)
             }
-            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-            .listRowSeparator(.hidden)
-            .listRowBackground(Color.clear)
+            .buttonStyle(.plain)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 4)
         }
     }
 }
