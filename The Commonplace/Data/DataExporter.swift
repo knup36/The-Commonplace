@@ -43,6 +43,7 @@ class DataExporter {
         var text: String
         var tags: [String]
         var isFavorited: Bool
+        var isPinned: Bool
         var imageFile: String?
         var extractedText: String?
         var visionTags: [String]
@@ -78,6 +79,16 @@ class DataExporter {
         var totalHabitsAtTime: Int?
         var journalImageFile: String?
         var vibeEmoji: String?
+        // HealthKit fields
+        var healthActiveCalories: Double?
+        var healthExerciseMinutes: Double?
+        var healthStandHours: Double?
+        var healthWorkoutName: String?
+        var healthWorkoutDuration: Int?
+        var healthWorkoutCalories: Double?
+        var healthDataFetched: Bool?
+        // Journal image path (replaces journalImageData blob)
+        var journalImagePath: String?
         // Media fields (v1.5)
         var mediaTitle: String?
         var mediaType: String?
@@ -232,6 +243,7 @@ class DataExporter {
                 text: entry.text,
                 tags: entry.tagNames,
                 isFavorited: entry.isFavorited,
+                isPinned: entry.isPinned,
                 imageFile: nil,
                 extractedText: entry.extractedText,
                 visionTags: entry.visionTags,
@@ -266,6 +278,13 @@ class DataExporter {
                 totalHabitsAtTime: entry.type == .journal ? entry.totalHabitsAtTime : nil,
                 journalImageFile: nil,
                 vibeEmoji: entry.type == .journal ? entry.vibeEmoji : nil,
+                healthActiveCalories: entry.healthActiveCalories,
+                healthExerciseMinutes: entry.healthExerciseMinutes,
+                healthStandHours: entry.healthStandHours,
+                healthWorkoutName: entry.healthWorkoutName,
+                healthWorkoutDuration: entry.healthWorkoutDuration,
+                healthWorkoutCalories: entry.healthWorkoutCalories,
+                healthDataFetched: entry.healthDataFetched,
                 // Media fields
                 mediaTitle: entry.mediaTitle,
                 mediaType: entry.mediaType,
@@ -317,9 +336,10 @@ class DataExporter {
                 dto.musicArtworkFile = filename
                 mediaFileCount += 1
             }
-            if entry.type == .journal, let imageData = entry.journalImageData {
+            if entry.type == .journal, let path = entry.journalImagePath,
+               let data = MediaFileManager.load(path: path) {
                 let filename = "entry_\(entry.id.uuidString)_journal.jpg"
-                try imageData.write(to: mediaDir.appendingPathComponent(filename))
+                try data.write(to: mediaDir.appendingPathComponent(filename))
                 dto.journalImageFile = filename
                 mediaFileCount += 1
             }
@@ -416,7 +436,8 @@ class DataExporter {
             entry.previewImagePath,
             entry.faviconPath,
             entry.musicArtworkPath,
-            entry.mediaCoverPath
+            entry.mediaCoverPath,
+            entry.journalImagePath
         ].compactMap { $0 }
         // Note: journalImageData is stored in SwiftData directly, not as a file path,
         // so it is always available and does not need an iCloud download check

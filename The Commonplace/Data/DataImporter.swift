@@ -91,6 +91,7 @@ class DataImporter {
             entry.id = UUID(uuidString: dto.id) ?? UUID()
             entry.createdAt = dto.createdAt
             entry.isFavorited = dto.isFavorited
+            entry.isPinned = dto.isPinned
             entry.extractedText = dto.extractedText
             entry.visionTags = dto.visionTags
             entry.transcript = dto.transcript
@@ -114,6 +115,15 @@ class DataImporter {
             entry.previewURL = dto.previewURL
             entry.tagNames = dto.tags
             entry.musicTrackID = dto.musicTrackID
+            
+            // HealthKit fields
+            entry.healthActiveCalories = dto.healthActiveCalories
+            entry.healthExerciseMinutes = dto.healthExerciseMinutes
+            entry.healthStandHours = dto.healthStandHours
+            entry.healthWorkoutName = dto.healthWorkoutName
+            entry.healthWorkoutDuration = dto.healthWorkoutDuration
+            entry.healthWorkoutCalories = dto.healthWorkoutCalories
+            entry.healthDataFetched = dto.healthDataFetched ?? false
 
             // Journal fields
             if type == .journal {
@@ -163,7 +173,11 @@ class DataImporter {
             }
             if let filename = dto.journalImageFile,
                let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
-                entry.journalImageData = data
+                entry.journalImagePath = try? MediaFileManager.save(
+                    data,
+                    type: .journal,
+                    id: entry.id.uuidString
+                )
             }
             if let filename = dto.mediaCoverFile,
                let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
