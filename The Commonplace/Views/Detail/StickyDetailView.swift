@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import MapKit
 
 // MARK: - StickyDetailView
@@ -20,6 +21,7 @@ struct StickyDetailView: View {
     @State private var editingItemText: String = ""
     @State private var sortedChecked: Set<String> = []
     @State private var addItemEditorID = UUID()
+    @State private var showingDeleteConfirmation = false
     @FocusState private var newItemFocused: Bool
     @FocusState private var titleFocused: Bool
     @FocusState private var focusedItemID: String?
@@ -73,13 +75,7 @@ struct StickyDetailView: View {
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack {
-                    Button {
-                        withAnimation { entry.isPinned.toggle() }
-                    } label: {
-                        Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
-                            .foregroundStyle(accentColor)
-                    }
+                HStack(spacing: 20) {
                     if newItemFocused || isEditingTitle || focusedItemID != nil {
                         Button("Done") {
                             if isEditingTitle {
@@ -98,8 +94,31 @@ struct StickyDetailView: View {
                         .bold()
                         .foregroundStyle(style.accent)
                     }
+                    Menu {
+                        Button(role: .destructive) {
+                            showingDeleteConfirmation = true
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .foregroundStyle(accentColor)
+                    }
+                    Button {
+                        withAnimation { entry.isPinned.toggle() }
+                    } label: {
+                        Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
+                            .foregroundStyle(accentColor)
+                    }
                 }
             }
+        }
+        .confirmationDialog("Delete this entry?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                modelContext.delete(entry)
+                dismiss()
+            }
+            Button("Cancel", role: .cancel) {}
         }
     }
     
