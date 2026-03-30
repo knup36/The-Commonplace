@@ -22,7 +22,11 @@ struct HomeDashboardView: View {
     @Query var allCollections: [Collection]
     @Query(sort: \Entry.createdAt, order: .reverse) var allEntries: [Entry]
     @Query var allTags: [Tag]
-    @Query(sort: \Person.name) var allPersons: [Person]
+    @Query var allTags_persons: [Tag]
+
+    var allPersons: [Tag] {
+        allTags_persons.filter { $0.isPerson }.sorted { $0.name < $1.name }
+    }
     @EnvironmentObject var themeManager: ThemeManager
     
     var style: any AppThemeStyle { themeManager.style }
@@ -44,7 +48,7 @@ struct HomeDashboardView: View {
         allEntries.filter { $0.isPinned }
     }
     
-    var pinnedPersons: [Person] {
+    var pinnedPersons: [Tag] {
         allPersons.filter { $0.isPinned }
     }
     
@@ -56,7 +60,7 @@ struct HomeDashboardView: View {
     
     var hasAnything: Bool {
         !pinnedCollections.isEmpty || !pinnedEntries.isEmpty ||
-        !pinnedPersons.isEmpty || !pinnedTags.isEmpty
+        !pinnedPersons.isEmpty || !pinnedTags.filter { !$0.isPerson }.isEmpty
     }
     
     func entryCount(for collection: Collection) -> Int {
@@ -67,8 +71,8 @@ struct HomeDashboardView: View {
         allEntries.filter { $0.tagNames.contains(tag.name) }.count
     }
     
-    func entryCount(for person: Person) -> Int {
-        allEntries.filter { $0.tagNames.contains(person.tagString) }.count
+    func entryCountForPerson(_ person: Tag) -> Int {
+        allEntries.filter { $0.tagNames.contains("@\(person.name)") }.count
     }
     
     // MARK: - Body
@@ -181,7 +185,7 @@ struct HomeDashboardView: View {
             .padding(8)
         }
         .frame(width: 100, height: 100)
-        .shadow(color: style.usesSerifFonts ? .black.opacity(0.3) : .clear, radius: 4, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.35), radius: 6, x: 0, y: 3)
     }
     
     // MARK: - Entries Section
@@ -215,7 +219,7 @@ struct HomeDashboardView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHGrid(rows: oneRow, spacing: 16) {
                     ForEach(pinnedPersons.prefix(maxCards)) { person in
-                        NavigationLink(destination: PersonDetailView(person: person)) {
+                        NavigationLink(destination: PersonDetailView(tag: person)) {
                             compactPersonCard(person: person)
                         }
                         .buttonStyle(.plain)
@@ -228,7 +232,7 @@ struct HomeDashboardView: View {
         }
     }
     
-    func compactPersonCard(person: Person) -> some View {
+    func compactPersonCard(person: Tag) -> some View {
         VStack(spacing: 6) {
             // Avatar with gold angular gradient ring
             ZStack {
@@ -263,9 +267,10 @@ struct HomeDashboardView: View {
                 .frame(width: 64)
         }
         .frame(width: 64, height: 80)
+        .shadow(color: .black.opacity(0.3), radius: 5, x: 0, y: 2)
     }
     
-    func personAvatarView(person: Person, size: CGFloat) -> some View {
+    func personAvatarView(person: Tag, size: CGFloat) -> some View {
         Group {
             if let path = person.profilePhotoPath,
                let data = MediaFileManager.load(path: path),
@@ -326,6 +331,7 @@ struct HomeDashboardView: View {
             Capsule()
                 .strokeBorder(style.accent.opacity(0.25), lineWidth: 0.5)
         )
+        .shadow(color: .black.opacity(0.25), radius: 3, x: 0, y: 1)
     }
     
     // MARK: - Section Header

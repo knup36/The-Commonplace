@@ -89,7 +89,11 @@ struct CommonplaceApp: App {
             SearchIndex.shared.backfillIfNeeded(entries: entries)
             TagMigrationService.migrateIfNeeded(context: context)
             PersonMigrationService.migrateIfNeeded(context: context)
+            SubjectMigrationService.shared.migrateIfNeeded(context: context)
+            JournalImageMigrationService.shared.migrateIfNeeded(entries: entries, context: context)
             ShareExtensionIngestor.ingestPendingEntries(context: context)
+            entries.forEach { $0.healthDataFetched = false }
+            try? context.save()
             Task.detached {
                 await HealthKitBackfillService.shared.backfillIfNeeded(
                     entries: entries,

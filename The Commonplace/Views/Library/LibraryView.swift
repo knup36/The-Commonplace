@@ -12,7 +12,11 @@ struct LibraryView: View {
     @Query var allEntries: [Entry]
     @Query var allEntryTags: [Entry]
     @Query var allTagObjects: [Tag]
-    @Query(sort: \Person.name) var allPersons: [Person]
+    @Query var allPersonTags: [Tag]
+
+    var allPersons: [Tag] {
+        allPersonTags.filter { $0.isPerson }.sorted { $0.name < $1.name }
+    }
     @Environment(\.modelContext) var modelContext
     @Environment(\.editMode) var editMode
     @EnvironmentObject var themeManager: ThemeManager
@@ -97,8 +101,8 @@ struct LibraryView: View {
     
     // MARK: - People logic
     
-    func entryCount(for person: Person) -> Int {
-        allEntries.filter { $0.tagNames.contains(person.tagString) }.count
+    func entryCount(for person: Tag) -> Int {
+        allEntries.filter { $0.tagNames.contains("@\(person.name)") }.count
     }
     
     // MARK: - Body
@@ -384,7 +388,7 @@ struct LibraryView: View {
         }
         ForEach(allPersons) { person in
             ZStack {
-                NavigationLink(destination: PersonDetailView(person: person)) {
+                NavigationLink(destination: PersonDetailView(tag: person)) {
                     EmptyView()
                 }
                 .opacity(0)
@@ -438,6 +442,7 @@ struct LibraryView: View {
             .swipeActions(edge: .trailing) {
                 Button(role: .destructive) {
                     modelContext.delete(person)
+                    try? modelContext.save()
                 } label: {
                     Label("Delete", systemImage: "trash")
                 }
@@ -447,7 +452,7 @@ struct LibraryView: View {
     
     // MARK: - Person Avatar
     
-    func personAvatar(person: Person, size: CGFloat) -> some View {
+    func personAvatar(person: Tag, size: CGFloat) -> some View {
         Group {
             if let path = person.profilePhotoPath,
                let data = MediaFileManager.load(path: path),

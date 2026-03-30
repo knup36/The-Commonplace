@@ -1,36 +1,35 @@
 // PersonEditView.swift
 // Commonplace
 //
-// Edit sheet for a Person object.
+// Edit sheet for a Person Subject (Tag with subjectType == "person").
 // Accessible via the Edit button on PersonDetailView.
+//
+// Updated in v1.10.1 — now reads from Tag instead of Person model.
 //
 // Allows editing:
 //   - Profile photo (with crop/zoom via UIImagePickerController)
 //   - Name
 //   - Bio
 //   - Birthdate
-//
-// All changes save immediately to SwiftData.
-// Dismiss via Done button in toolbar.
 
 import SwiftUI
 import SwiftData
 
 struct PersonEditView: View {
-    @Bindable var person: Person
+    @Bindable var tag: Tag
     @Environment(\.modelContext) var modelContext
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var themeManager: ThemeManager
-    
+
     @State private var nameText: String = ""
     @State private var bioText: String = ""
     @State private var showingImagePicker = false
     @State private var selectedImage: UIImage? = nil
     @State private var showingDatePicker = false
-    
+
     var style: any AppThemeStyle { themeManager.style }
     var accent: Color { style.accent }
-    
+
     var body: some View {
         NavigationStack {
             Form {
@@ -59,7 +58,7 @@ struct PersonEditView: View {
                     .padding(.vertical, 8)
                     .listRowBackground(style.usesSerifFonts ? style.surface : nil)
                 }
-                
+
                 // Name
                 Section {
                     TextField("Name", text: $nameText)
@@ -70,7 +69,7 @@ struct PersonEditView: View {
                     Text("Name")
                         .foregroundStyle(style.tertiaryText)
                 }
-                
+
                 // Bio
                 Section {
                     TextField("Add a bio...", text: $bioText, axis: .vertical)
@@ -82,23 +81,23 @@ struct PersonEditView: View {
                     Text("Bio")
                         .foregroundStyle(style.tertiaryText)
                 }
-                
+
                 // Birthday
                 Section {
                     if showingDatePicker {
                         DatePicker(
                             "Birthday",
                             selection: Binding(
-                                get: { person.birthdate ?? Date() },
-                                set: { person.birthdate = $0 }
+                                get: { tag.birthdate ?? Date() },
+                                set: { tag.birthdate = $0 }
                             ),
                             displayedComponents: .date
                         )
                         .datePickerStyle(.graphical)
                         .listRowBackground(style.usesSerifFonts ? style.surface : nil)
-                        
+
                         Button("Remove Birthday") {
-                            person.birthdate = nil
+                            tag.birthdate = nil
                             showingDatePicker = false
                         }
                         .foregroundStyle(.red)
@@ -108,10 +107,10 @@ struct PersonEditView: View {
                             showingDatePicker = true
                         } label: {
                             HStack {
-                                Text(person.birthdate != nil
-                                     ? person.birthdate!.formatted(.dateTime.month(.wide).day().year())
+                                Text(tag.birthdate != nil
+                                     ? tag.birthdate!.formatted(.dateTime.month(.wide).day().year())
                                      : "Add Birthday")
-                                .foregroundStyle(person.birthdate != nil ? style.primaryText : style.tertiaryText)
+                                .foregroundStyle(tag.birthdate != nil ? style.primaryText : style.tertiaryText)
                                 Spacer()
                                 Image(systemName: "chevron.right")
                                     .font(.caption)
@@ -146,8 +145,8 @@ struct PersonEditView: View {
                 }
             }
             .onAppear {
-                nameText = person.name
-                bioText = person.bio ?? ""
+                nameText = tag.name
+                bioText = tag.bio ?? ""
             }
             .sheet(isPresented: $showingImagePicker) {
                 CroppingImagePicker(image: $selectedImage)
@@ -155,32 +154,32 @@ struct PersonEditView: View {
             .onChange(of: selectedImage) { _, newImage in
                 guard let newImage,
                       let processed = ImageProcessor.resizeAndCompress(image: newImage) else { return }
-                person.profilePhotoPath = try? MediaFileManager.save(
+                tag.profilePhotoPath = try? MediaFileManager.save(
                     processed,
                     type: .image,
-                    id: "\(person.id.uuidString)_avatar"
+                    id: "\(tag.name)_avatar"
                 )
                 try? modelContext.save()
             }
         }
     }
-    
+
     // MARK: - Save
-    
+
     func save() {
         let trimmedName = nameText.trimmingCharacters(in: .whitespaces)
         if !trimmedName.isEmpty {
-            person.name = trimmedName
+            tag.name = trimmedName
         }
-        person.bio = bioText.trimmingCharacters(in: .whitespaces).isEmpty ? nil : bioText.trimmingCharacters(in: .whitespaces)
+        tag.bio = bioText.trimmingCharacters(in: .whitespaces).isEmpty ? nil : bioText.trimmingCharacters(in: .whitespaces)
         try? modelContext.save()
     }
-    
+
     // MARK: - Avatar
-    
+
     func avatarView(size: CGFloat) -> some View {
         Group {
-            if let path = person.profilePhotoPath,
+            if let path = tag.profilePhotoPath,
                let data = MediaFileManager.load(path: path),
                let uiImage = UIImage(data: data) {
                 Image(uiImage: uiImage)
@@ -193,7 +192,7 @@ struct PersonEditView: View {
                     .fill(accent.opacity(0.2))
                     .frame(width: size, height: size)
                     .overlay(
-                        Text(String(person.name.prefix(1)).uppercased())
+                        Text(String(tag.name.prefix(1)).uppercased())
                             .font(.system(size: size * 0.4, weight: .semibold))
                             .foregroundStyle(accent)
                     )

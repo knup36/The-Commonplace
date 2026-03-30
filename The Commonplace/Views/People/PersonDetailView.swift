@@ -1,52 +1,45 @@
 // PersonDetailView.swift
 // Commonplace
 //
-// Formal detail view for a Person object.
+// Formal detail view for a Person Subject (Tag with subjectType == "person").
 // Centered avatar with gold border, name, birthday, bio, then entry feed.
-// Everything scrolls together in one unified ScrollView — personal info
-// slides up and off screen naturally as the user scrolls into entries.
+// Everything scrolls together in one unified ScrollView.
 //
-// Layout: ScrollView + LazyVStack (no List — full design control, no background fighting)
-//
-// Editing via PersonEditView sheet, accessible from Edit button in toolbar.
-//
-// People connect to entries via name matching:
-//   entry.tagNames.contains("@" + person.name)
+// Updated in v1.10.1 — now reads from Tag instead of Person model.
+// People connect to entries via @-prefixed name matching:
+//   entry.tagNames.contains("@" + tag.name)
 
 import SwiftUI
 import SwiftData
 
 struct PersonDetailView: View {
-    @Bindable var person: Person
+    @Bindable var tag: Tag
     @Query var allEntries: [Entry]
     @Environment(\.modelContext) var modelContext
     @EnvironmentObject var themeManager: ThemeManager
-    
+
     @State private var showingEditView = false
-    
+
     var style: any AppThemeStyle { themeManager.style }
     var accent: Color { style.accent }
-    
+
     var taggedEntries: [Entry] {
         allEntries
-            .filter { $0.tagNames.contains(person.tagString) }
+            .filter { $0.tagNames.contains("@\(tag.name)") }
             .sorted { $0.createdAt > $1.createdAt }
     }
-    
+
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                // Contact header
                 contactHeader
-                
-                // Divider
+
                 Divider()
                     .overlay(style.usesSerifFonts ? InkwellTheme.cardBorderTop : Color(uiColor: .separator))
                     .opacity(style.usesSerifFonts ? 0.6 : 1)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 12)
-                
-                // Entry count
+
                 if !taggedEntries.isEmpty {
                     Text("\(taggedEntries.count) \(taggedEntries.count == 1 ? "entry" : "entries")")
                         .font(.caption)
@@ -55,14 +48,13 @@ struct PersonDetailView: View {
                         .padding(.horizontal, 16)
                         .padding(.bottom, 8)
                 }
-                
-                // Entry feed
+
                 if taggedEntries.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "tray")
                             .font(.system(size: 36))
                             .foregroundStyle(style.tertiaryText)
-                        Text("No entries with \(person.name) yet")
+                        Text("No entries with \(tag.name) yet")
                             .font(.subheadline)
                             .foregroundStyle(style.tertiaryText)
                     }
@@ -71,11 +63,7 @@ struct PersonDetailView: View {
                     .padding(.bottom, 40)
                 } else {
                     ForEach(taggedEntries) { entry in
-                        ZStack {
-                            NavigationLink(destination: destinationView(for: entry)) {
-                                EmptyView()
-                            }
-                            .opacity(0)
+                        NavigationLink(destination: destinationView(for: entry)) {
                             EntryRowView(entry: entry)
                         }
                         .buttonStyle(.plain)
@@ -98,15 +86,14 @@ struct PersonDetailView: View {
             }
         }
         .sheet(isPresented: $showingEditView) {
-            PersonEditView(person: person)
+            PersonEditView(tag: tag)
         }
     }
-    
+
     // MARK: - Contact Header
-    
+
     var contactHeader: some View {
         VStack(alignment: .center, spacing: 12) {
-            // Avatar with gold border
             ZStack {
                 Circle()
                     .strokeBorder(
@@ -127,22 +114,20 @@ struct PersonDetailView: View {
                         lineWidth: 3.5
                     )
                     .frame(width: 181, height: 181)
-                
+
                 avatarView(size: 175)
             }
             .padding(.top, 32)
             .padding(.bottom, 4)
-            
-            // Name
-            Text(person.name)
+
+            Text(tag.name)
                 .font(style.usesSerifFonts
                       ? .system(.title2, design: .serif)
                       : .title2)
                 .fontWeight(.bold)
                 .foregroundStyle(style.primaryText)
-            
-            // Birthday
-            if let birthdate = person.birthdate {
+
+            if let birthdate = tag.birthdate {
                 HStack(spacing: 5) {
                     Image(systemName: "birthday.cake")
                         .font(.caption)
@@ -152,9 +137,8 @@ struct PersonDetailView: View {
                         .foregroundStyle(style.secondaryText)
                 }
             }
-            
-            // Bio
-            if let bio = person.bio, !bio.isEmpty {
+
+            if let bio = tag.bio, !bio.isEmpty {
                 Text(bio)
                     .font(style.usesSerifFonts
                           ? .system(.body, design: .serif)
@@ -168,12 +152,12 @@ struct PersonDetailView: View {
         .frame(maxWidth: .infinity)
         .padding(.bottom, 24)
     }
-    
+
     // MARK: - Avatar
-    
+
     func avatarView(size: CGFloat) -> some View {
         Group {
-            if let path = person.profilePhotoPath,
+            if let path = tag.profilePhotoPath,
                let data = MediaFileManager.load(path: path),
                let uiImage = UIImage(data: data) {
                 Image(uiImage: uiImage)
@@ -186,7 +170,7 @@ struct PersonDetailView: View {
                     .fill(accent.opacity(0.15))
                     .frame(width: size, height: size)
                     .overlay(
-                        Text(String(person.name.prefix(1)).uppercased())
+                        Text(String(tag.name.prefix(1)).uppercased())
                             .font(.system(size: size * 0.4, weight: .light))
                             .foregroundStyle(accent)
                     )

@@ -21,7 +21,11 @@ import SwiftData
 
 struct SearchView: View {
     @Query var allEntries: [Entry]
-    @Query(sort: \Person.name) var allPersons: [Person]
+    @Query var allPersonTags: [Tag]
+
+    var allPersons: [Tag] {
+        allPersonTags.filter { $0.isPerson }.sorted { $0.name < $1.name }
+    }
     @Query var allTags: [Tag]
     @Query var allCollections: [Collection]
     @EnvironmentObject var themeManager: ThemeManager
@@ -34,7 +38,9 @@ struct SearchView: View {
     
     // Result sets
     @State private var matchingEntries: [Entry] = []
-    @State private var matchingPersons: [Person] = []
+    @State private var taggedEntries: [Entry] = []
+    @State private var mentionedEntries: [Entry] = []
+    @State private var matchingPersons: [Tag] = []
     @State private var matchingTags: [Tag] = []
     @State private var matchingCollections: [Collection] = []
     
@@ -233,7 +239,7 @@ struct SearchView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(matchingPersons.prefix(maxResults)) { person in
-                        NavigationLink(destination: PersonDetailView(person: person)) {
+                        NavigationLink(destination: PersonDetailView(tag: person)) {
                             VStack(spacing: 6) {
                                 ZStack {
                                     Circle()
@@ -352,22 +358,63 @@ struct SearchView: View {
     // MARK: - Entries Results
     
     var entriesResultsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let maxEntries = 10
+        let totalCount = matchingEntries.count
+        let displayTagged = Array(taggedEntries.prefix(maxEntries))
+        let remainingSlots = maxEntries - displayTagged.count
+        let displayMentioned = Array(mentionedEntries.prefix(max(0, remainingSlots)))
+        
+        return VStack(alignment: .leading, spacing: 10) {
             sectionHeader("Entries", icon: "doc.text.fill")
             
-            VStack(spacing: 8) {
-                ForEach(matchingEntries.prefix(maxResults)) { entry in
-                    NavigationLink(destination: destinationView(for: entry)) {
-                        EntryRowView(entry: entry)
+            VStack(spacing: 0) {
+                if !displayTagged.isEmpty {
+                    groupLabel("Tagged")
+                    VStack(spacing: 8) {
+                        ForEach(displayTagged) { entry in
+                            NavigationLink(destination: destinationView(for: entry)) {
+                                EntryRowView(entry: entry)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 16)
+                        }
+                    }
+                    .padding(.bottom, 8)
+                }
+                
+                if !displayMentioned.isEmpty {
+                    groupLabel("Mentioned in entries")
+                    VStack(spacing: 8) {
+                        ForEach(displayMentioned) { entry in
+                            NavigationLink(destination: destinationView(for: entry)) {
+                                EntryRowView(entry: entry)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 16)
+                        }
+                    }
+                    .padding(.bottom, 8)
+                }
+                
+                if totalCount > maxEntries {
+                    NavigationLink(destination: SearchResultsView(query: query, allEntries: allEntries)) {
+                        HStack {
+                            Text("See all \(totalCount) results")
+                                .font(.subheadline)
+                                .foregroundStyle(style.accent)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(style.tertiaryText)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
                     }
                     .buttonStyle(.plain)
-                    .padding(.horizontal, 16)
                 }
             }
-            .padding(.bottom, 8)
         }
     }
-    
     // MARK: - Section Header
     
     func sectionHeader(_ title: String, icon: String) -> some View {
@@ -385,7 +432,7 @@ struct SearchView: View {
     
     // MARK: - Person Avatar
     
-    func personAvatar(person: Person, size: CGFloat) -> some View {
+    func personAvatar(person: Tag, size: CGFloat) -> some View {
         Group {
             if let path = person.profilePhotoPath,
                let data = MediaFileManager.load(path: path),
@@ -430,11 +477,20 @@ struct SearchView: View {
     func runSearch(_ q: String) {
         let lower = q.lowercased()
         
-        // Entries — via FTS index
+        // Entries — via FTS index, split into tagged vs mentioned
         let matchedIDs = SearchIndex.shared.search(query: q)
-        matchingEntries = allEntries
+        let allMatched = allEntries
             .filter { matchedIDs.contains($0.id) }
             .sorted { $0.createdAt > $1.createdAt }
+        
+        // Tagged — entry has the query as a tag or person tag
+        let tagString = "@\(q.lowercased())"
+        taggedEntries = allMatched.filter { entry in
+            entry.tagNames.contains { $0.lowercased() == lower || $0.lowercased() == tagString }
+        }
+        let taggedIDs = Set(taggedEntries.map { $0.id })
+        mentionedEntries = allMatched.filter { !taggedIDs.contains($0.id) }
+        matchingEntries = allMatched
         
         // People — in memory name match
         matchingPersons = allPersons.filter {
@@ -443,7 +499,7 @@ struct SearchView: View {
         
         // Tags — in memory name match (exclude @ person tags)
         matchingTags = allTags.filter {
-            !$0.name.hasPrefix("@") &&
+            !$0.isPerson &&
             $0.name.lowercased().contains(lower)
         }
         
@@ -472,5 +528,23 @@ struct SearchView: View {
     
     func saveRecentSearches() {
         UserDefaults.standard.set(recentSearches, forKey: recentSearchesKey)
+    }
+    
+    
+    // MARK: - Helpers
+    
+    func groupLabel(_ title: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: title.contains("Tagged") ? "person.fill" : "quote.opening")
+                .font(.system(size: 11))
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.medium)
+        }
+        .foregroundStyle(style.secondaryText)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+        .padding(.bottom, 12)
     }
 }
