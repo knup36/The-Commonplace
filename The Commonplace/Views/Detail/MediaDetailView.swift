@@ -23,6 +23,7 @@ import SwiftData
 struct MediaDetailView: View {
     @Bindable var entry: Entry
     @Environment(\.modelContext) var modelContext
+    @Environment(\.dismiss) var dismiss
     @EnvironmentObject var themeManager: ThemeManager
     var style: any AppThemeStyle { themeManager.style }
     
@@ -35,6 +36,7 @@ struct MediaDetailView: View {
     @State private var saveTask: Task<Void, Never>? = nil
     @State private var localRating: Int = 0
     @State private var localStatus: String = "wantTo"
+    @State private var showingDeleteConfirmation = false
     
     // MARK: - Log State
     @State private var newLogText: String = ""
@@ -63,7 +65,17 @@ struct MediaDetailView: View {
         .navigationTitle(isPopulated ? (entry.mediaTitle ?? "Media") : "New Media Entry")        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack {
+                HStack(spacing: 20) {
+                    Menu {
+                        Button(role: .destructive) {
+                            showingDeleteConfirmation = true
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .foregroundStyle(entry.type.accentColor)
+                    }
                     Button {
                         withAnimation { entry.isPinned.toggle() }
                     } label: {
@@ -78,6 +90,13 @@ struct MediaDetailView: View {
             loadCoverImage()
             localRating = entry.mediaRating ?? 0
             localStatus = entry.mediaStatus ?? "wantTo"
+        }
+        .confirmationDialog("Delete this entry?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                modelContext.delete(entry)
+                dismiss()
+            }
+            Button("Cancel", role: .cancel) {}
         }
     }
     

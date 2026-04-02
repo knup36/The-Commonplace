@@ -31,6 +31,9 @@ struct MediaFileManager {
     static var audioURL: URL  { containerURL.appendingPathComponent("media/audio") }
     static var previewsURL: URL { containerURL.appendingPathComponent("media/previews") }
     static var faviconsURL: URL { containerURL.appendingPathComponent("media/favicons") }
+    static var journalURL: URL { containerURL.appendingPathComponent("media/journal") }
+    static var videoURL: URL { containerURL.appendingPathComponent("media/video") }
+    static var thumbnailURL: URL { containerURL.appendingPathComponent("media/thumbnails") }
 
     // MARK: - Media Types
 
@@ -39,22 +42,31 @@ struct MediaFileManager {
         case audio
         case preview
         case favicon
+        case journal
+        case video
+        case thumbnail
 
         var directory: URL {
             switch self {
-            case .image:   return MediaFileManager.imagesURL
-            case .audio:   return MediaFileManager.audioURL
-            case .preview: return MediaFileManager.previewsURL
-            case .favicon: return MediaFileManager.faviconsURL
+            case .image:     return MediaFileManager.imagesURL
+            case .audio:     return MediaFileManager.audioURL
+            case .preview:   return MediaFileManager.previewsURL
+            case .favicon:   return MediaFileManager.faviconsURL
+            case .journal:   return MediaFileManager.journalURL
+            case .video:     return MediaFileManager.videoURL
+            case .thumbnail: return MediaFileManager.thumbnailURL
             }
         }
 
         var fileExtension: String {
             switch self {
-            case .image:   return "jpg"
-            case .audio:   return "m4a"
-            case .preview: return "jpg"
-            case .favicon: return "png"
+            case .image:     return "jpg"
+            case .audio:     return "m4a"
+            case .preview:   return "jpg"
+            case .favicon:   return "png"
+            case .journal:   return "jpg"
+            case .video:     return "mp4"
+            case .thumbnail: return "jpg"
             }
         }
     }
@@ -103,10 +115,13 @@ struct MediaFileManager {
 
     private static func folderName(for type: MediaType) -> String {
         switch type {
-        case .image:   return "images"
-        case .audio:   return "audio"
-        case .preview: return "previews"
-        case .favicon: return "favicons"
+        case .image:     return "images"
+        case .audio:     return "audio"
+        case .preview:   return "previews"
+        case .favicon:   return "favicons"
+        case .journal:   return "journal"
+        case .video:     return "video"
+        case .thumbnail: return "thumbnails"
         }
     }
     // MARK: - Debug

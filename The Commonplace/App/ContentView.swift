@@ -79,5 +79,12 @@ struct ContentView: View {
             }
         }
         .fontDesign(themeManager.current == .inkwell ? .serif : .rounded)
+        .overlay(alignment: .bottom) {
+            VStack {
+                Spacer()
+                MiniSoundPlayerBar()
+                    .padding(.bottom, 57)
+            }
+        }
     }
 }

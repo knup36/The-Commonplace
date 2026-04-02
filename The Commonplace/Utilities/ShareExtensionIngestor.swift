@@ -29,6 +29,7 @@ import SwiftData
 import Foundation
 import UIKit
 import LinkPresentation
+import CoreLocation
 
 struct ShareExtensionIngestor {
     
@@ -39,8 +40,12 @@ struct ShareExtensionIngestor {
         }
         
         print("ShareExtensionIngestor: ingesting \(pending.count) pending entries")
+        for shared in pending {
+            print("ShareExtensionIngestor: found entry type=\(shared.type) url=\(shared.url ?? "nil")")
+        }
         
         for shared in pending {
+            print("ShareExtensionIngestor: ingesting type=\(shared.type) url=\(shared.url ?? "nil")")
             guard let entryType = EntryType(rawValue: shared.type) else {
                 print("ShareExtensionIngestor: unknown entry type \(shared.type), skipping")
                 AppGroupContainer.deletePending(id: shared.id)
@@ -58,6 +63,10 @@ struct ShareExtensionIngestor {
             switch entryType {
             case .link:
                 entry.url = shared.url
+                // Auto-detect content type from URL before async work
+                if let urlString = shared.url {
+                    entry.linkContentType = detectLinkContentType(urlString: urlString)
+                }
                 // Fetch link preview and article content in background.
                 // Re-indexes after metadata arrives so search reflects full content.
                 if let urlString = shared.url {
@@ -87,11 +96,14 @@ struct ShareExtensionIngestor {
                            markdown.trimmingCharacters(in: .whitespacesAndNewlines).count > 200 {
                             entry.markdownContent = markdown
                             if entry.linkTitle == nil { entry.linkTitle = result.title }
+                            // Upgrade to article if not already set to video
+                            if entry.linkContentType == nil {
+                                entry.linkContentType = "article"
+                            }
                         } else {
                             entry.markdownContent = "__failed__"
                         }
                         try? context.save()
-                        // Re-index now that link title and markdown content are populated
                         SearchIndex.shared.index(entry: entry)
                     }
                 }
@@ -176,14 +188,35 @@ struct ShareExtensionIngestor {
                     }
                 }
             case .location:
-                entry.url = shared.url
-                print("📍 Location URL: \(shared.url ?? "nil")")
                 entry.locationName = shared.locationName
                 entry.locationAddress = shared.locationAddress
                 if let lat = shared.locationLatitude,
                    let lon = shared.locationLongitude {
                     entry.locationLatitude = lat
                     entry.locationLongitude = lon
+                } else if let urlString = shared.url {
+                    if urlString.hasPrefix("commonplace-location://mapitem") {
+                        // Rich MKMapItem data encoded by share extension
+                        if let components = URLComponents(string: urlString),
+                           let queryItems = components.queryItems {
+                            let lat = queryItems.first(where: { $0.name == "lat" }).flatMap { Double($0.value ?? "") }
+                            let lon = queryItems.first(where: { $0.name == "lon" }).flatMap { Double($0.value ?? "") }
+                            let name = queryItems.first(where: { $0.name == "name" })?.value
+                            let address = queryItems.first(where: { $0.name == "address" })?.value
+                            let category = queryItems.first(where: { $0.name == "category" })?.value
+
+                            entry.locationLatitude = lat
+                            entry.locationLongitude = lon
+                            entry.locationName = name
+                            entry.locationAddress = address
+                            entry.locationCategory = category?.isEmpty == false ? category : nil
+                        }
+                    } else {
+                        // Regular Maps short URL — resolve the redirect
+                        Task {
+                            await resolveMapsURL(urlString: urlString, entry: entry, context: context)
+                        }
+                    }
                 }
 
             case .text, .audio, .journal, .sticky, .media:
@@ -215,5 +248,115 @@ struct ShareExtensionIngestor {
         }
         
         print("ShareExtensionIngestor: ingestion complete")
+    }
+    @MainActor
+    static func resolveMapsURL(urlString: String, entry: Entry, context: ModelContext) async {
+        guard let url = URL(string: urlString) else { return }
+        
+        // Follow redirects to get the final URL
+        var request = URLRequest(url: url)
+        request.httpMethod = "HEAD"
+        
+        guard let (_, response) = try? await URLSession.shared.data(from: url),
+              let finalURL = (response as? HTTPURLResponse)?.url ?? url as URL? else {
+            print("ShareExtensionIngestor: failed to resolve Maps URL")
+            return
+        }
+        
+        // Try to extract coordinates from the final URL
+        // Apple Maps format: ?ll=lat,lon or ?q=lat,lon or ?daddr=lat,lon
+        guard let components = URLComponents(url: finalURL, resolvingAgainstBaseURL: false),
+              let queryItems = components.queryItems else {
+            return
+        }
+        
+        var lat: Double? = nil
+        var lon: Double? = nil
+        var name: String? = nil
+        
+        // Try ?ll=lat,lon
+        if let ll = queryItems.first(where: { $0.name == "ll" })?.value {
+            let parts = ll.split(separator: ",")
+            if parts.count == 2 {
+                lat = Double(parts[0])
+                lon = Double(parts[1])
+            }
+        }
+        
+        // Try ?q=lat,lon or ?q=place+name
+        if lat == nil, let q = queryItems.first(where: { $0.name == "q" })?.value {
+            let parts = q.split(separator: ",")
+            if parts.count == 2, let parsedLat = Double(parts[0]), let parsedLon = Double(parts[1]) {
+                lat = parsedLat
+                lon = parsedLon
+            } else {
+                name = q
+            }
+        }
+        
+        // Try ?daddr=lat,lon
+        if lat == nil, let daddr = queryItems.first(where: { $0.name == "daddr" })?.value {
+            let parts = daddr.split(separator: ",")
+            if parts.count == 2 {
+                lat = Double(parts[0])
+                lon = Double(parts[1])
+            }
+        }
+
+        // Try ?address=
+        if name == nil, let address = queryItems.first(where: { $0.name == "address" })?.value {
+            name = address
+        }
+
+        // Update entry with resolved data
+        if let lat, let lon {
+            entry.locationLatitude = lat
+            entry.locationLongitude = lon
+            print("ShareExtensionIngestor: resolved coordinates \(lat), \(lon)")
+            
+            // Reverse geocode to get a place name
+            let location = CLLocation(latitude: lat, longitude: lon)
+            let geocoder = CLGeocoder()
+            if let placemarks = try? await geocoder.reverseGeocodeLocation(location),
+               let placemark = placemarks.first {
+                var parts: [String] = []
+                if let subLocality = placemark.subLocality {
+                    parts.append(subLocality)
+                } else if let area = placemark.areasOfInterest?.first {
+                    parts.append(area)
+                }
+                if let city = placemark.locality { parts.append(city) }
+                if let state = placemark.administrativeArea { parts.append(state) }
+                entry.locationName = parts.isEmpty ? placemark.name : parts.joined(separator: ", ")
+                entry.locationAddress = placemark.thoroughfare
+            }
+        } else if let name {
+            entry.locationName = name
+            print("ShareExtensionIngestor: resolved place name \(name)")
+        }
+        
+        try? context.save()
+        SearchIndex.shared.index(entry: entry)
+    }
+    // MARK: - Link Content Type Detection
+
+    static func detectLinkContentType(urlString: String) -> String? {
+        let lower = urlString.lowercased()
+
+        // Video platforms
+        let videoDomains = [
+            "youtube.com", "youtu.be",
+            "vimeo.com",
+            "tiktok.com",
+            "twitch.tv",
+            "dailymotion.com"
+        ]
+        for domain in videoDomains {
+            if lower.contains(domain) { return "video" }
+        }
+
+        // Everything else gets detected after article extraction
+        // returns nil here — upgraded to "article" if extraction succeeds
+        return nil
     }
 }

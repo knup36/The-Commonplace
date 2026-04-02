@@ -66,6 +66,9 @@ class HealthKitBackfillService {
         // Write to entry on main actor to keep SwiftData happy
         await MainActor.run {
             if let summary {
+                print("Stand hours fetched: \(summary.standHours)")
+                print("Active calories fetched: \(summary.activeCalories)")
+                print("Exercise minutes fetched: \(summary.exerciseMinutes)")
                 entry.healthActiveCalories = summary.activeCalories
                 entry.healthExerciseMinutes = summary.exerciseMinutes
                 entry.healthStandHours = summary.standHours

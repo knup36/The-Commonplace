@@ -180,7 +180,7 @@ struct HomeDashboardView: View {
                 
                 Text("\(count)")
                     .font(.caption2)
-                    .foregroundStyle(style.tertiaryText)
+                    .foregroundStyle(InkwellTheme.collectionAccentColor(for: collection.colorHex))
             }
             .padding(8)
         }

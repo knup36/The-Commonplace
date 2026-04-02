@@ -25,8 +25,8 @@ struct FeedView: View {
     
     let addTypes: [(type: EntryType, label: String, icon: String, color: Color)] = [
         (.text,     "Note",   "text.alignleft",    .gray),
-        (.photo,    "Photo",  "camera.fill",        .pink),
-        (.audio,    "Audio",  "waveform",           .orange),
+        (.photo,    "Shot",  "camera.fill",        .pink),
+        (.audio,    "Sound",  "waveform",           .orange),
         (.link,     "Link",   "link",               .blue),
         (.sticky,   "List",   "checklist",          Color(hex: "#FFD60A")),
         (.location, "Place",  "mappin.circle.fill", .green),

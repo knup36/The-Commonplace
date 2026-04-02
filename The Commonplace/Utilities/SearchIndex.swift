@@ -39,7 +39,7 @@ class SearchIndex {
     }
     
     // Bump this any time columns are added or removed from entry_search
-    private let schemaVersion = 6
+    private let schemaVersion = 8
     
     private func setup() {
         do {
@@ -54,6 +54,7 @@ class SearchIndex {
                     // Schema changed — drop and recreate, backfill will re-index everything
                     try db.execute(sql: "DROP TABLE IF EXISTS entry_search")
                     UserDefaults.standard.removeObject(forKey: "searchIndexBackfilled")
+                    UserDefaults.standard.removeObject(forKey: "searchIndexSchemaVersion")
                 }
                 try db.create(virtualTable: "entry_search", ifNotExists: true, using: FTS5()) { t in
                     t.column("entry_id")
@@ -143,7 +144,7 @@ class SearchIndex {
                         entry.id.uuidString,
                         // Universal
                         entry.text,
-                        entry.tagNames.joined(separator: " "),
+                        entry.tagNames.map { $0.hasPrefix("@") ? String($0.dropFirst()) : $0 }.joined(separator: " "),
                         entry.captureLocationName ?? "",
                         // Photo
                         entry.extractedText ?? "",
@@ -217,6 +218,22 @@ class SearchIndex {
     }
     
     // MARK: - Backfill
+    func debugEntry(id: UUID) {
+            guard let db else { return }
+            do {
+                let rows = try db.read { db in
+                    try Row.fetchAll(db,
+                        sql: "SELECT tags FROM entry_search WHERE entry_id = ?",
+                        arguments: [id.uuidString]
+                    )
+                }
+                for row in rows {
+                    print("DEBUG tags field: \(row["tags"] as? String ?? "nil")")
+                }
+            } catch {
+                print("Debug failed: \(error)")
+            }
+        }
     
     func backfillIfNeeded(entries: [Entry]) {
         guard let db else { return }

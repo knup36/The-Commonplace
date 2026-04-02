@@ -22,9 +22,13 @@ struct ActivityRingsView: View {
 
     var style: any AppThemeStyle
 
-    private let moveColor   = Color(red: 1.0,  green: 0.23, blue: 0.19)
+    private let moveColor     = Color(red: 1.0,  green: 0.23, blue: 0.19)
     private let exerciseColor = Color(red: 0.20, green: 0.78, blue: 0.35)
-    private let standColor  = Color(red: 0.0,  green: 0.78, blue: 0.75)
+    private let standColor    = Color(red: 0.0,  green: 0.78, blue: 0.75)
+
+    private let moveGoal: Double     = 330
+    private let exerciseGoal: Double = 15
+    private let standGoal: Double    = 12
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -56,20 +60,24 @@ struct ActivityRingsView: View {
     // MARK: - Rings
 
     var rings: some View {
-        ZStack {
-            RingShape(radius: 38, lineWidth: 7, progress: 0.75)
+        let moveProgress = min(activeCalories / moveGoal, 1.0)
+        let exerciseProgress = min(exerciseMinutes / exerciseGoal, 1.0)
+        let standProgress = min(standHours / standGoal, 1.0)
+
+        return ZStack {
+            RingShape(radius: 38, lineWidth: 7, progress: 1.0)
                 .stroke(moveColor.opacity(0.15), lineWidth: 7)
-            RingShape(radius: 38, lineWidth: 7, progress: 0.75)
+            RingShape(radius: 38, lineWidth: 7, progress: moveProgress)
                 .stroke(moveColor, style: StrokeStyle(lineWidth: 7, lineCap: .round))
 
-            RingShape(radius: 29, lineWidth: 7, progress: 0.65)
+            RingShape(radius: 29, lineWidth: 7, progress: 1.0)
                 .stroke(exerciseColor.opacity(0.15), lineWidth: 7)
-            RingShape(radius: 29, lineWidth: 7, progress: 0.65)
+            RingShape(radius: 29, lineWidth: 7, progress: exerciseProgress)
                 .stroke(exerciseColor, style: StrokeStyle(lineWidth: 7, lineCap: .round))
 
-            RingShape(radius: 20, lineWidth: 7, progress: 0.60)
+            RingShape(radius: 20, lineWidth: 7, progress: 1.0)
                 .stroke(standColor.opacity(0.15), lineWidth: 7)
-            RingShape(radius: 20, lineWidth: 7, progress: 0.60)
+            RingShape(radius: 20, lineWidth: 7, progress: standProgress)
                 .stroke(standColor, style: StrokeStyle(lineWidth: 7, lineCap: .round))
         }
         .frame(width: 90, height: 90)

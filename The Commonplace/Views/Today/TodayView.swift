@@ -54,6 +54,7 @@ struct TodayView: View {
                     titleHeader
                     segmentPicker
                     if selectedTab == 0 {
+                        WeeklyReviewCard()
                         if let entry = entries.first(where: {
                             Calendar.current.isDateInToday($0.createdAt) && $0.type == .journal
                         }),

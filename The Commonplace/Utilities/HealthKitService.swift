@@ -24,7 +24,7 @@ class HealthKitService {
     private let readTypes: Set<HKObjectType> = [
         HKObjectType.quantityType(forIdentifier: .activeEnergyBurned)!,
         HKObjectType.quantityType(forIdentifier: .appleExerciseTime)!,
-        HKObjectType.quantityType(forIdentifier: .appleStandTime)!,
+        HKObjectType.categoryType(forIdentifier: .appleStandHour)!,
         HKObjectType.workoutType()
     ]
     
@@ -66,11 +66,7 @@ class HealthKitService {
             unit: .minute(),
             for: date
         )
-        async let stand = fetchSum(
-            typeIdentifier: .appleStandTime,
-            unit: .hour(),
-            for: date
-        )
+        async let stand = fetchStandHours(for: date)
         
         let (cal, ex, st) = await (calories, exercise, stand)
         
@@ -140,6 +136,36 @@ class HealthKitService {
     
     // MARK: - Private Helpers
     
+    private func fetchStandHours(for date: Date) async -> Double {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        
+        let predicate = HKQuery.predicateForSamples(
+            withStart: startOfDay,
+            end: endOfDay,
+            options: .strictStartDate
+        )
+        
+        guard let categoryType = HKObjectType.categoryType(forIdentifier: .appleStandHour) else {
+            return 0
+        }
+        
+        return await withCheckedContinuation { continuation in
+            let query = HKSampleQuery(
+                sampleType: categoryType,
+                predicate: predicate,
+                limit: HKObjectQueryNoLimit,
+                sortDescriptors: nil
+            ) { _, samples, _ in
+                let standSamples = samples as? [HKCategorySample] ?? []
+                let count = standSamples.filter { $0.value == HKCategoryValueAppleStandHour.stood.rawValue }.count
+                continuation.resume(returning: Double(count))
+            }
+            self.store.execute(query)
+        }
+    }
+        
     private func fetchSum(
         typeIdentifier: HKQuantityTypeIdentifier,
         unit: HKUnit,

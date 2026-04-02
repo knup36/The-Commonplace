@@ -1,5 +1,6 @@
 import SwiftUI
 import MapKit
+import SwiftData
 
 // MARK: - LocationDetailView
 // Detail view for location entries.
@@ -12,25 +13,26 @@ struct LocationDetailView: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var themeManager: ThemeManager
-
+    
+    @State private var showingDeleteConfirmation = false
     @State private var editText = ""
     @State private var isEditing = false
     @FocusState private var textFieldFocused: Bool
-
+    
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { InkwellTheme.collectionAccentColor(for: "#30D158") }
     var bgColor: Color { InkwellTheme.locationCard }
-
+    
     var coordinate: CLLocationCoordinate2D? {
         guard let lat = entry.locationLatitude,
               let lon = entry.locationLongitude else { return nil }
         return CLLocationCoordinate2D(latitude: lat, longitude: lon)
     }
-
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-
+                
                 // Location picker — shown when no location set yet
                 if entry.locationLatitude == nil {
                     VStack(alignment: .leading, spacing: 8) {
@@ -44,7 +46,7 @@ struct LocationDetailView: View {
                     }
                     .padding()
                 }
-
+                
                 // Map
                 if let coordinate {
                     Map(position: .constant(.region(MKCoordinateRegion(
@@ -57,9 +59,9 @@ struct LocationDetailView: View {
                     .frame(height: 280)
                     .onTapGesture { openInMaps() }
                 }
-
+                
                 VStack(alignment: .leading, spacing: 16) {
-
+                    
                     // Place info
                     if entry.locationLatitude != nil {
                         VStack(alignment: .leading, spacing: 6) {
@@ -80,7 +82,7 @@ struct LocationDetailView: View {
                                     .foregroundStyle(accentColor)
                             }
                         }
-
+                        
                         Button { openInMaps() } label: {
                             Label("Open in Maps", systemImage: "map.fill")
                                 .frame(maxWidth: .infinity)
@@ -88,10 +90,10 @@ struct LocationDetailView: View {
                         .buttonStyle(.borderedProminent)
                         .tint(accentColor)
                     }
-
+                    
                     Divider()
                         .overlay(style.surface)
-
+                    
                     // Note
                     if isEditing {
                         TextField("Add a note...", text: $editText, axis: .vertical)
@@ -111,9 +113,9 @@ struct LocationDetailView: View {
                                 textFieldFocused = true
                             }
                     }
-
+                    
                     TagInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
-
+                    
                     Divider()
                         .overlay(style.surface)
                     EntryMetadataFooter(entry: entry, style: style, accentColor: accentColor)
@@ -129,22 +131,47 @@ struct LocationDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                if isEditing {
-                    Button("Done") {
-                        entry.text = editText
-                        isEditing = false
-                        textFieldFocused = false
+                HStack(spacing: 20) {
+                    if isEditing {
+                        Button("Done") {
+                            entry.text = editText
+                            isEditing = false
+                            textFieldFocused = false
+                        }
+                        .bold()
+                        .foregroundStyle(style.accent)
                     }
-                    .bold()
-                    .foregroundStyle(style.accent)
+                    Menu {
+                        Button(role: .destructive) {
+                            showingDeleteConfirmation = true
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .foregroundStyle(style.accent)
+                    }
+                    Button {
+                        withAnimation { entry.isPinned.toggle() }
+                    } label: {
+                        Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
+                            .foregroundStyle(style.accent)
+                    }
                 }
             }
         }
         .onDisappear {
             SearchIndex.shared.index(entry: entry)
         }
+        .confirmationDialog("Delete this entry?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                modelContext.delete(entry)
+                dismiss()
+            }
+            Button("Cancel", role: .cancel) {}
+        }
     }
-
+    
     func openInMaps() {
         guard let coordinate else { return }
         let request = MKLocalSearch.Request()
@@ -170,4 +197,5 @@ struct LocationDetailView: View {
             }
         }
     }
+    
 }

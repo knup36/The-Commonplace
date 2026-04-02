@@ -22,7 +22,10 @@ struct SharedEntry: Codable, Identifiable {
     let locationLatitude: Double?
     let locationLongitude: Double?
     let tags: [String]
-
+    let captureLatitude: Double?
+    let captureLocationName: String?
+    let captureLongitude: Double?
+    
     init(
         id: UUID = UUID(),
         createdAt: Date = Date(),
@@ -34,7 +37,10 @@ struct SharedEntry: Codable, Identifiable {
         locationAddress: String? = nil,
         locationLatitude: Double? = nil,
         locationLongitude: Double? = nil,
-        tags: [String] = []
+        tags: [String] = [],
+        captureLatitude: Double? = nil,
+        captureLongitude: Double? = nil,
+        captureLocationName: String? = nil
     ) {
         self.id = id
         self.createdAt = createdAt
@@ -47,15 +53,17 @@ struct SharedEntry: Codable, Identifiable {
         self.locationLatitude = locationLatitude
         self.locationLongitude = locationLongitude
         self.tags = tags
-    }
-}
+        self.captureLatitude = captureLatitude
+        self.captureLongitude = captureLongitude
+        self.captureLocationName = captureLocationName
+    }}
 
 // MARK: - App Group Container
 
 struct AppGroupContainer {
     static let identifier = "group.com.johncaldwell.commonplace"
     static let pendingEntriesFolder = "pending_entries"
-
+    
     static var containerURL: URL? {
         FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: identifier
@@ -89,7 +97,6 @@ struct AppGroupContainer {
             at: folder,
             includingPropertiesForKeys: nil
         ).filter { $0.pathExtension == "json" }
-
         return try files.compactMap { url in
             let data = try Data(contentsOf: url)
             return try JSONDecoder().decode(SharedEntry.self, from: data)

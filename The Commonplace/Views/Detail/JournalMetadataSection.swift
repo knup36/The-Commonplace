@@ -83,8 +83,9 @@ struct JournalMetadataSection: View {
             }
 
             // Journal photo
-            if let imageData = entry.journalImageData,
-               let uiImage = UIImage(data: imageData) {
+            if let path = entry.journalImagePath,
+               let data = MediaFileManager.load(path: path),
+               let uiImage = UIImage(data: data) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFit()

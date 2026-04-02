@@ -50,6 +50,7 @@ struct CompactEntryCard: View {
         }
         .frame(width: cardWidth, height: cardHeight)
         .contentShape(RoundedRectangle(cornerRadius: 14))
+        .shadow(color: .black.opacity(0.35), radius: 8, x: 0, y: 4)
         
     }
     
@@ -191,20 +192,16 @@ struct CompactEntryCard: View {
 
     var locationCard: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Image(systemName: "mappin.circle.fill")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(entry.type.accentColor)
-            Spacer()
             Text(entry.locationName ?? "Unknown Location")
                 .font(style.usesSerifFonts ? .system(.caption, design: .serif) : .caption)
                 .fontWeight(.medium)
                 .foregroundStyle(style.primaryText)
-                .lineLimit(2)
+                .lineLimit(1)
             if let address = entry.locationAddress {
                 Text(address)
                     .font(.caption2)
                     .foregroundStyle(style.secondaryText)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
         }
     }

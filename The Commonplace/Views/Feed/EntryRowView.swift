@@ -14,6 +14,7 @@
 //   - Shadows are only rendered on the Inkwell theme (style.usesSerifFonts)
 
 import SwiftUI
+import SwiftData
 
 // MARK: - ShimmerView
 // Animated placeholder shown while an image loads from disk.
@@ -109,18 +110,43 @@ struct AsyncMediaImage: View {
 struct EntryRowView: View {
     let entry: Entry
     @EnvironmentObject var themeManager: ThemeManager
+    @Query var allPersonTags: [Tag]
     
     var style: any AppThemeStyle { themeManager.style }
     
     // MARK: - Sub-views
     
     @ViewBuilder
-        var typeLabel: some View {
-            if style.usesSerifFonts {
-                HStack(spacing: 5) {
-                    Circle()
-                        .fill(entry.type.accentColor)
-                        .frame(width: 5, height: 5)
+    var typeLabel: some View {
+        if style.usesSerifFonts {
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(entry.type.accentColor)
+                    .frame(width: 5, height: 5)
+                if entry.type == .link, let contentType = entry.linkContentType {
+                    HStack(spacing: 0) {
+                        Text("LINK")
+                            .font(.system(size: 9, weight: .medium))
+                            .kerning(0.8)
+                            .foregroundStyle(entry.type.accentColor)
+                        Text(" · \(contentType.uppercased())")
+                            .font(.system(size: 9, weight: .medium))
+                            .kerning(0.8)
+                            .foregroundStyle(entry.type.accentColor.opacity(0.5))
+                    }
+                } else if entry.type == .photo {
+                    let subtype = entry.videoPath != nil ? "VIDEO" : "PHOTO"
+                    HStack(spacing: 0) {
+                        Text("SHOT")
+                            .font(.system(size: 9, weight: .medium))
+                            .kerning(0.8)
+                            .foregroundStyle(entry.type.accentColor)
+                        Text(" · \(subtype)")
+                            .font(.system(size: 9, weight: .medium))
+                            .kerning(0.8)
+                            .foregroundStyle(entry.type.accentColor.opacity(0.5))
+                    }
+                } else {
                     Text(typeLabelText.uppercased())
                         .font(.system(size: 9, weight: .medium))
                         .kerning(0.8)
@@ -128,17 +154,24 @@ struct EntryRowView: View {
                 }
             }
         }
-
-        var typeLabelText: String {
-            if entry.type == .media {
-                switch entry.mediaType {
-                case "movie": return "Movie"
-                case "tv":    return "TV Show"
-                default:      return "Media"
-                }
+    }
+    
+    var typeLabelText: String {
+        if entry.type == .media {
+            switch entry.mediaType {
+            case "movie": return "Movie"
+            case "tv":    return "TV Show"
+            default:      return "Media"
             }
-            return entry.type.displayName
         }
+        if entry.type == .link, let contentType = entry.linkContentType {
+            return "Link · \(contentType.capitalized)"
+        }
+        if entry.type == .photo {
+            return entry.videoPath != nil ? "Shot · Video" : "Shot · Photo"
+        }
+        return entry.type.displayName
+    }
     
     var metadataColumn: some View {
         HStack(spacing: 6) {
@@ -267,15 +300,15 @@ struct EntryRowView: View {
                         }
                     }
                     if let status = entry.mediaStatus {
-                                    Text(mediaStatusLabel(for: status).uppercased())
-                                        .font(.system(size: 8, weight: .semibold))
-                                        .kerning(0.6)
-                                        .foregroundStyle(mediaStatusColor(for: status))
-                                        .padding(.horizontal, 7)
-                                        .padding(.vertical, 3)
-                                        .background(mediaStatusColor(for: status).opacity(0.15))
-                                        .clipShape(Capsule())
-                                }
+                        Text(mediaStatusLabel(for: status).uppercased())
+                            .font(.system(size: 8, weight: .semibold))
+                            .kerning(0.6)
+                            .foregroundStyle(mediaStatusColor(for: status))
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(mediaStatusColor(for: status).opacity(0.15))
+                            .clipShape(Capsule())
+                    }
                 }
                 Spacer()
             }
@@ -294,7 +327,62 @@ struct EntryRowView: View {
     @ViewBuilder
     var tagsRow: some View {
         HStack(alignment: .bottom, spacing: 8) {
-            HStack(alignment: .center) {
+            HStack(alignment: .center, spacing: 6) {
+                // People avatars first
+                let personTags = entry.tagNames.filter { $0.hasPrefix("@") }
+                if !personTags.isEmpty {
+                    HStack(spacing: 4) {
+                        ForEach(personTags.prefix(3), id: \.self) { tag in
+                            let name = String(tag.dropFirst())
+                            let personTag = allPersonTags.first { $0.name == name && $0.isPerson }
+                            ZStack {
+                                Circle()
+                                    .strokeBorder(
+                                        AngularGradient(
+                                            colors: [
+                                                Color(hex: "#C8903A"),
+                                                Color(hex: "#F5D478"),
+                                                Color(hex: "#C8903A"),
+                                                Color(hex: "#8A6028"),
+                                                Color(hex: "#C8903A"),
+                                                Color(hex: "#F5D478"),
+                                                Color(hex: "#C8903A")
+                                            ],
+                                            center: .center,
+                                            startAngle: .degrees(0),
+                                            endAngle: .degrees(360)
+                                        ),
+                                        lineWidth: 1
+                                    )
+                                    .frame(width: 22, height: 22)
+                                if let path = personTag?.profilePhotoPath,
+                                   let data = MediaFileManager.load(path: path),
+                                   let uiImage = UIImage(data: data) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 20, height: 20)
+                                        .clipShape(Circle())
+                                } else {
+                                    Circle()
+                                        .fill(entry.type.accentColor.opacity(0.2))
+                                        .frame(width: 20, height: 20)
+                                        .overlay(
+                                            Text(String(name.prefix(1)).uppercased())
+                                                .font(.system(size: 9, weight: .medium))
+                                                .foregroundStyle(entry.type.accentColor)
+                                        )
+                                }
+                            }
+                        }
+                        if personTags.count > 3 {
+                            Text("+\(personTags.count - 3)")
+                                .font(.caption2)
+                                .foregroundStyle(style.secondaryText)
+                        }
+                    }
+                }
+                // Tags after people
                 let visibleTags = entry.tagNames.filter { !$0.hasPrefix("@") }
                 if !visibleTags.isEmpty {
                     HStack(spacing: 4) {
@@ -329,6 +417,18 @@ struct EntryRowView: View {
     // MARK: - Body
     
     var body: some View {
+        if entry.tagNames.contains(WeeklyReviewTheme.weeklyReviewTag) {
+            WeeklyReviewRowView(entry: entry)
+        } else if entry.type == .audio {
+            SoundRowView(entry: entry)
+        } else if entry.type == .photo && entry.videoPath != nil {
+            ShotRowView(entry: entry)
+        } else {
+            regularBody
+        }
+    }
+    
+    var regularBody: some View {
         VStack(alignment: .leading, spacing: 8) {
             ZStack(alignment: .topTrailing) {
                 ZStack(alignment: .topLeading) {
@@ -371,19 +471,19 @@ struct EntryRowView: View {
 // MARK: Helpers
 
 func mediaStatusLabel(for status: String) -> String {
-        switch status {
-        case "wantTo":     return "Want to Watch"
-        case "inProgress": return "In Progress"
-        case "finished":   return "Finished"
-        default:           return status
-        }
+    switch status {
+    case "wantTo":     return "Want to Watch"
+    case "inProgress": return "In Progress"
+    case "finished":   return "Finished"
+    default:           return status
     }
+}
 
-    func mediaStatusColor(for status: String) -> Color {
-        switch status {
-        case "wantTo":     return InkwellTheme.mediaAccent
-        case "inProgress": return InkwellTheme.stickyAccent
-        case "finished":   return InkwellTheme.locationAccent
-        default:           return InkwellTheme.inkSecondary
-        }
+func mediaStatusColor(for status: String) -> Color {
+    switch status {
+    case "wantTo":     return InkwellTheme.mediaAccent
+    case "inProgress": return InkwellTheme.stickyAccent
+    case "finished":   return InkwellTheme.locationAccent
+    default:           return InkwellTheme.inkSecondary
     }
+}

@@ -23,5 +23,7 @@
 	<true/>
 	<key>NSAppleMusicUsageDescription</key>
 	<string>Commonplace uses Apple Music to play your saved tracks.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Commonplace reads your activity and workout data to enrich your journal entries.</string>
 </dict>
 </plist>

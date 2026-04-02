@@ -49,7 +49,20 @@ struct LinkDetailSection: View {
                         }
                     }
             } else {
-                LinkPreviewView(entry: entry)
+                // Content type selector
+                if entry.url != nil {
+                    contentTypeSelector
+                }
+                
+                // Content based on type
+                if entry.linkContentType == "article",
+                   let markdown = entry.markdownContent,
+                   markdown != "__failed__" {
+                    articlePreview(markdown: markdown)
+                } else {
+                    LinkPreviewView(entry: entry)
+                }
+                
                 if let urlString = entry.url, let url = URL(string: urlString) {
                     if isExtracting {
                         HStack(spacing: 6) {
@@ -107,6 +120,9 @@ struct LinkDetailSection: View {
                        markdown.trimmingCharacters(in: .whitespacesAndNewlines).count > 200 {
                         entry.markdownContent = markdown
                         if entry.linkTitle == nil { entry.linkTitle = result.title }
+                        if entry.linkContentType == nil {
+                            entry.linkContentType = "article"
+                        }
                     } else {
                         entry.markdownContent = "__failed__"
                     }
@@ -116,12 +132,91 @@ struct LinkDetailSection: View {
         }
     }
 
+    // MARK: - Content Type Selector
+
+    var contentTypeSelector: some View {
+        HStack(spacing: 0) {
+            ForEach(["generic", "article", "video"], id: \.self) { type in
+                let isSelected = (type == "generic" && entry.linkContentType == nil) ||
+                                 entry.linkContentType == type
+                Button {
+                    entry.linkContentType = type == "generic" ? nil : type
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: iconFor(type))
+                            .font(.system(size: 11))
+                        Text(type.capitalized)
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundStyle(isSelected ? accentColor : style.tertiaryText)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 7)
+                    .background(isSelected ? accentColor.opacity(0.12) : Color.clear)
+                }
+                .buttonStyle(.plain)
+                if type != "video" {
+                    Divider()
+                        .frame(height: 16)
+                        .overlay(style.tertiaryText.opacity(0.3))
+                }
+            }
+        }
+        .background(accentColor.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(accentColor.opacity(0.15), lineWidth: 0.5)
+        )
+    }
+
+    func iconFor(_ type: String) -> String {
+        switch type {
+        case "article": return "doc.text"
+        case "video":   return "play.circle"
+        default:        return "link"
+        }
+    }
+
+    // MARK: - Article Preview
+
+    func articlePreview(markdown: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let title = entry.linkTitle {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(style.primaryText)
+                    .lineLimit(2)
+            }
+            if let urlString = entry.url {
+                Text(urlString)
+                    .font(.caption)
+                    .foregroundStyle(style.tertiaryText)
+                    .lineLimit(1)
+            }
+            Divider()
+                .overlay(accentColor.opacity(0.2))
+            Text(String(markdown.prefix(300)).trimmingCharacters(in: .whitespacesAndNewlines) + "...")
+                .font(.system(size: 13))
+                .foregroundStyle(style.secondaryText)
+                .lineLimit(4)
+                .lineSpacing(3)
+        }
+        .padding(12)
+        .background(accentColor.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(accentColor.opacity(0.15), lineWidth: 0.5)
+        )
+    }
+    
     // MARK: - Helpers
 
     func saveURL() {
         guard !linkURLText.isEmpty else { return }
         let urlString = linkURLText.hasPrefix("http") ? linkURLText : "https://\(linkURLText)"
         entry.url = urlString
+        entry.linkContentType = ShareExtensionIngestor.detectLinkContentType(urlString: urlString)
         linkFieldFocused = false
         isExtracting = true
         Task {
@@ -145,6 +240,9 @@ struct LinkDetailSection: View {
                markdown.trimmingCharacters(in: .whitespacesAndNewlines).count > 200 {
                 entry.markdownContent = markdown
                 if entry.linkTitle == nil { entry.linkTitle = result.title }
+                if entry.linkContentType == nil {
+                    entry.linkContentType = "article"
+                }
             } else {
                 entry.markdownContent = "__failed__"
             }

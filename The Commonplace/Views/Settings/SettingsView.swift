@@ -67,6 +67,8 @@ struct SettingsView: View {
             aboutSection
             dataSection
         }
+        .scrollContentBackground(style.usesSerifFonts ? .hidden : .visible)
+        .background(style.usesSerifFonts ? style.background : Color(uiColor: .systemGroupedBackground))
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingShareSheet) {

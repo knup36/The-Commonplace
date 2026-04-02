@@ -49,6 +49,61 @@ struct MarkdownExporter {
     }
 
     // MARK: - Export
+    
+    static func exportWeek(entries: [Entry], weekStart: Date) throws -> ExportResult {
+        let calendar = Calendar.current
+        let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) ?? weekStart
+
+        let weekEntries = entries
+            .filter { $0.createdAt >= weekStart && $0.createdAt < weekEnd }
+            .sorted { $0.createdAt < $1.createdAt }
+
+        guard !weekEntries.isEmpty else {
+            throw MarkdownExportError.noEntries
+        }
+
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("commonplace_week_\(UUID().uuidString)")
+        let mediaURL = tempDir.appendingPathComponent("media")
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: mediaURL, withIntermediateDirectories: true)
+
+        var mediaFileCount = 0
+        let filename = weekFilename(for: weekStart, entries: weekEntries)
+        let fileURL = tempDir.appendingPathComponent(filename)
+        let markdown = try renderWeek(
+            weekStart: weekStart,
+            entries: weekEntries,
+            mediaURL: mediaURL,
+            mediaFileCount: &mediaFileCount
+        )
+        try markdown.write(to: fileURL, atomically: true, encoding: .utf8)
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let zipURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Commonplace-Week-\(formatter.string(from: weekStart)).zip")
+        if FileManager.default.fileExists(atPath: zipURL.path) {
+            try FileManager.default.removeItem(at: zipURL)
+        }
+        let archive = try Archive(url: zipURL, accessMode: .create)
+        try archive.addEntry(with: filename, fileURL: fileURL)
+        let mediaFiles = (try? FileManager.default.contentsOfDirectory(
+            at: mediaURL,
+            includingPropertiesForKeys: nil
+        )) ?? []
+        for file in mediaFiles {
+            try archive.addEntry(with: "media/\(file.lastPathComponent)", fileURL: file)
+        }
+        try FileManager.default.removeItem(at: tempDir)
+
+        return ExportResult(
+            zipURL: zipURL,
+            entryCount: weekEntries.count,
+            mediaFileCount: mediaFileCount,
+            weekCount: 1
+        )
+    }
 
     static func export(entries: [Entry]) throws -> ExportResult {
         // Filter to last 30 days
@@ -290,9 +345,10 @@ struct MarkdownExporter {
                 lines.append("")
                 lines.append(entry.text)
             }
-            if let imageData = entry.journalImageData {
+            if let path = entry.journalImagePath,
+               let data = MediaFileManager.load(path: path) {
                 let filename = "\(entry.id.uuidString)_journal.jpg"
-                try imageData.write(to: mediaURL.appendingPathComponent(filename))
+                try data.write(to: mediaURL.appendingPathComponent(filename))
                 mediaFileCount += 1
                 lines.append("")
                 lines.append("![Journal Photo](media/\(filename))")

@@ -79,7 +79,10 @@ struct JournalBlockView: View {
         .onChange(of: journalImage) { _, newImage in
             if let image = newImage,
                let data = ImageProcessor.resizeAndCompress(image: image) {
-                getOrCreateTodayEntry().journalImageData = data
+                let entry = getOrCreateTodayEntry()
+                if let path = try? MediaFileManager.save(data, type: .journal, id: entry.id.uuidString) {
+                    entry.journalImagePath = path
+                }
                 journalImage = nil
             }
         }
@@ -259,15 +262,19 @@ struct JournalBlockView: View {
             Label("Daily Photo", systemImage: "camera.fill")
                 .font(.subheadline).fontWeight(.medium)
                 .foregroundStyle(style.secondaryText)
-            if let imageData = todayEntry?.journalImageData,
-               let uiImage = UIImage(data: imageData) {
+            if let path = todayEntry?.journalImagePath,
+               let data = MediaFileManager.load(path: path),
+               let uiImage = UIImage(data: data) {
                 ZStack(alignment: .topTrailing) {
                     Image(uiImage: uiImage)
                         .resizable().scaledToFit()
                         .frame(maxWidth: .infinity)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                     Button {
-                        todayEntry?.journalImageData = nil
+                        if let path = todayEntry?.journalImagePath {
+                            MediaFileManager.delete(path: path)
+                        }
+                        todayEntry?.journalImagePath = nil
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(.white).padding(8)

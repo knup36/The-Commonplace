@@ -23,7 +23,7 @@ struct DailyNoteRowView: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(purple)
 
-            // Weather + Mood
+            // Weather + Mood + Mini rings
             HStack(spacing: 8) {
                 if !entry.weatherEmoji.isEmpty {
                     Text(entry.weatherEmoji).font(.title3)
@@ -34,7 +34,15 @@ struct DailyNoteRowView: View {
                 if !entry.vibeEmoji.isEmpty {
                     Text(entry.vibeEmoji).font(.title3)
                 }
-            }   
+                Spacer()
+                if entry.healthDataFetched {
+                    MiniActivityRingsView(
+                        activeCalories: entry.healthActiveCalories ?? 0,
+                        exerciseMinutes: entry.healthExerciseMinutes ?? 0,
+                        standHours: entry.healthStandHours ?? 0
+                    )
+                }
+            }
 
             // Note text
             if !entry.text.isEmpty {
@@ -68,8 +76,9 @@ struct DailyNoteRowView: View {
             }
 
             // Journal photo
-            if let imageData = entry.journalImageData,
-               let uiImage = UIImage(data: imageData) {
+            if let path = entry.journalImagePath,
+               let data = MediaFileManager.load(path: path),
+               let uiImage = UIImage(data: data) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFit()

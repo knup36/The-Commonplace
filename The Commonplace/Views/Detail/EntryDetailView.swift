@@ -38,12 +38,12 @@ struct EntryDetailView: View {
             .padding()
         }
         .background(entry.type.cardColor.ignoresSafeArea())
-                .scrollDismissesKeyboard(.interactively)
-                .keyboardAvoiding()
+        .scrollDismissesKeyboard(.interactively)
+        .keyboardAvoiding()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack {
+                HStack (spacing: 12){
                     if isEditing {
                         Button("Done") {
                             entry.text = editText
@@ -54,13 +54,6 @@ struct EntryDetailView: View {
                         .foregroundStyle(style.accent)
                     }
                     Menu {
-                        Button {
-                            withAnimation { entry.isPinned.toggle() }
-                        } label: {
-                            Label(entry.isPinned ? "Unbookmark" : "Bookmark",
-                                  systemImage: entry.isPinned ? "bookmark.slash.fill" : "bookmark.fill")
-                        }
-                        Divider()
                         Button(role: .destructive) {
                             showingDeleteConfirmation = true
                         } label: {
@@ -70,9 +63,16 @@ struct EntryDetailView: View {
                         Image(systemName: "ellipsis.circle")
                             .foregroundStyle(style.accent)
                     }
+                    Button {
+                        withAnimation { entry.isPinned.toggle() }
+                    } label: {
+                        Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
+                            .foregroundStyle(style.accent)
+                    }
                 }
             }
-        }        .onAppear {
+        }
+        .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 if entry.type == .text && entry.text.isEmpty {
                     editText = entry.text
