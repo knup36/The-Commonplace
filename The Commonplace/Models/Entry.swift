@@ -38,10 +38,13 @@ class Entry {
     var isFavorited: Bool = false
     var isPinned: Bool = false
 
-    // Photo
+    // Photo / Shot (v1.12 — extended to support video clips)
     var imagePath: String? = nil
     var extractedText: String? = nil
     var visionTags: [String] = []
+    var videoPath: String? = nil
+    var videoDuration: Double? = nil
+    var videoThumbnailPath: String? = nil
 
     // Audio
     var audioPath: String? = nil
@@ -54,6 +57,7 @@ class Entry {
     var previewImagePath: String? = nil
     var markdownContent: String? = nil
     var faviconPath: String? = nil
+    var linkContentType: String? = nil  // "article", "video", nil = generic
 
     // Music (renamed from media* prefix in v1.5 to avoid collision with .media entry type)
     var musicArtist: String? = nil
@@ -87,6 +91,7 @@ class Entry {
     var completedHabitSnapshots: [String] = []
     var totalHabitsAtTime: Int = 0
     var journalImageData: Data? = nil
+    var journalImagePath: String? = nil
 
     // Health data (fetched once for past days, live for today)
     var healthActiveCalories: Double? = nil
@@ -113,7 +118,14 @@ class Entry {
     var tmdbID: Int? = nil
     var mediaRuntime: Int? = nil  // minutes — movies only
     var mediaSeasons: Int? = nil  // season count — TV only
-
+    
+    // Weekly Review (v1.12.1)
+    // Dedicated fields replacing key:value encoding in entry.text
+    var weeklyReviewHighlight: String? = nil
+    var weeklyReviewCarryForward: String? = nil
+    var weeklyReviewGratitude: String? = nil
+    var weeklyReviewStats: Data? = nil  // JSON encoded stats (entry count, habits, mood, calories, people, tags, music, media)
+    
     init(type: EntryType = .text, text: String = "", tags: [String] = []) {
         self.id = UUID()
         self.createdAt = Date()
@@ -153,8 +165,8 @@ enum EntryType: String, Codable, CaseIterable {
     var displayName: String {
         switch self {
         case .text:     return "Note"
-        case .photo:    return "Photo"
-        case .audio:    return "Audio"
+        case .photo:    return "Shot"
+        case .audio:    return "Sound"
         case .link:     return "Link"
         case .journal:  return "Journal"
         case .location: return "Place"

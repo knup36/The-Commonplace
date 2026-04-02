@@ -167,13 +167,22 @@ struct PersonEditView: View {
     // MARK: - Save
 
     func save() {
-        let trimmedName = nameText.trimmingCharacters(in: .whitespaces)
-        if !trimmedName.isEmpty {
-            tag.name = trimmedName
+            let trimmedName = nameText.trimmingCharacters(in: .whitespaces)
+            if !trimmedName.isEmpty && trimmedName != tag.name {
+                // Rename: update all entries that reference the old person tag
+                let oldTagString = "@\(tag.name)"
+                let newTagString = "@\(trimmedName)"
+                let fetchDescriptor = FetchDescriptor<Entry>()
+                if let allEntries = try? modelContext.fetch(fetchDescriptor) {
+                    for entry in allEntries where entry.tagNames.contains(oldTagString) {
+                        entry.tagNames = entry.tagNames.map { $0 == oldTagString ? newTagString : $0 }
+                    }
+                }
+                tag.name = trimmedName
+            }
+            tag.bio = bioText.trimmingCharacters(in: .whitespaces).isEmpty ? nil : bioText.trimmingCharacters(in: .whitespaces)
+            try? modelContext.save()
         }
-        tag.bio = bioText.trimmingCharacters(in: .whitespaces).isEmpty ? nil : bioText.trimmingCharacters(in: .whitespaces)
-        try? modelContext.save()
-    }
 
     // MARK: - Avatar
 

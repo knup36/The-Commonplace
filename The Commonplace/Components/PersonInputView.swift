@@ -24,7 +24,9 @@ import SwiftData
 
 struct PersonInputView: View {
     @Binding var tags: [String]
-    @Query(sort: \Person.name) var allPersons: [Person]
+    @Query(sort: \Tag.name) var allPersonTags: [Tag]
+
+    var allPersons: [Tag] { allPersonTags.filter { $0.isPerson } }
     var accentColor: Color = .accentColor
     var style: (any AppThemeStyle)?
 
@@ -40,7 +42,7 @@ struct PersonInputView: View {
     }
 
     /// Person suggestions based on input text, excluding already tagged ones
-    var suggestions: [Person] {
+    var suggestions: [Tag] {
         let tagged = Set(taggedPersonNames)
         if inputText.isEmpty {
             return allPersons.filter { !tagged.contains($0.name) }
@@ -223,13 +225,14 @@ struct PersonInputView: View {
         tags.append(tagString)
         inputText = ""
         
-        // Create Person object if one doesn't exist
-        let existingNames = allPersons.map { $0.name }
-        if !existingNames.contains(where: { $0.lowercased() == cleaned.lowercased() }) {
-            let person = Person(name: cleaned)
-            modelContext.insert(person)
-            try? modelContext.save()
-            print("👤 Created Person: '\(person.name)'")
-        }
+        // Create Tag with subjectType "person" if one doesn't exist
+                let existingNames = allPersons.map { $0.name }
+                if !existingNames.contains(where: { $0.lowercased() == cleaned.lowercased() }) {
+                    let tag = Tag(name: cleaned)
+                    tag.subjectType = "person"
+                    modelContext.insert(tag)
+                    try? modelContext.save()
+                    print("👤 Created Person Tag: '\(tag.name)'")
+                }
     }
 }

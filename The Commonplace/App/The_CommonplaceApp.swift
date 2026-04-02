@@ -91,6 +91,7 @@ struct CommonplaceApp: App {
             PersonMigrationService.migrateIfNeeded(context: context)
             SubjectMigrationService.shared.migrateIfNeeded(context: context)
             JournalImageMigrationService.shared.migrateIfNeeded(entries: entries, context: context)
+            WeeklyReviewMigrationService.shared.migrateIfNeeded(context: context)
             ShareExtensionIngestor.ingestPendingEntries(context: context)
             entries.forEach { $0.healthDataFetched = false }
             try? context.save()

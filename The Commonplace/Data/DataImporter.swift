@@ -14,34 +14,34 @@ import SwiftData
 import ZIPFoundation
 
 class DataImporter {
-
+    
     static func importArchive(from url: URL, modelContext: ModelContext) throws -> ImportResult {
         let accessing = url.startAccessingSecurityScopedResource()
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }
-
+        
         let tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("commonplace_import_\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: tempDir) }
-
+        
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
         try FileManager.default.unzipItem(at: url, to: tempDir)
-
+        
         let manifestURL = tempDir.appendingPathComponent("manifest.json")
         guard FileManager.default.fileExists(atPath: manifestURL.path) else {
             throw ImportError.missingManifest
         }
-
+        
         let jsonData = try Data(contentsOf: manifestURL)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let manifest = try decoder.decode(DataExporter.ExportManifest.self, from: jsonData)
-
+        
         let mediaDir = tempDir.appendingPathComponent("media")
-
+        
         var entriesImported = 0
         var collectionsImported = 0
         var habitsImported = 0
-
+        
         // Import Habits
         let existingHabitIDs = Set((try? modelContext.fetch(FetchDescriptor<Habit>()))?.map { $0.id.uuidString } ?? [])
         for dto in manifest.habits {
@@ -51,7 +51,7 @@ class DataImporter {
             modelContext.insert(habit)
             habitsImported += 1
         }
-
+        
         // Import Collections
         let existingCollectionIDs = Set((try? modelContext.fetch(FetchDescriptor<Collection>()))?.map { $0.id.uuidString } ?? [])
         let existingCollectionNames = Set((try? modelContext.fetch(FetchDescriptor<Collection>()))?.map { $0.name } ?? [])
@@ -99,6 +99,7 @@ class DataImporter {
             entry.url = dto.url
             entry.linkTitle = dto.linkTitle
             entry.markdownContent = dto.markdownContent
+            entry.linkContentType = dto.linkContentType
             entry.locationName = dto.locationName
             entry.locationAddress = dto.locationAddress
             entry.locationLatitude = dto.locationLatitude
@@ -124,7 +125,7 @@ class DataImporter {
             entry.healthWorkoutDuration = dto.healthWorkoutDuration
             entry.healthWorkoutCalories = dto.healthWorkoutCalories
             entry.healthDataFetched = dto.healthDataFetched ?? false
-
+            
             // Journal fields
             if type == .journal {
                 entry.weatherEmoji = dto.weatherEmoji ?? ""
@@ -134,7 +135,7 @@ class DataImporter {
                 entry.completedHabitSnapshots = dto.completedHabitSnapshots ?? []
                 entry.totalHabitsAtTime = dto.totalHabitsAtTime ?? 0
             }
-
+            
             // Media fields
             if type == .media {
                 entry.mediaTitle = dto.mediaTitle
@@ -149,12 +150,30 @@ class DataImporter {
                 entry.mediaRuntime = dto.mediaRuntime
                 entry.mediaSeasons = dto.mediaSeasons
             }
+            // Weekly Review fields
+            entry.weeklyReviewHighlight = dto.weeklyReviewHighlight
+            entry.weeklyReviewCarryForward = dto.weeklyReviewCarryForward
+            entry.weeklyReviewGratitude = dto.weeklyReviewGratitude
+            entry.weeklyReviewStats = dto.weeklyReviewStats
             
             // Media files
             if let filename = dto.imageFile,
                let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
                 entry.imagePath = try? MediaFileManager.save(data, type: .image, id: entry.id.uuidString)
             }
+            if let filename = dto.videoFile,
+               let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
+                entry.videoPath = try? MediaFileManager.save(data, type: .video, id: entry.id.uuidString)
+            }
+            if let filename = dto.videoThumbnailFile,
+               let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
+                entry.videoThumbnailPath = try? MediaFileManager.save(
+                    data,
+                    type: .thumbnail,
+                    id: "\(entry.id.uuidString)_thumb"
+                )
+            }
+            entry.videoDuration = dto.videoDuration
             if let filename = dto.audioFile,
                let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
                 entry.audioPath = try? MediaFileManager.save(data, type: .audio, id: entry.id.uuidString)
@@ -183,11 +202,11 @@ class DataImporter {
                let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
                 entry.mediaCoverPath = try? MediaFileManager.save(data, type: .image, id: "\(entry.id.uuidString)_cover")
             }
-
+            
             modelContext.insert(entry)
             entriesImported += 1
         }
-
+        
         // Handle old archive format — import legacy JournalEntry records
         // and merge them into matching journal entries
         if !manifest.journalEntries.isEmpty {
@@ -261,12 +280,12 @@ class DataImporter {
             }
         }
     }
-
+    
     struct ImportResult {
         let entriesImported: Int
         let collectionsImported: Int
         let habitsImported: Int
-
+        
         var summary: String {
             let total = entriesImported + collectionsImported + habitsImported
             if total == 0 {

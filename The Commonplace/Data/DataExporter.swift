@@ -48,6 +48,9 @@ class DataExporter {
         var extractedText: String?
         var visionTags: [String]
         var audioFile: String?
+        var videoFile: String?
+        var videoThumbnailFile: String?
+        var videoDuration: Double?
         var transcript: String?
         var duration: Double?
         var url: String?
@@ -55,6 +58,7 @@ class DataExporter {
         var previewImageFile: String?
         var markdownContent: String?
         var faviconFile: String?
+        var linkContentType: String?
         var locationName: String?
         var locationAddress: String?
         var locationLatitude: Double?
@@ -102,6 +106,11 @@ class DataExporter {
         var tmdbID: Int?
         var mediaRuntime: Int?
         var mediaSeasons: Int?
+        // Weekly Review fields (v1.12.1)
+        var weeklyReviewHighlight: String?
+        var weeklyReviewCarryForward: String?
+        var weeklyReviewGratitude: String?
+        var weeklyReviewStats: Data?
     }
     
     struct CollectionDTO: Codable {
@@ -248,6 +257,7 @@ class DataExporter {
                 extractedText: entry.extractedText,
                 visionTags: entry.visionTags,
                 audioFile: nil,
+                videoDuration: entry.videoDuration,
                 transcript: entry.transcript,
                 duration: entry.duration,
                 url: entry.url,
@@ -255,6 +265,7 @@ class DataExporter {
                 previewImageFile: nil,
                 markdownContent: entry.markdownContent,
                 faviconFile: nil,
+                linkContentType: entry.linkContentType,
                 locationName: entry.locationName,
                 locationAddress: entry.locationAddress,
                 locationLatitude: entry.locationLatitude,
@@ -297,7 +308,11 @@ class DataExporter {
                 mediaLog: entry.mediaLog.isEmpty ? nil : entry.mediaLog,
                 tmdbID: entry.tmdbID,
                 mediaRuntime: entry.mediaRuntime,
-                mediaSeasons: entry.mediaSeasons
+                mediaSeasons: entry.mediaSeasons,
+                weeklyReviewHighlight: entry.weeklyReviewHighlight,
+                weeklyReviewCarryForward: entry.weeklyReviewCarryForward,
+                weeklyReviewGratitude: entry.weeklyReviewGratitude,
+                weeklyReviewStats: entry.weeklyReviewStats
             )
             
             // Media files
@@ -306,6 +321,20 @@ class DataExporter {
                 let filename = "entry_\(entry.id.uuidString)_image.jpg"
                 try data.write(to: mediaDir.appendingPathComponent(filename))
                 dto.imageFile = filename
+                mediaFileCount += 1
+            }
+            if let path = entry.videoPath,
+               let data = MediaFileManager.load(path: path) {
+                let filename = "entry_\(entry.id.uuidString)_video.mp4"
+                try data.write(to: mediaDir.appendingPathComponent(filename))
+                dto.videoFile = filename
+                mediaFileCount += 1
+            }
+            if let path = entry.videoThumbnailPath,
+               let data = MediaFileManager.load(path: path) {
+                let filename = "entry_\(entry.id.uuidString)_thumb.jpg"
+                try data.write(to: mediaDir.appendingPathComponent(filename))
+                dto.videoThumbnailFile = filename
                 mediaFileCount += 1
             }
             if let path = entry.audioPath,
@@ -437,7 +466,9 @@ class DataExporter {
             entry.faviconPath,
             entry.musicArtworkPath,
             entry.mediaCoverPath,
-            entry.journalImagePath
+            entry.journalImagePath,
+            entry.videoPath,
+            entry.videoThumbnailPath
         ].compactMap { $0 }
         // Note: journalImageData is stored in SwiftData directly, not as a file path,
         // so it is always available and does not need an iCloud download check
