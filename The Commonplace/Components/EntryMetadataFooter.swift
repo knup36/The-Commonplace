@@ -22,7 +22,7 @@ struct EntryMetadataFooter: View {
                         entry.captureLocationName ?? "\(String(format: "%.4f", lat)), \(String(format: "%.4f", lon))",
                         systemImage: "location.fill"
                     )
-                    .font(style.typeCaption)
+                    .font(style.typeLabel)
                     .foregroundStyle(style.cardMetadataText)
                 }
                 .buttonStyle(.plain)
@@ -33,10 +33,10 @@ struct EntryMetadataFooter: View {
             // Right column — date + time
             VStack(alignment: .trailing, spacing: 4) {
                 Text(entry.createdAt.formatted(date: .long, time: .omitted))
-                    .font(style.typeCaption)
+                    .font(style.typeLabel)
                     .foregroundStyle(style.cardMetadataText)
                 Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
-                    .font(style.typeCaption)
+                    .font(style.typeLabel)
                     .foregroundStyle(style.cardMetadataText)
             }
         }

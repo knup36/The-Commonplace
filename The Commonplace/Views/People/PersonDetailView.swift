@@ -16,7 +16,8 @@ struct PersonDetailView: View {
     @Bindable var tag: Tag
     @Query var allEntries: [Entry]
     @Environment(\.modelContext) var modelContext
-    @EnvironmentObject var themeManager: ThemeManager
+        @Environment(\.dismiss) var dismiss
+        @EnvironmentObject var themeManager: ThemeManager
     
     @State private var showingEditView = false
     
@@ -78,10 +79,29 @@ struct PersonDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Edit") {
-                    showingEditView = true
+                HStack(spacing: 16) {
+                    Button {
+                        withAnimation { tag.isPinned.toggle() }
+                    } label: {
+                        Image(systemName: tag.isPinned ? "bookmark.fill" : "bookmark")
+                            .foregroundStyle(accent)
+                    }
+                    Menu {
+                        Button("Edit") {
+                            showingEditView = true
+                        }
+                        Button(role: .destructive) {
+                            modelContext.delete(tag)
+                            try? modelContext.save()
+                            dismiss()
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .foregroundStyle(accent)
+                    }
                 }
-                .foregroundStyle(accent)
             }
         }
         .sheet(isPresented: $showingEditView) {

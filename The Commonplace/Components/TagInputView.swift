@@ -139,22 +139,22 @@ struct TagInputView: View {
     }
 
     func tagPill(_ tag: String) -> some View {
-        HStack(spacing: 4) {
-            Text(tag)
-                .font(.caption)
-            Button {
-                tags.removeAll { $0 == tag }
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
+            HStack(spacing: 4) {
+                Text(tag)
+                    .font(.caption)
+                Button {
+                    tags.removeAll { $0 == tag }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                }
             }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(accentColor.opacity(0.2))
+            .foregroundStyle(accentColor)
+            .clipShape(Capsule())
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
-        .background(style?.pillBackground ?? accentColor.opacity(0.15))
-        .foregroundStyle(style?.pillForeground ?? accentColor)
-        .clipShape(Capsule())
-    }
 
     func addTag(_ text: String) {
         let cleaned = text

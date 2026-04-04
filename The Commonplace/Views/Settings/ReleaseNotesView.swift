@@ -21,6 +21,20 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "1.13",
+            title: "Dressed for Success",
+            notes: [
+                "The entire visual system was rebuilt from the ground up — every color, font, and spacing value now flows through a single theme system",
+                "Nothing is hardcoded anywhere in the app. Tweaking a color or font size now happens in one place and ripples everywhere automatically",
+                "A new type scale brings more intentional typography — New York serif for titles and hero text, SF Rounded for body and UI, with proper sizing at every level",
+                "The Dusk theme is available to try in Settings — early form, with more polish coming",
+                "Every entry type card color now derives from a single source of truth per type, per theme — switching themes is instant and correct on every screen",
+                "New collections now appear immediately in the Library without needing a restart",
+                "Note entries open in view mode when revisiting — the keyboard no longer jumps up uninvited",
+                "This one was all under the hood. The app deserved it."
+            ]
+        ),
+        Release(
             version: "1.12.1",
             title: "Un-Stuck",
             notes: [

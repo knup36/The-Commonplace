@@ -223,7 +223,10 @@ struct CompactEntryCard: View {
                     .foregroundStyle(style.cardPrimaryText)
                     .lineLimit(2)
             }
-            Spacer()
+            Text(entry.createdAt.formatted(date: .abbreviated, time: .omitted))
+                .font(style.typeCaption)
+                .foregroundStyle(style.cardMetadataText)
+                .padding(.bottom,7)
             if total > 0 {
                 HStack(spacing: 4) {
                     GeometryReader { geo in

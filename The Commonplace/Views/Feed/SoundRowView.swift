@@ -15,11 +15,13 @@ struct SoundRowView: View {
     let entry: Entry
     @EnvironmentObject var themeManager: ThemeManager
     @ObservedObject var player = SoundPlayerService.shared
-
+    
     var style: any AppThemeStyle { themeManager.style }
+    var accentColor: Color { entry.type.accentColor(for: themeManager.current) }
     var cardColor: Color { entry.type.cardColor(for: themeManager.current) }
     var labelColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
-
+        var dimLabelColor: Color { labelColor.opacity(0.5) }
+    
     var isThisEntryPlaying: Bool {
         player.currentEntryID == entry.id && player.isPlaying
     }
@@ -45,24 +47,24 @@ struct SoundRowView: View {
         }
         return ""
     }
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-
+            
             // Type label
             if style.showsEntryTypeLabel {
                 HStack {
                     Spacer()
                     HStack(spacing: 5) {
                         Circle()
-                            .fill(style.cardSecondaryText)
+                            .fill(dimLabelColor)
                             .frame(width: 5, height: 5)
-                        NYLabel("SOUND", color: UIColor(labelColor))
+                        NYLabel("SOUND", color: UIColor(dimLabelColor))
                             .fixedSize()
                     }
                 }
             }
-
+            
             // Waveform row
             HStack(alignment: .center, spacing: 10) {
                 HStack(spacing: 8) {
@@ -116,14 +118,14 @@ struct SoundRowView: View {
                 if !visibleTags.isEmpty {
                     HStack(spacing: 4) {
                         ForEach(visibleTags.prefix(3), id: \.self) { tag in
-                            Text(tag)
-                                .font(style.typeCaption)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(style.pillBackground)
-                                .foregroundStyle(style.pillForeground)
-                                .clipShape(Capsule())
-                        }
+                                                    Text(tag)
+                                                        .font(style.typeCaption)
+                                                        .padding(.horizontal, 8)
+                                                        .padding(.vertical, 4)
+                                                        .background(labelColor.opacity(0.2))
+                                                        .foregroundStyle(labelColor)
+                                                        .clipShape(Capsule())
+                                                }
                         if visibleTags.count > 3 {
                             Text("+\(visibleTags.count - 3)")
                                 .font(style.typeCaption)

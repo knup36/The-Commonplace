@@ -114,6 +114,7 @@ struct LocationDetailView: View {
                     }
                     
                     TagInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
+                    PersonInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
                     
                     Divider()
                         .overlay(style.surface)

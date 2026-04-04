@@ -331,11 +331,14 @@ struct LibraryView: View {
                 }
             }
             .navigationDestination(for: Collection.self) { collection in
-                CollectionDetailView(collection: collection)
-            }
-            .navigationDestination(for: Entry.self) { entry in
-                destinationView(for: entry)
-            }
+                            CollectionDetailView(collection: collection)
+                        }
+                        .navigationDestination(for: Entry.self) { entry in
+                            destinationView(for: entry)
+                        }
+                        .navigationDestination(for: Tag.self) { tag in
+                            PersonDetailView(tag: tag)
+                        }
             .sheet(isPresented: $showingAddCollection) {
                 CollectionFormView()
             }
@@ -348,104 +351,103 @@ struct LibraryView: View {
     
     
     // MARK: - People Content
-    
-    @ViewBuilder
-    var peopleContent: some View {
-        if allPersons.isEmpty {
-            VStack(spacing: 12) {
-                Image(systemName: "person.slash")
-                    .font(.system(size: 48))
-                    .foregroundStyle(style.tertiaryText)
-                Text("No People Yet")
-                    .font(style.typeTitle3)
-                    .foregroundStyle(style.secondaryText)
-                Text("Tag people on your entries to see them here")
+
+        @ViewBuilder
+        var peopleContent: some View {
+            if allPersons.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "person.slash")
+                        .font(.system(size: 48))
+                        .foregroundStyle(style.tertiaryText)
+                    Text("No People Yet")
+                        .font(style.typeTitle3)
+                        .foregroundStyle(style.secondaryText)
+                    Text("Tag people on your entries to see them here")
+                        .font(style.typeCaption)
+                        .foregroundStyle(style.tertiaryText)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 80)
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+            } else {
+                LazyVGrid(
+                                columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4),
+                                spacing: 20
+                            ) {
+                                ForEach(allPersons) { person in
+                                    Button {
+                                        navigationPath.append(person)
+                                    } label: {
+                                        personGridCell(person: person)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            }
+        }
+
+    func personGridCell(person: Tag) -> some View {
+        let count = entryCount(for: person)
+        return VStack(spacing: 6) {
+            ZStack(alignment: .bottomTrailing) {
+                ZStack {
+                    Circle()
+                        .strokeBorder(SharedTheme.goldRingGradient, lineWidth: 1.5)
+                        .frame(width: 76, height: 76)
+                    personAvatar(person: person, size: 73)
+                }
+                .frame(width: 76, height: 76)
+                
+                if count > 0 {
+                    Text("\(count)")
+                        .font(style.typeCaption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                            .background(style.accent)
+                            .clipShape(Capsule())
+                            .offset(x: 4, y: 4)
+                    }
+                }
+
+                Text(person.name)
                     .font(style.typeCaption)
-                    .foregroundStyle(style.tertiaryText)
+                    .foregroundStyle(style.primaryText)
+                    .lineLimit(1)
                     .multilineTextAlignment(.center)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.top, 80)
-            .listRowSeparator(.hidden)
-            .listRowBackground(Color.clear)
         }
-        ForEach(allPersons) { person in
-            ZStack {
-                NavigationLink(destination: PersonDetailView(tag: person)) {
-                    EmptyView()
-                }
-                .opacity(0)
-                HStack(spacing: 12) {
-                    personAvatar(person: person, size: 40)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(person.name)
-                            .font(style.typeBody)
-                            .fontWeight(.medium)
-                            .foregroundStyle(style.primaryText)
-                        if let bio = person.bio, !bio.isEmpty {
-                            Text(bio)
-                                .font(style.typeCaption)
-                                .foregroundStyle(style.secondaryText)
-                                .lineLimit(1)
-                        }
-                    }
-                    Spacer()
-                    let count = entryCount(for: person)
-                    Text("\(count)")
-                        .font(style.typeBodySecondary)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(style.accent)
-                        .padding(.trailing, -12)
-                }
-                .padding(.vertical, 4)
-                .padding(.horizontal, 10)
-            }
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 3, leading: 16, bottom: 3, trailing: 24))
-            .listRowSeparator(.visible)
-            .buttonStyle(.plain)
-            .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                Button {
-                    withAnimation { person.isPinned.toggle() }
-                } label: {
-                    Label(person.isPinned ? "Unbookmark" : "Bookmark",
-                          systemImage: person.isPinned ? "bookmark.slash.fill" : "bookmark.fill")
-                }
-                .tint(.orange)
-            }
-            .swipeActions(edge: .trailing) {
-                Button(role: .destructive) {
-                    modelContext.delete(person)
-                    try? modelContext.save()
-                } label: {
-                    Label("Delete", systemImage: "trash")
+
+        // MARK: - Person Avatar
+
+        func personAvatar(person: Tag, size: CGFloat) -> some View {
+            Group {
+                if let path = person.profilePhotoPath,
+                   let data = MediaFileManager.load(path: path),
+                   let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: size, height: size)
+                        .clipShape(Circle())
+                } else {
+                    Circle()
+                        .fill(style.accent.opacity(0.2))
+                        .frame(width: size, height: size)
+                        .overlay(
+                            Text(String(person.name.prefix(1)).uppercased())
+                                .font(.system(size: size * 0.4, weight: .semibold))
+                                .foregroundStyle(style.accent)
+                        )
                 }
             }
         }
     }
-    
-    // MARK: - Person Avatar
-    
-    func personAvatar(person: Tag, size: CGFloat) -> some View {
-        Group {
-            if let path = person.profilePhotoPath,
-               let data = MediaFileManager.load(path: path),
-               let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: size, height: size)
-                    .clipShape(Circle())
-            } else {
-                Circle()
-                    .fill(style.accent.opacity(0.2))
-                    .frame(width: size, height: size)
-                    .overlay(
-                        Text(String(person.name.prefix(1)).uppercased())
-                            .font(.system(size: size * 0.4, weight: .semibold))
-                            .foregroundStyle(style.accent)
-                    )
-            }
-        }
-    }
-}

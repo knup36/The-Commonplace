@@ -98,41 +98,39 @@ struct EntryRowView: View {
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { entry.type.accentColor(for: themeManager.current) }
         var cardColor: Color { entry.type.cardColor(for: themeManager.current) }
-        var labelColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
+    var labelColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
+        var dimLabelColor: Color { labelColor.opacity(0.5) }
 
     // MARK: - Type Label
-
+    
     @ViewBuilder
     var typeLabel: some View {
         if style.showsEntryTypeLabel {
             HStack(spacing: 5) {
                 Circle()
-                    .fill(Color.white.opacity(0.5))
+                    .fill(dimLabelColor)
                     .frame(width: 5, height: 5)
                 if entry.type == .link, let contentType = entry.linkContentType {
-                                    HStack(spacing: 0) {
-                                        NYLabel("LINK", size: 11, weight: .regular,
-                                                color: UIColor(labelColor))
-                                            .fixedSize()
-                                        NYLabel(" · \(contentType.uppercased())", size: 11, weight: .regular,
-                                                color: UIColor(labelColor).withAlphaComponent(0.5))
-                                            .fixedSize()
-                                    }
-                                } else if entry.type == .photo {
-                                    let subtype = entry.videoPath != nil ? "VIDEO" : "PHOTO"
-                                    HStack(spacing: 0) {
-                                        NYLabel("SHOT", size: 11, weight: .regular,
-                                                color: UIColor(labelColor))
-                                            .fixedSize()
-                                        NYLabel(" · \(subtype)", size: 11, weight: .regular,
-                                                color: UIColor(labelColor).withAlphaComponent(0.5))
-                                            .fixedSize()
-                                    }
-                                } else {
-                                    NYLabel(typeLabelText.uppercased(), size: 11, weight: .regular,
-                                            color: UIColor(labelColor))
-                                        .fixedSize()
-                                }
+                    HStack(spacing: 0) {
+                        NYLabel("LINK", color: UIColor(dimLabelColor))
+                            .fixedSize()
+                        NYLabel(" · \(contentType.uppercased())",
+                                color: UIColor(dimLabelColor).withAlphaComponent(0.5))
+                        .fixedSize()
+                    }
+                } else if entry.type == .photo {
+                    let subtype = entry.videoPath != nil ? "VIDEO" : "PHOTO"
+                    HStack(spacing: 0) {
+                        NYLabel("SHOT", color: UIColor(dimLabelColor))
+                            .fixedSize()
+                        NYLabel(" · \(subtype)",
+                                color: UIColor(dimLabelColor).withAlphaComponent(0.5))
+                        .fixedSize()
+                    }
+                } else {
+                    NYLabel(typeLabelText.uppercased(), color: UIColor(dimLabelColor))
+                        .fixedSize()
+                }
             }
         }
     }
@@ -365,15 +363,15 @@ struct EntryRowView: View {
                                 .font(style.typeCaption)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(style.pillBackground)
-                                .foregroundStyle(style.pillForeground)
+                                .background(labelColor.opacity(0.2))
+                                .foregroundStyle(labelColor)
                                 .clipShape(Capsule())
                         }
                         if visibleTags.count > 3 {
-                                                    Text("+\(visibleTags.count - 3)")
-                                                        .font(style.typeCaption)
-                                                        .foregroundStyle(style.cardMetadataText)
-                                                }
+                            Text("+\(visibleTags.count - 3)")
+                                .font(style.typeCaption)
+                                .foregroundStyle(style.cardMetadataText)
+                        }
                     }
                 }
                 Spacer()

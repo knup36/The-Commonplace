@@ -16,6 +16,8 @@ struct ShotRowView: View {
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { entry.type.accentColor(for: themeManager.current) }
     var cardColor: Color { entry.type.cardColor(for: themeManager.current) }
+    var labelColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
+    var dimLabelColor: Color { labelColor.opacity(0.5) }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -26,12 +28,12 @@ struct ShotRowView: View {
                     Spacer()
                     HStack(spacing: 5) {
                         Circle()
-                            .fill(style.cardSecondaryText)
+                            .fill(dimLabelColor)
                             .frame(width: 5, height: 5)
                         HStack(spacing: 0) {
-                            NYLabel("SHOT", color: UIColor(style.cardPrimaryText))
+                            NYLabel("SHOT", color: UIColor(dimLabelColor))
                                 .fixedSize()
-                            NYLabel(" · VIDEO", color: UIColor(style.cardMetadataText))
+                            NYLabel(" · VIDEO", color: UIColor(dimLabelColor).withAlphaComponent(0.5))
                                 .fixedSize()
                         }
                     }
@@ -108,8 +110,8 @@ struct ShotRowView: View {
                                 .font(style.typeCaption)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(style.pillBackground)
-                                .foregroundStyle(style.pillForeground)
+                                .background(labelColor.opacity(0.2))
+                                .foregroundStyle(labelColor)
                                 .clipShape(Capsule())
                         }
                         if visibleTags.count > 3 {

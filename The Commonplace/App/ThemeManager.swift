@@ -406,6 +406,7 @@ struct InkwellTheme {
         case "#30B0C7": return Color(hex: "#40A8C0")
         case "#32ADE6": return Color(hex: "#3888C0")
         case "#007AFF": return Color(hex: "#4878C8")
+        case "#0A84FF": return Color(hex: "#4878C8")
         case "#5856D6": return Color(hex: "#6860B8")
         case "#AF52DE": return Color(hex: "#9868C8")
         case "#BF5AF2": return Color(hex: "#9868C8")
@@ -440,17 +441,17 @@ struct InkwellStyle: AppThemeStyle {
     var subheadline: Font { .system(.subheadline, design: .serif) }
     var caption: Font     { .system(.caption, design: .serif) }
     var pillBackground: Color         { InkwellTheme.surface }
-        var pillForeground: Color         { InkwellTheme.inkSecondary }
-        var personAvatarBackground: Color { InkwellTheme.surface }
-        var personAvatarForeground: Color { InkwellTheme.inkPrimary }
-        var cardPrimaryText: Color        { InkwellTheme.inkPrimary }
-        var cardSecondaryText: Color      { InkwellTheme.inkSecondary }
-        var cardMetadataText: Color       { InkwellTheme.inkTertiary }
-        var cardDivider: Color            { InkwellTheme.cardBorderTop }
-        var cardBorder: Color             { InkwellTheme.cardBorder }
-        var showsEntryTypeLabel: Bool     { true }
-        var usesSerifFonts: Bool          { true }
-    }
+    var pillForeground: Color         { InkwellTheme.inkSecondary }
+    var personAvatarBackground: Color { InkwellTheme.surface }
+    var personAvatarForeground: Color { InkwellTheme.inkPrimary }
+    var cardPrimaryText: Color        { InkwellTheme.inkPrimary }
+    var cardSecondaryText: Color      { InkwellTheme.inkSecondary }
+    var cardMetadataText: Color       { InkwellTheme.inkTertiary }
+    var cardDivider: Color            { InkwellTheme.cardBorderTop }
+    var cardBorder: Color             { InkwellTheme.cardBorder }
+    var showsEntryTypeLabel: Bool     { true }
+    var usesSerifFonts: Bool          { true }
+}
 
     // MARK: - System Style
 
