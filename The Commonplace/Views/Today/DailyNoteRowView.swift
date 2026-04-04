@@ -10,19 +10,19 @@ import SwiftData
 struct DailyNoteRowView: View {
     let entry: Entry
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     var style: any AppThemeStyle { themeManager.style }
-    var purple: Color { InkwellTheme.journalAccent }
-
+    var purple: Color { EntryType.journal.detailAccentColor(for: themeManager.current) }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-
+            
             // Date
             Text(entry.createdAt.formatted(.dateTime.weekday(.wide).month(.wide).day()))
-                .font(style.subheadline)
+                .font(style.typeBodySecondary)
                 .fontWeight(.semibold)
                 .foregroundStyle(purple)
-
+            
             // Weather + Mood + Mini rings
             HStack(spacing: 8) {
                 if !entry.weatherEmoji.isEmpty {
@@ -43,23 +43,23 @@ struct DailyNoteRowView: View {
                     )
                 }
             }
-
+            
             // Note text
             if !entry.text.isEmpty {
                 let lineLimit = 6
                 let lines = entry.text.components(separatedBy: "\n")
                 let truncated = entry.text.count > 300 || lines.count > lineLimit
                 Text(entry.text)
-                    .font(style.body)
+                    .font(style.typeBody)
                     .lineLimit(lineLimit)
-                    .foregroundStyle(style.primaryText)
+                    .foregroundStyle(style.cardPrimaryText)
                 if truncated {
                     Text("more...")
-                        .font(style.caption)
+                        .font(style.typeCaption)
                         .foregroundStyle(purple.opacity(0.7))
                 }
             }
-
+            
             // Habit summary
             if !entry.completedHabitSnapshots.isEmpty || entry.totalHabitsAtTime > 0 {
                 let completed = entry.completedHabitSnapshots.count
@@ -70,11 +70,11 @@ struct DailyNoteRowView: View {
                         .font(.caption)
                         .foregroundStyle(purple)
                     Text("\(completed) of \(total) habits complete · \(percentage)%")
-                        .font(style.caption)
+                        .font(style.typeCaption)
                         .foregroundStyle(purple)
                 }
             }
-
+            
             // Journal photo
             if let path = entry.journalImagePath,
                let data = MediaFileManager.load(path: path),

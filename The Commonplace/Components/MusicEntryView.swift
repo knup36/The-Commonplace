@@ -31,8 +31,8 @@ struct MusicEntryView: View {
     @State private var previewTimer: Timer? = nil
     private let previewDuration: Double = 30.0
 
-    var isInkwell: Bool { themeManager.current == .inkwell }
-    var accentColor: Color { isInkwell ? InkwellTheme.accentColor(for: .music) : .red }
+    var style: any AppThemeStyle { themeManager.style }
+        var accentColor: Color { EntryType.music.detailAccentColor(for: themeManager.current) }
 
     var isCurrentlyPlaying: Bool {
         musicService.isPlaying && musicService.currentEntryID == entry.id
@@ -74,9 +74,9 @@ struct MusicEntryView: View {
                     .frame(width: 64, height: 64)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(isInkwell ? InkwellTheme.cardBorderTop.opacity(0.3) : Color.clear, lineWidth: 0.5)
-                    )
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .strokeBorder(style.cardBorder, lineWidth: 0.5)
+                                        )
             } else {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(accentColor.opacity(0.15))
@@ -95,31 +95,31 @@ struct MusicEntryView: View {
     var infoStack: some View {
         VStack(alignment: .leading, spacing: 4) {
             if let title = entry.linkTitle, !title.isEmpty {
-                Text(title)
-                    .font(isInkwell ? .system(.subheadline, design: .serif) : .subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(isInkwell ? InkwellTheme.inkPrimary : .primary)
-                    .lineLimit(2)
-            }
-            if let artist = entry.musicArtist, !artist.isEmpty {
-                Text(artist)
-                    .font(isInkwell ? .system(.caption, design: .serif) : .caption)
-                    .foregroundStyle(isInkwell ? InkwellTheme.inkSecondary : .secondary)
-                    .lineLimit(1)
-            }
-            if let album = entry.musicAlbum, !album.isEmpty {
-                Text(album)
-                    .font(isInkwell ? .system(.caption, design: .serif) : .caption)
-                    .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : Color(uiColor: .tertiaryLabel))
-                    .lineLimit(1)
-            }
-            if !entry.text.isEmpty {
-                Text(entry.text)
-                    .font(isInkwell ? .system(.caption, design: .serif) : .caption)
-                    .italic()
-                    .lineLimit(2)
-                    .foregroundStyle(isInkwell ? InkwellTheme.inkTertiary : .secondary)
-            }
+                            Text(title)
+                                .font(style.typeBodySecondary)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(style.cardPrimaryText)
+                                .lineLimit(2)
+                        }
+                        if let artist = entry.musicArtist, !artist.isEmpty {
+                            Text(artist)
+                                .font(style.typeCaption)
+                                .foregroundStyle(style.cardSecondaryText)
+                                .lineLimit(1)
+                        }
+                        if let album = entry.musicAlbum, !album.isEmpty {
+                            Text(album)
+                                .font(style.typeCaption)
+                                .foregroundStyle(style.cardMetadataText)
+                                .lineLimit(1)
+                        }
+                        if !entry.text.isEmpty {
+                            Text(entry.text)
+                                .font(style.typeCaption)
+                                .italic()
+                                .lineLimit(2)
+                                .foregroundStyle(style.cardMetadataText)
+                        }
         }
     }
 

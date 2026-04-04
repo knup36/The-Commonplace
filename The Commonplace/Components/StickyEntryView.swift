@@ -11,24 +11,24 @@ struct StickyEntryView: View {
     @EnvironmentObject var themeManager: ThemeManager
     var isPreview: Bool = false
     let previewLimit = 4
-
+    
     var style: any AppThemeStyle { themeManager.style }
-    var accentColor: Color { InkwellTheme.stickyAccent }
-
+    var accentColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let title = entry.stickyTitle, !title.isEmpty {
                 Text(title)
-                    .font(style.subheadline)
+                    .font(style.typeBodySecondary)
                     .fontWeight(.semibold)
                     .foregroundStyle(accentColor)
             }
-
+            
             let sortedItems = entry.parsedStickyItems.sorted {
                 !entry.stickyChecked.contains($0.id) && entry.stickyChecked.contains($1.id)
             }
             let visibleItems = isPreview ? Array(sortedItems.prefix(previewLimit)) : sortedItems
-
+            
             ForEach(visibleItems) { item in
                 HStack(spacing: 8) {
                     Button {
@@ -36,35 +36,35 @@ struct StickyEntryView: View {
                     } label: {
                         Image(systemName: entry.stickyChecked.contains(item.id) ? "checkmark.circle.fill" : "circle")
                             .foregroundStyle(entry.stickyChecked.contains(item.id)
-                                ? accentColor
-                                : style.tertiaryText)
+                                             ? accentColor
+                                             : style.tertiaryText)
                     }
                     .buttonStyle(.plain)
                     Text(item.text)
-                        .font(style.subheadline)
+                        .font(style.typeBodySecondary)
                         .foregroundStyle(entry.stickyChecked.contains(item.id)
-                            ? style.tertiaryText
-                            : style.primaryText)
+                                         ? style.cardMetadataText
+                                         : style.cardPrimaryText)
                         .strikethrough(entry.stickyChecked.contains(item.id),
                                        color: style.tertiaryText)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-
+            
             if isPreview && entry.parsedStickyItems.count > previewLimit {
                 Text("\(entry.parsedStickyItems.count - previewLimit) more...")
-                    .font(style.caption)
-                    .foregroundStyle(style.tertiaryText)
+                    .font(style.typeCaption)
+                    .foregroundStyle(style.cardMetadataText)
                     .padding(.top, 2)
             }
-
+            
             if !entry.parsedStickyItems.isEmpty {
                 HStack(spacing: 6) {
                     ProgressView(value: Double(entry.stickyChecked.count), total: Double(entry.parsedStickyItems.count))
                         .tint(accentColor)
                     Text("\(entry.stickyChecked.count)/\(entry.parsedStickyItems.count)")
-                        .font(.caption2)
-                        .foregroundStyle(style.tertiaryText)
+                        .font(style.typeCaption)
+                        .foregroundStyle(style.cardMetadataText)
                 }
                 .padding(.top, 2)
             }

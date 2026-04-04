@@ -21,14 +21,14 @@ struct HabitSettingsView: View {
     @Environment(\.modelContext) var modelContext
     @Query(sort: \Habit.order) var habits: [Habit]
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     @State private var showingAddHabit = false
     @State private var habitToEdit: Habit? = nil
     @State private var editMode: EditMode = .active
-
+    
     var style: any AppThemeStyle { themeManager.style }
     var accent: Color { style.accent }
-
+    
     var body: some View {
         List {
             ForEach(habits) { habit in
@@ -38,18 +38,14 @@ struct HabitSettingsView: View {
                             .fill(accent.opacity(0.12))
                             .frame(width: 36, height: 36)
                             .overlay(
-                                style.usesSerifFonts
-                                ? Circle().strokeBorder(accent.opacity(0.3), lineWidth: 0.5)
-                                : nil
+                                Circle().strokeBorder(accent.opacity(0.3), lineWidth: 0.5)
                             )
                         Image(systemName: habit.icon)
                             .font(.system(size: 16))
                             .foregroundStyle(accent)
                     }
                     Text(habit.name)
-                        .font(style.usesSerifFonts
-                              ? .system(.body, design: .serif)
-                              : .body)
+                        .font(style.typeBody)
                         .foregroundStyle(style.primaryText)
                     Spacer()
                 }
@@ -67,8 +63,8 @@ struct HabitSettingsView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .scrollContentBackground(style.usesSerifFonts ? .hidden : .visible)
-        .background(style.usesSerifFonts ? style.background : Color(uiColor: .systemGroupedBackground))
+        .scrollContentBackground(.hidden)
+        .background(style.background)
         .environment(\.editMode, $editMode)
         .navigationTitle("Daily Habits")
         .navigationBarTitleDisplayMode(.inline)

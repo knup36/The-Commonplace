@@ -46,29 +46,35 @@ extension Notification.Name {
 
 struct CommonplaceTextEditor<Toolbar: View>: UIViewRepresentable {
     @Binding var text: String
-    var placeholder: String = ""
-    var usesSerifFont: Bool = false
-    var minHeight: CGFloat = 32
-    var onSubmit: (() -> Void)? = nil
-    var toolbar: Toolbar
+        var placeholder: String = ""
+        var usesSerifFont: Bool = false
+        var fontSize: CGFloat? = nil        // nil = use system body size
+        var fontWeight: UIFont.Weight = .regular
+        var minHeight: CGFloat = 32
+        var onSubmit: (() -> Void)? = nil
+        var toolbar: Toolbar
     
     private let debounceInterval: TimeInterval = 0.3
     
     // Convenience init without toolbar
-    init(
-        text: Binding<String>,
-        placeholder: String = "",
-        usesSerifFont: Bool = false,
-        minHeight: CGFloat = 32,
-        onSubmit: (() -> Void)? = nil
-    ) where Toolbar == EmptyView {
-        self._text = text
-        self.placeholder = placeholder
-        self.usesSerifFont = usesSerifFont
-        self.minHeight = minHeight
-        self.onSubmit = onSubmit
-        self.toolbar = EmptyView()
-    }
+        init(
+            text: Binding<String>,
+            placeholder: String = "",
+            usesSerifFont: Bool = false,
+            fontSize: CGFloat? = nil,
+            fontWeight: UIFont.Weight = .regular,
+            minHeight: CGFloat = 32,
+            onSubmit: (() -> Void)? = nil
+        ) where Toolbar == EmptyView {
+            self._text = text
+            self.placeholder = placeholder
+            self.usesSerifFont = usesSerifFont
+            self.fontSize = fontSize
+            self.fontWeight = fontWeight
+            self.minHeight = minHeight
+            self.onSubmit = onSubmit
+            self.toolbar = EmptyView()
+        }
     
     // Full init with toolbar
     init(
@@ -128,14 +134,26 @@ struct CommonplaceTextEditor<Toolbar: View>: UIViewRepresentable {
     // for standard text styles.
     
     var resolvedUIFont: UIFont {
-        let baseDescriptor = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .body)
-        if usesSerifFont {
-            if let serifDescriptor = baseDescriptor.withDesign(.serif) {
-                return UIFont(descriptor: serifDescriptor, size: 0)
+            let size = fontSize ?? UIFont.preferredFont(forTextStyle: .body).pointSize
+            if usesSerifFont {
+                let baseDescriptor = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .body)
+                if let serifDescriptor = baseDescriptor.withDesign(.serif) {
+                    let weightedDescriptor = serifDescriptor.addingAttributes([
+                        .traits: [UIFontDescriptor.TraitKey.weight: fontWeight]
+                    ])
+                    return UIFont(descriptor: weightedDescriptor, size: size)
+                }
             }
+            // SF Rounded
+            let baseDescriptor = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .body)
+            if let roundedDescriptor = baseDescriptor.withDesign(.rounded) {
+                let weightedDescriptor = roundedDescriptor.addingAttributes([
+                    .traits: [UIFontDescriptor.TraitKey.weight: fontWeight]
+                ])
+                return UIFont(descriptor: weightedDescriptor, size: size)
+            }
+            return UIFont.systemFont(ofSize: size, weight: fontWeight)
         }
-        return UIFont(descriptor: baseDescriptor, size: 0)
-    }
     
     // MARK: - Coordinator
     
@@ -245,10 +263,14 @@ struct CommonplaceTextEditor<Toolbar: View>: UIViewRepresentable {
     // MARK: - Helpers
     
     private func updatePlaceholder(_ textView: GrowingTextView, context: Context) {
-        if text.isEmpty && !placeholder.isEmpty {
-            context.coordinator.addPlaceholder(to: textView, font: resolvedUIFont)
+            if text.isEmpty && !placeholder.isEmpty {
+                context.coordinator.addPlaceholder(to: textView, font: resolvedUIFont)
+            } else {
+                textView.subviews
+                    .first(where: { $0.accessibilityIdentifier == "placeholder" })?
+                    .removeFromSuperview()
+            }
         }
-    }
 }
 
 // MARK: - KeyboardAvoidingModifier

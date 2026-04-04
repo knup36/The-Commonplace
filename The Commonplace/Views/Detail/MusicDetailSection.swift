@@ -39,9 +39,9 @@ struct MusicDetailSection: View {
                         .textInputAutocapitalization(.never)
                         .focused($linkFieldFocused)
                         .padding(12)
-                        .background(accentColor.opacity(0.08))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .onChange(of: linkURLText) { _, newValue in
+                        .background(style.cardDivider)
+                                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                                .onChange(of: linkURLText) { _, newValue in
                             if newValue.contains("music.apple.com") {
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                                     if linkURLText == newValue { saveMusicURL() }
@@ -52,17 +52,17 @@ struct MusicDetailSection: View {
                     MusicEntryView(entry: entry)
                     if let urlString = entry.url, let url = URL(string: urlString) {
                         if isExtracting {
-                            HStack(spacing: 6) {
-                                ProgressView()
-                                Text("Fetching music info...")
-                                    .font(.caption)
-                                    .foregroundStyle(style.secondaryText)
-                            }
-                        } else if entry.linkTitle != nil {
-                            Label("Music info saved", systemImage: "checkmark.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(style.secondaryText)
-                        }
+                                                    HStack(spacing: 6) {
+                                                        ProgressView()
+                                                        Text("Fetching music info...")
+                                                            .font(style.typeCaption)
+                                                            .foregroundStyle(style.cardSecondaryText)
+                                                    }
+                                                } else if entry.linkTitle != nil {
+                                                    Label("Music info saved", systemImage: "checkmark.circle.fill")
+                                                        .font(style.typeCaption)
+                                                        .foregroundStyle(style.cardSecondaryText)
+                                                }
                         Button {
                             UIApplication.shared.open(url)
                         } label: {

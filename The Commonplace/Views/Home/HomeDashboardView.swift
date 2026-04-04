@@ -84,10 +84,8 @@ struct HomeDashboardView: View {
                     
                     // Title
                     Text("Home")
-                        .font(style.usesSerifFonts
-                              ? .system(size: 34, weight: .bold, design: .serif)
-                              : .largeTitle.bold())
-                        .foregroundStyle(style.primaryText)
+                                            .font(style.typeLargeTitle)
+                                            .foregroundStyle(style.primaryText)
                         .padding(.horizontal, 20)
                         .padding(.top, 16)
                     
@@ -154,39 +152,37 @@ struct HomeDashboardView: View {
     }
     
     func compactCollectionCard(collection: Collection) -> some View {
-        let accent = Color(hex: collection.colorHex)
-        let bg = InkwellTheme.collectionCardBackground(for: collection.colorHex)
-        let count = entryCount(for: collection)
-        
-        return ZStack {
-            RoundedRectangle(cornerRadius: 16)
-                .fill(bg)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .strokeBorder(accent.opacity(0.3), lineWidth: 0.5)
-                )
-            
-            VStack(spacing: 6) {
-                Image(systemName: collection.icon)
-                    .font(.system(size: 22, weight: .medium))
-                    .foregroundStyle(InkwellTheme.collectionAccentColor(for: collection.colorHex))
-                
-                Text(collection.name)
-                    .font(style.usesSerifFonts ? .system(.caption2, design: .serif) : .caption2)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(style.primaryText)
-                    .lineLimit(1)
-                    .multilineTextAlignment(.center)
-                
-                Text("\(count)")
-                    .font(.caption2)
-                    .foregroundStyle(InkwellTheme.collectionAccentColor(for: collection.colorHex))
+            let accent = Color(hex: collection.colorHex)
+            let count = entryCount(for: collection)
+
+            return ZStack {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(accent.opacity(0.15))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .strokeBorder(accent.opacity(0.3), lineWidth: 0.5)
+                    )
+
+                VStack(spacing: 6) {
+                    Image(systemName: collection.icon)
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundStyle(accent)
+
+                    Text(collection.name)
+                        .font(style.typeCaption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(style.primaryText)
+                        .lineLimit(1)
+                        .multilineTextAlignment(.center)
+
+                    Text("\(count)")
+                        .font(style.typeCaption)
+                        .foregroundStyle(accent.opacity(0.7))
+                }
+                .padding(8)
             }
-            .padding(8)
+            .frame(width: 100, height: 100)
         }
-        .frame(width: 100, height: 100)
-        .shadow(color: .black.opacity(0.35), radius: 6, x: 0, y: 3)
-    }
     
     // MARK: - Entries Section
     
@@ -237,37 +233,20 @@ struct HomeDashboardView: View {
             // Avatar with gold angular gradient ring
             ZStack {
                 Circle()
-                    .strokeBorder(
-                        AngularGradient(
-                            colors: [
-                                Color(hex: "#C8903A"),
-                                Color(hex: "#F5D478"),
-                                Color(hex: "#C8903A"),
-                                Color(hex: "#8A6028"),
-                                Color(hex: "#C8903A"),
-                                Color(hex: "#F5D478"),
-                                Color(hex: "#C8903A")
-                            ],
-                            center: .center,
-                            startAngle: .degrees(0),
-                            endAngle: .degrees(360)
-                        ),
-                        lineWidth: 1.5
-                    )
-                    .frame(width: 58, height: 58)
+                                    .strokeBorder(SharedTheme.goldRingGradient, lineWidth: 1.5)
+                                    .frame(width: 58, height: 58)
                 
                 personAvatarView(person: person, size: 54)
             }
             
             // Name
             Text(person.name)
-                .font(.caption2)
-                .foregroundStyle(style.secondaryText)
-                .lineLimit(1)
-                .frame(width: 64)
-        }
-        .frame(width: 64, height: 80)
-        .shadow(color: .black.opacity(0.3), radius: 5, x: 0, y: 2)
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.secondaryText)
+                            .lineLimit(1)
+                            .frame(width: 64)
+                    }
+                    .frame(width: 64, height: 80)
     }
     
     func personAvatarView(person: Tag, size: CGFloat) -> some View {
@@ -316,12 +295,11 @@ struct HomeDashboardView: View {
         let count = entryCount(for: tag)
         return HStack(spacing: 4) {
             Text(tag.name)
-                .font(style.usesSerifFonts ? .system(.caption, design: .serif) : .caption)
-                .italic(style.usesSerifFonts)
-                .foregroundStyle(style.accent)
-            Text("(\(count))")
-                .font(.caption2)
-                .foregroundStyle(style.tertiaryText)
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.accent)
+                        Text("(\(count))")
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.tertiaryText)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
@@ -342,9 +320,8 @@ struct HomeDashboardView: View {
                 .font(.caption)
                 .foregroundStyle(style.accent)
             Text(title)
-                .font(.title3)
-                .fontWeight(.semibold)
-                .foregroundStyle(style.primaryText)
+                            .font(style.typeTitle2)
+                            .foregroundStyle(style.primaryText)
             Spacer()
         }
         .padding(.horizontal, 20)
@@ -358,11 +335,11 @@ struct HomeDashboardView: View {
                 .font(.system(size: 36))
                 .foregroundStyle(style.tertiaryText)
             Text("Nothing bookmarked yet")
-                .font(.headline)
-                .foregroundStyle(style.secondaryText)
-            Text("Bookmark entries, collections, tags, and people to see them here.")
-                .font(.caption)
-                .foregroundStyle(style.tertiaryText)
+                            .font(style.typeTitle3)
+                            .foregroundStyle(style.secondaryText)
+                        Text("Bookmark entries, collections, tags, and people to see them here.")
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.tertiaryText)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)

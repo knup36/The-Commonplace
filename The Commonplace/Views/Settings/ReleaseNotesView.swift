@@ -11,28 +11,28 @@ struct ReleaseNotesView: View {
     @EnvironmentObject var themeManager: ThemeManager
     var style: any AppThemeStyle { themeManager.style }
     var accent: Color { style.accent }
-
+    
     struct Release: Identifiable {
         let id = UUID()
         let version: String
         let title: String
         let notes: [String]
     }
-
+    
     let releases: [Release] = [
         Release(
-                    version: "1.12.1",
-                    title: "Un-Stuck",
-                    notes: [
-                        "Stickies are completely redesigned — input and list are fully separated, eliminating the doubled-text glitch that's been there since the beginning",
-                        "Tap any item to edit it, or tap the input bar at the bottom to add — the keyboard appears instantly with no delay",
-                        "Long-press any unchecked item to drag and reorder",
-                        "Checked items sink to the bottom with strikethrough, swipe to delete any item",
-                        "Weekly Review data now lives in dedicated fields instead of being hidden inside your note text — a rule that applies to all future entry types",
-                        "Adding a new person to an entry now appears in the People list immediately, no restart needed",
-                        "Renaming a person no longer detaches them from their entries — all connections update automatically"
-                    ]
-                ),
+            version: "1.12.1",
+            title: "Un-Stuck",
+            notes: [
+                "Stickies are completely redesigned — input and list are fully separated, eliminating the doubled-text glitch that's been there since the beginning",
+                "Tap any item to edit it, or tap the input bar at the bottom to add — the keyboard appears instantly with no delay",
+                "Long-press any unchecked item to drag and reorder",
+                "Checked items sink to the bottom with strikethrough, swipe to delete any item",
+                "Weekly Review data now lives in dedicated fields instead of being hidden inside your note text — a rule that applies to all future entry types",
+                "Adding a new person to an entry now appears in the People list immediately, no restart needed",
+                "Renaming a person no longer detaches them from their entries — all connections update automatically"
+            ]
+        ),
         Release(
             version: "1.12",
             title: "Vidiots",
@@ -237,7 +237,7 @@ struct ReleaseNotesView: View {
             ]
         ),
     ]
-
+    
     var body: some View {
         List {
             // Latest version — prominent
@@ -246,9 +246,7 @@ struct ReleaseNotesView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(alignment: .firstTextBaseline, spacing: 8) {
                             Text("Version \(latest.version)")
-                                .font(style.usesSerifFonts
-                                      ? .system(.title2, design: .serif)
-                                      : .title2)
+                                .font(style.typeTitle2)
                                 .fontWeight(.bold)
                                 .foregroundStyle(style.primaryText)
                             Text("Latest")
@@ -261,9 +259,7 @@ struct ReleaseNotesView: View {
                                 .clipShape(Capsule())
                         }
                         Text(latest.title)
-                            .font(style.usesSerifFonts
-                                  ? .system(.subheadline, design: .serif)
-                                  : .subheadline)
+                            .font(style.typeBodySecondary)
                             .foregroundStyle(style.secondaryText)
                         VStack(alignment: .leading, spacing: 8) {
                             ForEach(latest.notes, id: \.self) { note in
@@ -273,9 +269,7 @@ struct ReleaseNotesView: View {
                                         .foregroundStyle(accent)
                                         .padding(.top, 3)
                                     Text(note)
-                                        .font(style.usesSerifFonts
-                                              ? .system(.body, design: .serif)
-                                              : .body)
+                                        .font(style.typeBody)
                                         .foregroundStyle(style.primaryText)
                                 }
                             }
@@ -283,10 +277,10 @@ struct ReleaseNotesView: View {
                     }
                     .padding(.vertical, 8)
                 }
-                .listRowBackground(style.usesSerifFonts ? style.surface : nil)
-
+                .listRowBackground(style.surface)
+                
             }
-
+            
             // Previous versions
             Section {
                 ForEach(releases.dropFirst()) { release in
@@ -299,9 +293,7 @@ struct ReleaseNotesView: View {
                                         .frame(width: 4, height: 4)
                                         .padding(.top, 6)
                                     Text(note)
-                                        .font(style.usesSerifFonts
-                                              ? .system(.subheadline, design: .serif)
-                                              : .subheadline)
+                                        .font(style.typeBodySecondary)
                                         .foregroundStyle(style.secondaryText)
                                 }
                             }
@@ -310,9 +302,7 @@ struct ReleaseNotesView: View {
                     } label: {
                         HStack {
                             Text("Version \(release.version)")
-                                .font(style.usesSerifFonts
-                                      ? .system(.body, design: .serif)
-                                      : .body)
+                                .font(style.typeBody)
                                 .foregroundStyle(style.primaryText)
                             Spacer()
                             Text(release.title)
@@ -320,7 +310,7 @@ struct ReleaseNotesView: View {
                                 .foregroundStyle(style.tertiaryText)
                         }
                     }
-                    .listRowBackground(style.usesSerifFonts ? style.surface : nil)
+                    .listRowBackground(style.surface)
                 }
             } header: {
                 Text("Previous Versions")
@@ -328,8 +318,8 @@ struct ReleaseNotesView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .scrollContentBackground(style.usesSerifFonts ? .hidden : .visible)
-        .background(style.usesSerifFonts ? style.background : Color(uiColor: .systemGroupedBackground))
+        .scrollContentBackground(.hidden)
+        .background(style.background)
         .navigationTitle("What's New")
         .navigationBarTitleDisplayMode(.inline)
     }

@@ -27,7 +27,7 @@ struct JournalPromptCard: View {
     @State private var isDismissed = false
 
     var style: any AppThemeStyle { themeManager.style }
-    var accent: Color { InkwellTheme.journalAccent }
+    var accent: Color { EntryType.journal.detailAccentColor(for: themeManager.current) }
 
     var body: some View {
         if !isDismissed {
@@ -38,11 +38,9 @@ struct JournalPromptCard: View {
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(accent)
                     Text("Today's Prompts")
-                        .font(style.usesSerifFonts
-                              ? .system(.subheadline, design: .serif)
-                              : .subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(style.primaryText)
+                                            .font(style.typeBodySecondary)
+                                            .fontWeight(.semibold)
+                                            .foregroundStyle(style.cardPrimaryText)
                     Spacer()
                     // Emoji summary
                     Text("\(weather) \(mood) \(vibe)")
@@ -77,21 +75,13 @@ struct JournalPromptCard: View {
                 }
             }
             .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(InkwellTheme.journalCard)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .strokeBorder(
-                                LinearGradient(
-                                    colors: [accent.opacity(0.4), accent.opacity(0.1)],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                ),
-                                lineWidth: 0.5
-                            )
-                    )
-            )
-            .shadow(color: style.usesSerifFonts ? .black.opacity(0.3) : .clear, radius: 6, x: 0, y: 3)
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(EntryType.journal.cardColor(for: themeManager.current))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .strokeBorder(style.cardBorder, lineWidth: 0.5)
+                                )
+                        )
             .padding(.horizontal)
             .onAppear {
                 isDismissed = service.isDismissedToday
@@ -115,10 +105,8 @@ struct JournalPromptCard: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(accent)
                 Text(prompt.introspective)
-                    .font(style.usesSerifFonts
-                          ? .system(.body, design: .serif)
-                          : .body)
-                    .foregroundStyle(style.primaryText)
+                                    .font(style.typeBody)
+                                    .foregroundStyle(style.cardPrimaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 16)
@@ -135,10 +123,8 @@ struct JournalPromptCard: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(accent)
                 Text(prompt.practical)
-                    .font(style.usesSerifFonts
-                          ? .system(.body, design: .serif)
-                          : .body)
-                    .foregroundStyle(style.primaryText)
+                                    .font(style.typeBody)
+                                    .foregroundStyle(style.cardPrimaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 16)

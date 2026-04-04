@@ -267,14 +267,14 @@ struct WeeklyReviewFlowView: View {
                     .font(.system(size: 16))
                     .foregroundStyle(WeeklyReviewTheme.accentGold)
                 Text("Weekly Review")
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(AppTypeScale.title1)
                     .foregroundStyle(WeeklyReviewTheme.primaryText)
             }
             Text(weekRange)
-                .font(.system(size: 13))
+                .font(AppTypeScale.bodySecondary)
                 .foregroundStyle(WeeklyReviewTheme.secondaryText)
             Text("\(weekEntries.count) entries captured this week")
-                .font(.system(size: 12))
+                .font(AppTypeScale.caption)
                 .foregroundStyle(WeeklyReviewTheme.tertiaryText)
         }
     }
@@ -283,7 +283,7 @@ struct WeeklyReviewFlowView: View {
     
     func sectionHeader(_ title: String) -> some View {
         Text(title.uppercased())
-            .font(.system(size: 10, weight: .medium))
+            .font(AppTypeScale.sectionHeader)
             .foregroundStyle(WeeklyReviewTheme.tertiaryText)
             .kerning(0.6)
             .padding(.horizontal, 20)
@@ -318,7 +318,7 @@ struct WeeklyReviewFlowView: View {
                             .foregroundStyle(type.accentColor)
                             .frame(width: 20)
                         Text("\(entries.count) \(entries.count == 1 ? type.displayName : type.displayName + "s")")
-                            .font(.system(size: 13))
+                            .font(AppTypeScale.bodySecondary)
                             .foregroundStyle(type.accentColor)
                         Spacer()
                         Image(systemName: "chevron.right")
@@ -346,7 +346,7 @@ struct WeeklyReviewFlowView: View {
         VStack(alignment: .leading, spacing: 10) {
             if habitBreakdown.isEmpty {
                 Text("No habits tracked this week")
-                    .font(.system(size: 13))
+                    .font(AppTypeScale.bodySecondary)
                     .foregroundStyle(WeeklyReviewTheme.secondaryText)
             } else {
                 ForEach(habitBreakdown, id: \.name) { habit in
@@ -355,11 +355,11 @@ struct WeeklyReviewFlowView: View {
                             .font(.system(size: 14))
                             .foregroundStyle(habitColor(habit.completed, total: habit.total))
                         Text(habit.name)
-                            .font(.system(size: 13))
+                            .font(AppTypeScale.bodySecondary)
                             .foregroundStyle(WeeklyReviewTheme.primaryText)
                         Spacer()
                         Text("\(habit.completed)/\(habit.total)")
-                            .font(.system(size: 13, weight: .medium))
+                            .font(AppTypeScale.bodySecondary)
                             .foregroundStyle(habitColor(habit.completed, total: habit.total))
                     }
                 }
@@ -389,10 +389,10 @@ struct WeeklyReviewFlowView: View {
     func healthStat(value: String, label: String) -> some View {
         VStack(spacing: 3) {
             Text(value)
-                .font(.system(size: 18, weight: .semibold))
+                .font(AppTypeScale.title2)
                 .foregroundStyle(WeeklyReviewTheme.primaryText)
             Text(label)
-                .font(.system(size: 10))
+                .font(AppTypeScale.sectionHeader)
                 .foregroundStyle(WeeklyReviewTheme.tertiaryText)
         }
         .padding(.horizontal, 16)
@@ -409,7 +409,7 @@ struct WeeklyReviewFlowView: View {
                 VStack(spacing: 4) {
                     personAvatar(name: name)
                     Text(name)
-                        .font(.system(size: 10))
+                        .font(AppTypeScale.caption)
                         .foregroundStyle(WeeklyReviewTheme.secondaryText)
                         .lineLimit(1)
                         .frame(width: 44)
@@ -450,7 +450,7 @@ struct WeeklyReviewFlowView: View {
         FlowLayout(spacing: 6, maxRows: 3) {
             ForEach(weekTags, id: \.self) { tag in
                 Text(tag)
-                    .font(.system(size: 11))
+                    .font(AppTypeScale.caption)
                     .foregroundStyle(WeeklyReviewTheme.accentPurple)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
@@ -486,12 +486,12 @@ struct WeeklyReviewFlowView: View {
                     }
                     VStack(alignment: .leading, spacing: 2) {
                         Text(entry.linkTitle ?? "Unknown Track")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(AppTypeScale.bodySecondary)
                             .foregroundStyle(WeeklyReviewTheme.primaryText)
                             .lineLimit(1)
                         if let artist = entry.musicArtist {
                             Text(artist)
-                                .font(.system(size: 11))
+                                .font(AppTypeScale.caption)
                                 .foregroundStyle(WeeklyReviewTheme.secondaryText)
                                 .lineLimit(1)
                         }
@@ -527,12 +527,12 @@ struct WeeklyReviewFlowView: View {
                     }
                     VStack(alignment: .leading, spacing: 2) {
                         Text(entry.mediaTitle ?? "Unknown")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(AppTypeScale.bodySecondary)
                             .foregroundStyle(WeeklyReviewTheme.primaryText)
                             .lineLimit(1)
                         if let status = entry.mediaStatus {
                             Text(status == "finished" ? "Finished" : status == "inProgress" ? "In Progress" : "Want to Watch")
-                                .font(.system(size: 11))
+                                .font(AppTypeScale.caption)
                                 .foregroundStyle(WeeklyReviewTheme.secondaryText)
                         }
                     }
@@ -569,18 +569,19 @@ struct WeeklyReviewFlowView: View {
     func reflectionField(label: String, placeholder: String, text: Binding<String>, field: Field) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
-                .font(.system(size: 13, weight: .medium))
+                .font(AppTypeScale.bodySecondary)
                 .foregroundStyle(WeeklyReviewTheme.secondaryText)
             ZStack(alignment: .topLeading) {
                 if text.wrappedValue.isEmpty {
                     Text(placeholder)
-                        .font(.system(size: 13))
+                        .font(AppTypeScale.bodySecondary)
                         .foregroundStyle(WeeklyReviewTheme.tertiaryText)
                         .padding(.top, 10)
                         .padding(.leading, 12)
                 }
                 TextEditor(text: text)
-                    .font(.system(size: 13))
+                    .font(AppTypeScale.bodySecondary)
+                    .foregroundStyle(WeeklyReviewTheme.primaryText)
                     .foregroundStyle(WeeklyReviewTheme.primaryText)
                     .scrollContentBackground(.hidden)
                     .background(Color.clear)
@@ -609,7 +610,7 @@ struct WeeklyReviewFlowView: View {
                     Image(systemName: exportDone ? "checkmark.circle.fill" : "square.and.arrow.up")
                         .font(.system(size: 14))
                     Text(exportDone ? "Week exported" : "Export this week's archive")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(AppTypeScale.body)
                 }
                 .foregroundStyle(exportDone ? WeeklyReviewTheme.accentGold : WeeklyReviewTheme.accentPurple)
                 .frame(maxWidth: .infinity)
@@ -632,7 +633,7 @@ struct WeeklyReviewFlowView: View {
                 showingDoneConfirmation = true
             } label: {
                 Text("Done")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(AppTypeScale.body)
                     .foregroundStyle(exportDone
                                      ? WeeklyReviewTheme.primaryText
                                      : WeeklyReviewTheme.tertiaryText)

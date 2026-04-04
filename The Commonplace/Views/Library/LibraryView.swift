@@ -13,7 +13,7 @@ struct LibraryView: View {
     @Query var allEntryTags: [Entry]
     @Query var allTagObjects: [Tag]
     @Query var allPersonTags: [Tag]
-
+    
     var allPersons: [Tag] {
         allPersonTags.filter { $0.isPerson }.sorted { $0.name < $1.name }
     }
@@ -115,9 +115,7 @@ struct LibraryView: View {
                     // Header
                     VStack(alignment: .leading, spacing: 12) {
                         Text(selectedTab == 0 ? "Collections" : selectedTab == 1 ? "Tags" : "People")
-                            .font(style.usesSerifFonts
-                                  ? .system(size: 34, weight: .bold, design: .serif)
-                                  : .largeTitle.bold())
+                            .font(style.typeLargeTitle)
                             .foregroundStyle(style.primaryText)
                             .padding(.leading, 8)
                         
@@ -136,8 +134,8 @@ struct LibraryView: View {
                     if selectedTab == 0 {
                         if currentSort != .custom {
                             HStack {
-                                Image(systemName: iconForSort(currentSort)).font(.caption)
-                                Text("Sorted by \(currentSort.rawValue)").font(.caption)
+                                Image(systemName: iconForSort(currentSort)).font(style.typeCaption)
+                                Text("Sorted by \(currentSort.rawValue)").font(style.typeCaption)
                                 Spacer()
                                 Button("Reset") {
                                     withAnimation { currentSort = .custom }
@@ -152,11 +150,9 @@ struct LibraryView: View {
                         }
                         
                         ForEach(displayedCollections) { collection in
-                            ZStack {
-                                NavigationLink(destination: CollectionDetailView(collection: collection)) {
-                                    EmptyView()
-                                }
-                                .opacity(0)
+                            Button {
+                                navigationPath.append(collection)
+                            } label: {
                                 CollectionListRowView(collection: collection)
                             }
                             .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
@@ -190,8 +186,8 @@ struct LibraryView: View {
                         .onMove { from, to in
                             guard currentSort == .custom else { return }
                             var reordered = reorderedCollections.isEmpty
-                                ? allCollections.sorted { $0.order < $1.order }
-                                : reorderedCollections
+                            ? allCollections.sorted { $0.order < $1.order }
+                            : reorderedCollections
                             reordered.move(fromOffsets: from, toOffset: to)
                             for (index, collection) in reordered.enumerated() {
                                 if !collection.isSystem {
@@ -211,10 +207,10 @@ struct LibraryView: View {
                                     .font(.system(size: 48))
                                     .foregroundStyle(style.tertiaryText)
                                 Text("No Tags Yet")
-                                    .font(.headline)
+                                    .font(style.typeTitle3)
                                     .foregroundStyle(style.secondaryText)
                                 Text("Add tags to your entries to see them here")
-                                    .font(.caption)
+                                    .font(style.typeCaption)
                                     .foregroundStyle(style.tertiaryText)
                                     .multilineTextAlignment(.center)
                             }
@@ -235,12 +231,12 @@ struct LibraryView: View {
                                             .font(.caption)
                                             .foregroundStyle(style.accent)
                                         Text(item.tag)
-                                            .font(style.body)
+                                            .font(style.typeBody)
                                             .foregroundStyle(style.primaryText)
                                     }
                                     Spacer()
                                     Text("\(item.count)")
-                                        .font(.subheadline)
+                                        .font(style.typeBodySecondary)
                                         .fontWeight(.semibold)
                                         .foregroundStyle(style.accent)
                                         .padding(.trailing, -12)
@@ -248,16 +244,9 @@ struct LibraryView: View {
                                 .padding(.vertical, 4)
                                 .padding(.horizontal, 10)
                             }
-                            .listRowBackground(
-                                style.usesSerifFonts
-                                ? style.surface
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    .padding(.vertical, 2)
-                                    .padding(.horizontal, 16)
-                                : nil
-                            )
+                            .listRowBackground(Color.clear)
                             .listRowInsets(EdgeInsets(top: 3, leading: 16, bottom: 3, trailing: 24))
-                            .listRowSeparator(style.usesSerifFonts ? .hidden : .visible)
+                            .listRowSeparator(.visible)
                             .buttonStyle(.plain)
                             .swipeActions(edge: .leading) {
                                 Button {
@@ -297,20 +286,14 @@ struct LibraryView: View {
                 reorderedCollections = allCollections.sorted { $0.order < $1.order }
             }
             .onChange(of: allCollections) {
-                print("allCollections changed, reorderedCollections.isEmpty: \(reorderedCollections.isEmpty)")
-                if reorderedCollections.isEmpty {
-                    reorderedCollections = allCollections.sorted { $0.order < $1.order }
-                }
+                reorderedCollections = allCollections.sorted { $0.order < $1.order }
             }
             .scrollContentBackground(.hidden)
             .background(style.background.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    if selectedTab == 0 && currentSort == .custom {
-                        EditButton()
-                            .foregroundStyle(style.accent)
-                    }
+                    EmptyView()
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 16) {
@@ -374,10 +357,10 @@ struct LibraryView: View {
                     .font(.system(size: 48))
                     .foregroundStyle(style.tertiaryText)
                 Text("No People Yet")
-                    .font(.headline)
+                    .font(style.typeTitle3)
                     .foregroundStyle(style.secondaryText)
                 Text("Tag people on your entries to see them here")
-                    .font(.caption)
+                    .font(style.typeCaption)
                     .foregroundStyle(style.tertiaryText)
                     .multilineTextAlignment(.center)
             }
@@ -396,14 +379,12 @@ struct LibraryView: View {
                     personAvatar(person: person, size: 40)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(person.name)
-                            .font(style.usesSerifFonts
-                                  ? .system(.body, design: .serif)
-                                  : .body)
+                            .font(style.typeBody)
                             .fontWeight(.medium)
                             .foregroundStyle(style.primaryText)
                         if let bio = person.bio, !bio.isEmpty {
                             Text(bio)
-                                .font(.caption)
+                                .font(style.typeCaption)
                                 .foregroundStyle(style.secondaryText)
                                 .lineLimit(1)
                         }
@@ -411,7 +392,7 @@ struct LibraryView: View {
                     Spacer()
                     let count = entryCount(for: person)
                     Text("\(count)")
-                        .font(.subheadline)
+                        .font(style.typeBodySecondary)
                         .fontWeight(.semibold)
                         .foregroundStyle(style.accent)
                         .padding(.trailing, -12)
@@ -419,16 +400,9 @@ struct LibraryView: View {
                 .padding(.vertical, 4)
                 .padding(.horizontal, 10)
             }
-            .listRowBackground(
-                style.usesSerifFonts
-                ? style.surface
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .padding(.vertical, 2)
-                    .padding(.horizontal, 16)
-                : nil
-            )
+            .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 3, leading: 16, bottom: 3, trailing: 24))
-            .listRowSeparator(style.usesSerifFonts ? .hidden : .visible)
+            .listRowSeparator(.visible)
             .buttonStyle(.plain)
             .swipeActions(edge: .leading, allowsFullSwipe: true) {
                 Button {

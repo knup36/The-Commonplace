@@ -22,7 +22,7 @@ struct PhotoDetailSection: View {
     @Bindable var entry: Entry
     var style: any AppThemeStyle
     var accentColor: Color
-
+    
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @State private var isAnalyzing = false
     @State private var isProcessingVideo = false
@@ -31,69 +31,69 @@ struct PhotoDetailSection: View {
     @State private var player: AVPlayer? = nil
     @State private var videoTempURL: URL? = nil
     @State private var videoSize: CGSize = CGSize(width: 9, height: 16)
-
+    
     var isVideo: Bool { entry.videoPath != nil }
-
+    
     var body: some View {
         if entry.type == .photo {
             VStack(alignment: .leading, spacing: 8) {
-            if isVideo {
-                videoSection
-            } else if entry.imagePath != nil {
-                photoSection
-            } else {
-                emptyState
-            }
-
-            // Processing indicator
-            if isAnalyzing {
-                HStack(spacing: 8) {
-                    ProgressView()
-                    Text("Analyzing image...")
-                        .font(.caption)
-                        .foregroundStyle(style.secondaryText)
+                if isVideo {
+                    videoSection
+                } else if entry.imagePath != nil {
+                    photoSection
+                } else {
+                    emptyState
                 }
-            }
-
-            if isProcessingVideo {
-                HStack(spacing: 8) {
-                    ProgressView()
-                    Text("Processing video...")
-                        .font(.caption)
-                        .foregroundStyle(style.secondaryText)
-                }
-            }
-
-            // Extracted text — photos only
-            if !isVideo, let extractedText = entry.extractedText, !extractedText.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    Button {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                            showingExtractedText.toggle()
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Label("Extracted Text", systemImage: "text.viewfinder")
-                                .font(.caption)
-                                .foregroundStyle(style.secondaryText)
-                            Image(systemName: "chevron.down")
-                                .font(.caption)
-                                .foregroundStyle(style.secondaryText)
-                                .rotationEffect(.degrees(showingExtractedText ? 180 : 0))
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    if showingExtractedText {
-                        Text(extractedText)
+                
+                // Processing indicator
+                if isAnalyzing {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                        Text("Analyzing image...")
                             .font(.caption)
                             .foregroundStyle(style.secondaryText)
-                            .padding(8)
-                            .background(style.surface)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                            .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                 }
-            }
+                
+                if isProcessingVideo {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                        Text("Processing video...")
+                            .font(.caption)
+                            .foregroundStyle(style.secondaryText)
+                    }
+                }
+                
+                // Extracted text — photos only
+                if !isVideo, let extractedText = entry.extractedText, !extractedText.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Button {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                showingExtractedText.toggle()
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Label("Extracted Text", systemImage: "text.viewfinder")
+                                    .font(.caption)
+                                    .foregroundStyle(style.secondaryText)
+                                Image(systemName: "chevron.down")
+                                    .font(.caption)
+                                    .foregroundStyle(style.secondaryText)
+                                    .rotationEffect(.degrees(showingExtractedText ? 180 : 0))
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        if showingExtractedText {
+                            Text(extractedText)
+                                .font(.caption)
+                                .foregroundStyle(style.secondaryText)
+                                .padding(8)
+                                .background(style.surface)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+                    }
+                }
             }
             .onAppear {
                 setupVideoPlayer()
@@ -102,11 +102,11 @@ struct PhotoDetailSection: View {
                 player = nil
                 setupVideoPlayer()
             }
-                    .onDisappear {
-                        player?.pause()
-                    }
-                }
+            .onDisappear {
+                player?.pause()
             }
+        }
+    }
     
     // MARK: - Photo Section
     
@@ -131,9 +131,9 @@ struct PhotoDetailSection: View {
             mediaPicker(label: "Change Shot", icon: "photo")
         }
     }
-
+    
     // MARK: - Video Section
-
+    
     var videoSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let player = player {
@@ -173,19 +173,19 @@ struct PhotoDetailSection: View {
                     }
                 }
             }
-
+            
             if let duration = entry.videoDuration {
                 Label(formatDuration(duration), systemImage: "video.fill")
                     .font(.caption)
                     .foregroundStyle(style.secondaryText)
             }
-
+            
             mediaPicker(label: "Change Video", icon: "video")
         }
     }
-
+    
     // MARK: - Empty State
-
+    
     var emptyState: some View {
         VStack(spacing: 12) {
             PhotosPicker(
@@ -195,14 +195,14 @@ struct PhotoDetailSection: View {
                 Label("Choose Photo", systemImage: "photo")
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(accentColor.opacity(0.1))
+                    .background(style.cardDivider)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .foregroundStyle(accentColor)
+                    .foregroundStyle(style.cardPrimaryText)
             }
             .onChange(of: selectedPhotoItem) { _, newItem in
                 Task { await savePhoto(from: newItem) }
             }
-
+            
             PhotosPicker(
                 selection: $selectedPhotoItem,
                 matching: .videos
@@ -210,26 +210,26 @@ struct PhotoDetailSection: View {
                 Label("Choose Video", systemImage: "video")
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(accentColor.opacity(0.1))
+                    .background(style.cardDivider)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .foregroundStyle(accentColor)
+                    .foregroundStyle(style.cardPrimaryText)
             }
             .onChange(of: selectedPhotoItem) { _, newItem in
                 Task { await saveVideo(from: newItem) }
             }
         }
     }
-
+    
     // MARK: - Media Picker
-
+    
     func mediaPicker(label: String, icon: String) -> some View {
         PhotosPicker(
             selection: $selectedPhotoItem,
             matching: icon == "video" ? .videos : .images
         ) {
             Label(label, systemImage: icon)
-                .font(.caption)
-                .foregroundStyle(accentColor)
+                .font(style.typeCaption)
+                .foregroundStyle(style.cardSecondaryText)
         }
         .onChange(of: selectedPhotoItem) { _, newItem in
             Task {
@@ -241,45 +241,45 @@ struct PhotoDetailSection: View {
             }
         }
     }
-
+    
     // MARK: - Save Photo
-
+    
     private func savePhoto(from item: PhotosPickerItem?) async {
         guard let item,
               let rawData = try? await item.loadTransferable(type: Data.self),
               let uiImage = UIImage(data: rawData),
               let processedData = ImageProcessor.resizeAndCompress(image: uiImage)
         else { return }
-
+        
         // Clear video fields if switching from video to photo
         entry.videoPath = nil
         entry.videoDuration = nil
         entry.videoThumbnailPath = nil
-
+        
         entry.imagePath = try? MediaFileManager.save(
             processedData,
             type: .image,
             id: entry.id.uuidString
         )
-
+        
         isAnalyzing = true
         let result = await VisionService.analyze(imageData: processedData)
         entry.extractedText = result.extractedText.isEmpty ? nil : result.extractedText
         entry.visionTags = result.tags
         isAnalyzing = false
     }
-
+    
     // MARK: - Save Video
-
+    
     private func saveVideo(from item: PhotosPickerItem?) async {
         guard let item else {
             print("saveVideo: no item")
             return
         }
-
+        
         isProcessingVideo = true
         print("saveVideo: starting")
-
+        
         // Load video data directly
         guard let data = try? await item.loadTransferable(type: Data.self) else {
             print("saveVideo: failed to load data from picker item")
@@ -287,7 +287,7 @@ struct PhotoDetailSection: View {
             return
         }
         print("saveVideo: got data, size \(data.count) bytes")
-
+        
         // Write to temp file for processing
         let tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
@@ -302,7 +302,7 @@ struct PhotoDetailSection: View {
         }
         let url = tempURL
         print("saveVideo: wrote temp file to \(url)")
-
+        
         // Generate thumbnail from first frame
         if let thumbnailData = VideoProcessor.thumbnail(url: url) {
             entry.videoThumbnailPath = try? MediaFileManager.save(
@@ -313,7 +313,7 @@ struct PhotoDetailSection: View {
             // Also set as imagePath so feed card can show thumbnail
             entry.imagePath = entry.videoThumbnailPath
         }
-
+        
         // Compress video
         if let compressed = await VideoProcessor.compress(url: url) {
             entry.videoPath = try? MediaFileManager.save(
@@ -322,19 +322,19 @@ struct PhotoDetailSection: View {
                 id: entry.id.uuidString
             )
         }
-
+        
         // Get duration
         let asset = AVURLAsset(url: url)
         let duration = try? await asset.load(.duration)
         entry.videoDuration = duration.map { CMTimeGetSeconds($0) }
-
+        
         // Clear photo fields if switching from photo to video
         entry.extractedText = nil
         entry.visionTags = []
-
+        
         isProcessingVideo = false
     }
-
+    
     // MARK: - Helpers
     
     func setupVideoPlayer() {
@@ -366,7 +366,7 @@ struct PhotoDetailSection: View {
         let asset = AVURLAsset(url: url)
         let avPlayer = AVPlayer(url: url)
         player = avPlayer
-
+        
         // Read video dimensions
         Task {
             if let track = try? await asset.loadTracks(withMediaType: .video).first {
@@ -385,7 +385,7 @@ struct PhotoDetailSection: View {
             }
         }
     }
-
+    
     func writeTempVideo(data: Data) -> URL? {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
@@ -393,7 +393,7 @@ struct PhotoDetailSection: View {
         try? data.write(to: url)
         return url
     }
-
+    
     func formatDuration(_ duration: Double) -> String {
         let mins = Int(duration) / 60
         let secs = Int(duration) % 60

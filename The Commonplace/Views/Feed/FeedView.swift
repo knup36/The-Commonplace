@@ -39,17 +39,15 @@ struct FeedView: View {
     // MARK: - Feed Header
     
     @ViewBuilder
-    var feedHeader: some View {
-        if style.usesSerifFonts {
+        var feedHeader: some View {
             Text("Feed")
-                .font(.system(size: 34, weight: .bold, design: .serif))
+                .font(style.typeLargeTitle)
                 .foregroundStyle(style.primaryText)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.leading, 24)
                 .padding(.top, 8)
                 .id("feed-title")
         }
-    }
     
     // MARK: - Entry Rows
     
@@ -101,13 +99,13 @@ struct FeedView: View {
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: filterType == nil ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
-                    .foregroundStyle(filterType.map { $0.accentColor } ?? style.accent)
-                if let ft = filterType {
-                    Text(ft.displayName)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundStyle(ft.accentColor)
-                }
+                                    .foregroundStyle(filterType.map { $0.detailAccentColor(for: themeManager.current) } ?? style.accent)
+                                if let ft = filterType {
+                                    Text(ft.displayName)
+                                        .font(style.typeCaption)
+                                        .fontWeight(.medium)
+                                        .foregroundStyle(ft.detailAccentColor(for: themeManager.current))
+                                }
             }
         }
     }
@@ -226,9 +224,9 @@ struct FeedView: View {
     var addEntryCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("New Entry")
-                .font(.system(.subheadline, design: style.usesSerifFonts ? .serif : .rounded))
-                .fontWeight(.semibold)
-                .foregroundStyle(style.primaryText)
+                            .font(style.typeTitle3)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(style.primaryText)
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
                 .padding(.bottom, 12)
@@ -243,17 +241,9 @@ struct FeedView: View {
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .shadow(color: .black.opacity(0.25), radius: 20, x: 0, y: 8)
         .overlay(
-            style.usesSerifFonts
-            ? RoundedRectangle(cornerRadius: 20)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [InkwellTheme.cardBorderTop, InkwellTheme.cardBorderTop.opacity(0.3)],
-                        startPoint: .top, endPoint: .bottom
-                    ),
-                    lineWidth: 1
+                    RoundedRectangle(cornerRadius: 20)
+                        .strokeBorder(style.surface.opacity(0.5), lineWidth: 0.5)
                 )
-            : nil
-        )
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 16)
     }
@@ -284,46 +274,27 @@ struct FeedView: View {
     // MARK: - Entry Type Button
     
     func entryTypeButton(item: (type: EntryType, label: String, icon: String, color: Color)) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(style.usesSerifFonts
-                      ? InkwellTheme.cardBackground(for: item.type)
-                      : item.color.opacity(0.12))
-                .frame(maxWidth: .infinity, minHeight: 80)
-                .overlay(
-                    style.usesSerifFonts
-                    ? AnyView(
+            let cardColor = item.type.cardColor(for: themeManager.current)
+            let accentColor = item.type.detailAccentColor(for: themeManager.current)
+            return ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(cardColor)
+                    .frame(maxWidth: .infinity, minHeight: 80)
+                    .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .strokeBorder(
-                                LinearGradient(
-                                    colors: [InkwellTheme.cardBorderTop, InkwellTheme.cardBorderColor(for: item.type)],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                ),
-                                lineWidth: 0.5
-                            )
+                            .strokeBorder(style.cardBorder, lineWidth: 0.5)
                     )
-                    : AnyView(
-                        RoundedRectangle(cornerRadius: 12)
-                            .strokeBorder(item.color.opacity(0.5), lineWidth: 0.5)
-                    )
-                )
-                .shadow(color: style.usesSerifFonts ? .black.opacity(0.4) : .black.opacity(0.08), radius: 6, x: 0, y: 3)
-            VStack(spacing: 6) {
-                Image(systemName: item.icon)
-                    .font(.system(size: 22, weight: .medium))
-                    .foregroundStyle(style.usesSerifFonts
-                                     ? InkwellTheme.accentColor(for: item.type)
-                                     : item.color)
-                Text(item.label)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundStyle(style.usesSerifFonts
-                                     ? InkwellTheme.accentColor(for: item.type)
-                                     : .primary)
+                VStack(spacing: 6) {
+                    Image(systemName: item.icon)
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundStyle(accentColor)
+                    Text(item.label)
+                        .font(style.typeBodySecondary)
+                        .fontWeight(.medium)
+                        .foregroundStyle(accentColor)
+                }
             }
         }
-    }
     
     // MARK: - Template Button
     

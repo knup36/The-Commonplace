@@ -22,7 +22,7 @@ import SwiftData
 struct SearchView: View {
     @Query var allEntries: [Entry]
     @Query var allPersonTags: [Tag]
-
+    
     var allPersons: [Tag] {
         allPersonTags.filter { $0.isPerson }.sorted { $0.name < $1.name }
     }
@@ -62,9 +62,7 @@ struct SearchView: View {
                     LazyVStack(alignment: .leading, spacing: 0) {
                         // Title
                         Text("Search")
-                            .font(style.usesSerifFonts
-                                  ? .system(size: 34, weight: .bold, design: .serif)
-                                  : .largeTitle.bold())
+                            .font(style.typeLargeTitle)
                             .foregroundStyle(style.primaryText)
                             .padding(.horizontal, 20)
                             .padding(.top, 16)
@@ -109,8 +107,7 @@ struct SearchView: View {
             } else {
                 HStack {
                     Text("Recent")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
+                        .font(style.typeTitle3)
                         .foregroundStyle(style.secondaryText)
                     Spacer()
                     Button("Clear") {
@@ -136,7 +133,7 @@ struct SearchView: View {
                                 .font(.caption)
                                 .foregroundStyle(style.tertiaryText)
                             Text(search)
-                                .font(style.usesSerifFonts ? .system(.body, design: .serif) : .body)
+                                .font(style.typeBody)
                                 .foregroundStyle(style.primaryText)
                             Spacer()
                             Image(systemName: "arrow.up.left")
@@ -151,8 +148,7 @@ struct SearchView: View {
                     
                     if index < recentSearches.count - 1 {
                         Divider()
-                            .overlay(style.usesSerifFonts ? InkwellTheme.cardBorderTop : Color(uiColor: .separator))
-                            .opacity(0.5)
+                            .overlay(style.tertiaryText.opacity(0.3))
                             .padding(.horizontal, 20)
                     }
                 }
@@ -173,10 +169,10 @@ struct SearchView: View {
                 .font(.system(size: 36))
                 .foregroundStyle(style.tertiaryText)
             Text("No recent searches")
-                .font(.headline)
+                .font(style.typeTitle3)
                 .foregroundStyle(style.secondaryText)
             Text("Your searches will appear here.")
-                .font(.caption)
+                .font(style.typeCaption)
                 .foregroundStyle(style.tertiaryText)
         }
         .frame(maxWidth: .infinity)
@@ -215,7 +211,7 @@ struct SearchView: View {
                 .font(.system(size: 36))
                 .foregroundStyle(style.tertiaryText)
             Text("No results for \"\(query)\"")
-                .font(.headline)
+                .font(style.typeTitle3)
                 .foregroundStyle(style.secondaryText)
         }
         .frame(maxWidth: .infinity)
@@ -224,8 +220,7 @@ struct SearchView: View {
     
     var resultDivider: some View {
         Divider()
-            .overlay(style.usesSerifFonts ? InkwellTheme.cardBorderTop : Color(uiColor: .separator))
-            .opacity(0.6)
+            .overlay(style.tertiaryText.opacity(0.3))
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
     }
@@ -243,28 +238,12 @@ struct SearchView: View {
                             VStack(spacing: 6) {
                                 ZStack {
                                     Circle()
-                                        .strokeBorder(
-                                            AngularGradient(
-                                                colors: [
-                                                    Color(hex: "#C8903A"),
-                                                    Color(hex: "#F5D478"),
-                                                    Color(hex: "#C8903A"),
-                                                    Color(hex: "#8A6028"),
-                                                    Color(hex: "#C8903A"),
-                                                    Color(hex: "#F5D478"),
-                                                    Color(hex: "#C8903A")
-                                                ],
-                                                center: .center,
-                                                startAngle: .degrees(0),
-                                                endAngle: .degrees(360)
-                                            ),
-                                            lineWidth: 1.5
-                                        )
+                                        .strokeBorder(SharedTheme.goldRingGradient, lineWidth: 1.5)
                                         .frame(width: 58, height: 58)
                                     personAvatar(person: person, size: 54)
                                 }
                                 Text(person.name)
-                                    .font(.caption)
+                                    .font(style.typeCaption)
                                     .foregroundStyle(style.secondaryText)
                                     .lineLimit(1)
                             }
@@ -290,11 +269,10 @@ struct SearchView: View {
                     NavigationLink(destination: TagFeedView(tag: tag.name)) {
                         HStack(spacing: 4) {
                             Text(tag.name)
-                                .font(style.usesSerifFonts ? .system(.caption, design: .serif) : .caption)
-                                .italic(style.usesSerifFonts)
+                                .font(style.typeCaption)
                                 .foregroundStyle(style.accent)
                             Text("(\(allEntries.filter { $0.tagNames.contains(tag.name) }.count))")
-                                .font(.caption2)
+                                .font(style.typeCaption)
                                 .foregroundStyle(style.tertiaryText)
                         }
                         .padding(.horizontal, 12)
@@ -324,7 +302,7 @@ struct SearchView: View {
                             let accent = Color(hex: collection.colorHex)
                             ZStack {
                                 RoundedRectangle(cornerRadius: 14)
-                                    .fill(InkwellTheme.collectionCardBackground(for: collection.colorHex))
+                                    .fill(accent.opacity(0.15))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 14)
                                             .strokeBorder(accent.opacity(0.3), lineWidth: 0.5)
@@ -332,14 +310,14 @@ struct SearchView: View {
                                 VStack(spacing: 5) {
                                     Image(systemName: collection.icon)
                                         .font(.system(size: 20, weight: .medium))
-                                        .foregroundStyle(InkwellTheme.collectionAccentColor(for: collection.colorHex))
+                                        .foregroundStyle(accent)
                                     Text(collection.name)
-                                        .font(.caption2)
+                                        .font(style.typeCaption)
                                         .fontWeight(.semibold)
                                         .foregroundStyle(style.primaryText)
                                         .lineLimit(1)
                                     Text("\(allEntries.filter { collectionMatches(entry: $0, collection: collection) }.count)")
-                                        .font(.caption2)
+                                        .font(style.typeCaption)
                                         .foregroundStyle(style.tertiaryText)
                                 }
                                 .padding(8)
@@ -400,7 +378,7 @@ struct SearchView: View {
                     NavigationLink(destination: SearchResultsView(query: query, allEntries: allEntries)) {
                         HStack {
                             Text("See all \(totalCount) results")
-                                .font(.subheadline)
+                                .font(style.typeBodySecondary)
                                 .foregroundStyle(style.accent)
                             Spacer()
                             Image(systemName: "chevron.right")
@@ -423,7 +401,7 @@ struct SearchView: View {
                 .font(.caption)
                 .foregroundStyle(style.accent)
             Text(title)
-                .font(.subheadline)
+                .font(style.typeBodySecondary)
                 .fontWeight(.semibold)
                 .foregroundStyle(style.secondaryText)
         }
@@ -538,7 +516,7 @@ struct SearchView: View {
             Image(systemName: title.contains("Tagged") ? "person.fill" : "quote.opening")
                 .font(.system(size: 11))
             Text(title)
-                .font(.subheadline)
+                .font(style.typeBodySecondary)
                 .fontWeight(.medium)
         }
         .foregroundStyle(style.secondaryText)

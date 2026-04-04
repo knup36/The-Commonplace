@@ -17,45 +17,44 @@ struct PersonDetailView: View {
     @Query var allEntries: [Entry]
     @Environment(\.modelContext) var modelContext
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     @State private var showingEditView = false
-
+    
     var style: any AppThemeStyle { themeManager.style }
     var accent: Color { style.accent }
-
+    
     var taggedEntries: [Entry] {
         allEntries
             .filter { $0.tagNames.contains("@\(tag.name)") }
             .sorted { $0.createdAt > $1.createdAt }
     }
-
+    
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 contactHeader
-
+                
                 Divider()
-                    .overlay(style.usesSerifFonts ? InkwellTheme.cardBorderTop : Color(uiColor: .separator))
-                    .opacity(style.usesSerifFonts ? 0.6 : 1)
+                    .overlay(style.tertiaryText.opacity(0.3))
                     .padding(.horizontal, 16)
                     .padding(.bottom, 12)
-
+                
                 if !taggedEntries.isEmpty {
                     Text("\(taggedEntries.count) \(taggedEntries.count == 1 ? "entry" : "entries")")
-                        .font(.caption)
+                        .font(style.typeCaption)
                         .fontWeight(.semibold)
                         .foregroundStyle(style.secondaryText)
                         .padding(.horizontal, 16)
                         .padding(.bottom, 8)
                 }
-
+                
                 if taggedEntries.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "tray")
                             .font(.system(size: 36))
                             .foregroundStyle(style.tertiaryText)
                         Text("No entries with \(tag.name) yet")
-                            .font(.subheadline)
+                            .font(style.typeBodySecondary)
                             .foregroundStyle(style.tertiaryText)
                     }
                     .frame(maxWidth: .infinity)
@@ -89,61 +88,40 @@ struct PersonDetailView: View {
             PersonEditView(tag: tag)
         }
     }
-
+    
     // MARK: - Contact Header
-
+    
     var contactHeader: some View {
         VStack(alignment: .center, spacing: 12) {
             ZStack {
                 Circle()
-                    .strokeBorder(
-                        AngularGradient(
-                            colors: [
-                                Color(hex: "#C8903A"),
-                                Color(hex: "#F5D478"),
-                                Color(hex: "#C8903A"),
-                                Color(hex: "#8A6028"),
-                                Color(hex: "#C8903A"),
-                                Color(hex: "#F5D478"),
-                                Color(hex: "#C8903A")
-                            ],
-                            center: .center,
-                            startAngle: .degrees(0),
-                            endAngle: .degrees(360)
-                        ),
-                        lineWidth: 3.5
-                    )
+                    .strokeBorder(SharedTheme.goldRingGradient, lineWidth: 3.5)
                     .frame(width: 181, height: 181)
-
+                
                 avatarView(size: 175)
             }
             .padding(.top, 32)
             .padding(.bottom, 4)
-
+            
             Text(tag.name)
-                .font(style.usesSerifFonts
-                      ? .system(.title2, design: .serif)
-                      : .title2)
+                .font(style.typeTitle2)
                 .fontWeight(.bold)
                 .foregroundStyle(style.primaryText)
-
+            
             if let birthdate = tag.birthdate {
                 HStack(spacing: 5) {
                     Image(systemName: "birthday.cake")
                         .font(.caption)
                         .foregroundStyle(style.secondaryText)
                     Text(birthdate.formatted(.dateTime.month(.wide).day().year()))
-                        .font(.subheadline)
+                        .font(style.typeBodySecondary)
                         .foregroundStyle(style.secondaryText)
                 }
             }
-
+            
             if let bio = tag.bio, !bio.isEmpty {
                 Text(bio)
-                    .font(style.usesSerifFonts
-                          ? .system(.body, design: .serif)
-                          : .body)
-                    .italic(style.usesSerifFonts)
+                    .font(style.typeBody)
                     .foregroundStyle(style.tertiaryText)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
@@ -152,9 +130,9 @@ struct PersonDetailView: View {
         .frame(maxWidth: .infinity)
         .padding(.bottom, 24)
     }
-
+    
     // MARK: - Avatar
-
+    
     func avatarView(size: CGFloat) -> some View {
         Group {
             if let path = tag.profilePhotoPath,

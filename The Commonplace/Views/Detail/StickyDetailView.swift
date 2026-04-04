@@ -27,8 +27,8 @@ struct StickyDetailView: View {
     @FocusState private var inputFocused: Bool
     
     var style: any AppThemeStyle { themeManager.style }
-    var accentColor: Color { InkwellTheme.stickyAccent }
-    var bgColor: Color { InkwellTheme.stickyCard }
+    var accentColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
+        var bgColor: Color { entry.type.cardColor(for: themeManager.current) }
     
     // MARK: - Item model
     
@@ -164,8 +164,8 @@ struct StickyDetailView: View {
     var bottomInputBar: some View {
         HStack(spacing: 12) {
             TextField(editingItemID == nil ? "New item..." : "Edit item...", text: $inputText)
-                .font(.body)
-                .foregroundStyle(style.primaryText)
+                            .font(style.typeBody)
+                            .foregroundStyle(style.cardPrimaryText)
                 .focused($inputFocused)
                 .onSubmit {
                     commitInput()
@@ -195,24 +195,22 @@ struct StickyDetailView: View {
         .padding(.horizontal, 12)
         .padding(.bottom, 8)
         .overlay(alignment: .top) {
-            Rectangle()
-                .fill(accentColor.opacity(0.15))
-                .frame(height: 0.5)
-                .padding(.horizontal, 16)
-        }
+                    Rectangle()
+                        .fill(style.cardDivider)
+                        .frame(height: 0.5)
+                        .padding(.horizontal, 16)
+                }
     }
     
     // MARK: - Title
     
     var titleField: some View {
         TextField("Title", text: Binding(
-            get: { entry.stickyTitle ?? "" },
-            set: { entry.stickyTitle = $0.isEmpty ? nil : $0 }
-        ))
-        .font(style.title)
-        .fontWeight(.bold)
-        .foregroundStyle(accentColor)
-    }
+                    get: { entry.stickyTitle ?? "" },
+                    set: { entry.stickyTitle = $0.isEmpty ? nil : $0 }
+                ))
+                .font(style.typeLargeTitle)
+                .foregroundStyle(style.cardPrimaryText)    }
     
     // MARK: - Progress
     
@@ -223,8 +221,8 @@ struct StickyDetailView: View {
             ProgressView(value: Double(done), total: Double(total))
                 .tint(accentColor)
             Text("\(done) of \(total) completed")
-                .font(style.caption)
-                .foregroundStyle(style.secondaryText)
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.cardSecondaryText)
         }
     }
     
@@ -242,9 +240,9 @@ struct StickyDetailView: View {
             .buttonStyle(.plain)
             
             Text(item.text)
-                .font(style.body)
-                .foregroundStyle(checked ? style.tertiaryText : style.primaryText)
-                .strikethrough(checked, color: style.tertiaryText)
+                            .font(style.typeBody)
+                            .foregroundStyle(checked ? style.cardMetadataText : style.cardPrimaryText)
+                            .strikethrough(checked, color: style.cardMetadataText)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
                 .onTapGesture {

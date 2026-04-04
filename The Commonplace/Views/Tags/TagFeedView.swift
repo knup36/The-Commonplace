@@ -11,9 +11,9 @@ struct TagFeedView: View {
     @Query var entries: [Entry]
     @EnvironmentObject var themeManager: ThemeManager
     @State private var searchText = ""
-
+    
     var style: any AppThemeStyle { themeManager.style }
-
+    
     var filteredEntries: [Entry] {
         let tagged = entries
             .filter { $0.tagNames.contains(tag) }
@@ -21,7 +21,7 @@ struct TagFeedView: View {
         if searchText.isEmpty { return tagged }
         return tagged.filter { entryMatchesSearch($0, searchText: searchText) }
     }
-
+    
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
@@ -36,19 +36,17 @@ struct TagFeedView: View {
             }
         }
         .background(style.background)
-        .navigationTitle(style.usesSerifFonts ? "" : tag)
-        .navigationBarTitleDisplayMode(style.usesSerifFonts ? .inline : .large)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if style.usesSerifFonts {
-                ToolbarItem(placement: .principal) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "number")
-                            .font(.caption)
-                            .foregroundStyle(style.accent)
-                        Text(tag)
-                            .font(.system(.headline, design: .serif))
-                            .foregroundStyle(style.primaryText)
-                    }
+            ToolbarItem(placement: .principal) {
+                HStack(spacing: 6) {
+                    Image(systemName: "number")
+                        .font(.caption)
+                        .foregroundStyle(style.accent)
+                    Text(tag)
+                        .font(style.typeTitle3)
+                        .foregroundStyle(style.primaryText)
                 }
             }
         }

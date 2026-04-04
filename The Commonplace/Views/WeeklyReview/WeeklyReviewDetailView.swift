@@ -23,22 +23,22 @@ struct WeeklyReviewDetailView: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     @State private var showingDeleteConfirmation = false
-
+    
     var style: any AppThemeStyle { themeManager.style }
-
+    
     // MARK: - Parsed Data
-
+    
     var weekStart: Date? {
         Calendar.current.dateInterval(of: .weekOfYear, for: entry.createdAt)?.start
     }
-
+    
     var weekEnd: Date? {
         guard let start = weekStart else { return nil }
         return Calendar.current.date(byAdding: .day, value: 6, to: start)
     }
-
+    
     var weekRange: String {
         guard let start = weekStart, let end = weekEnd else { return "" }
         let fmt = DateFormatter()
@@ -47,37 +47,37 @@ struct WeeklyReviewDetailView: View {
         fmtYear.dateFormat = "MMM d, yyyy"
         return "\(fmt.string(from: start)) — \(fmtYear.string(from: end))"
     }
-
+    
     // Decode the stats JSON blob from weeklyReviewStats
-        var stats: [String: String] {
-            guard let data = entry.weeklyReviewStats,
-                  let decoded = try? JSONDecoder().decode([String: String].self, from: data)
-            else { return [:] }
-            return decoded
-        }
-
-        var entryCount: String { stats["entries"] ?? "" }
-        var habitSummary: String { stats["habits"] ?? "" }
-        var avgMood: String { stats["avgmood"] ?? "" }
-        var avgCalories: String { stats["avgcal"] ?? "" }
-        var highlight: String { entry.weeklyReviewHighlight ?? "" }
-        var carryForward: String { entry.weeklyReviewCarryForward ?? "" }
-        var gratitude: String { entry.weeklyReviewGratitude ?? "" }
-        var musicLines: [String] {
-            stats["music"]?.components(separatedBy: "|").filter { !$0.isEmpty } ?? []
-        }
-        var mediaLines: [String] {
-            stats["media"]?.components(separatedBy: "|").filter { !$0.isEmpty } ?? []
-        }
-        var tagLines: [String] {
-            stats["tags"]?.components(separatedBy: "|").filter { !$0.isEmpty && $0 != WeeklyReviewTheme.weeklyReviewTag } ?? []
-        }
-        var personLines: [String] {
-            stats["people"]?.components(separatedBy: "|").filter { !$0.isEmpty } ?? []
-        }
-
+    var stats: [String: String] {
+        guard let data = entry.weeklyReviewStats,
+              let decoded = try? JSONDecoder().decode([String: String].self, from: data)
+        else { return [:] }
+        return decoded
+    }
+    
+    var entryCount: String { stats["entries"] ?? "" }
+    var habitSummary: String { stats["habits"] ?? "" }
+    var avgMood: String { stats["avgmood"] ?? "" }
+    var avgCalories: String { stats["avgcal"] ?? "" }
+    var highlight: String { entry.weeklyReviewHighlight ?? "" }
+    var carryForward: String { entry.weeklyReviewCarryForward ?? "" }
+    var gratitude: String { entry.weeklyReviewGratitude ?? "" }
+    var musicLines: [String] {
+        stats["music"]?.components(separatedBy: "|").filter { !$0.isEmpty } ?? []
+    }
+    var mediaLines: [String] {
+        stats["media"]?.components(separatedBy: "|").filter { !$0.isEmpty } ?? []
+    }
+    var tagLines: [String] {
+        stats["tags"]?.components(separatedBy: "|").filter { !$0.isEmpty && $0 != WeeklyReviewTheme.weeklyReviewTag } ?? []
+    }
+    var personLines: [String] {
+        stats["people"]?.components(separatedBy: "|").filter { !$0.isEmpty } ?? []
+    }
+    
     // MARK: - Body
-
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -86,56 +86,56 @@ struct WeeklyReviewDetailView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
                     .padding(.bottom, 20)
-
+                
                 if !personLines.isEmpty {
                     sectionDivider
                     peopleSection
                         .padding(.horizontal, 20)
                         .padding(.vertical, 16)
                 }
-
+                
                 if !tagLines.isEmpty {
                     sectionDivider
                     tagsSection
                         .padding(.horizontal, 20)
                         .padding(.vertical, 16)
                 }
-
+                
                 if !musicLines.isEmpty {
                     sectionDivider
                     musicSection
                         .padding(.horizontal, 20)
                         .padding(.vertical, 16)
                 }
-
+                
                 if !mediaLines.isEmpty {
                     sectionDivider
                     mediaSection
                         .padding(.horizontal, 20)
                         .padding(.vertical, 16)
                 }
-
+                
                 if !highlight.isEmpty {
                     sectionDivider
                     reflectionSection(label: "Highlight", text: highlight)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 16)
                 }
-
+                
                 if !carryForward.isEmpty {
                     sectionDivider
                     reflectionSection(label: "Carry forward", text: carryForward)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 16)
                 }
-
+                
                 if !gratitude.isEmpty {
                     sectionDivider
                     reflectionSection(label: "Gratitude", text: gratitude)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 16)
                 }
-
+                
                 Color.clear.frame(height: 40)
             }
         }
@@ -171,9 +171,9 @@ struct WeeklyReviewDetailView: View {
             Button("Cancel", role: .cancel) {}
         }
     }
-
+    
     // MARK: - Stats Header
-
+    
     var statsHeader: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
@@ -181,14 +181,14 @@ struct WeeklyReviewDetailView: View {
                     .font(.system(size: 14))
                     .foregroundStyle(WeeklyReviewTheme.accentGold)
                 Text("Weekly Review")
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(AppTypeScale.title2)
                     .foregroundStyle(WeeklyReviewTheme.primaryText)
             }
             Text(weekRange)
-                .font(.system(size: 13))
+                .font(AppTypeScale.bodySecondary)
                 .foregroundStyle(WeeklyReviewTheme.secondaryText)
                 .padding(.bottom, 8)
-
+            
             HStack(spacing: 10) {
                 if !entryCount.isEmpty {
                     statBox(value: entryCount, label: "entries")
@@ -205,14 +205,14 @@ struct WeeklyReviewDetailView: View {
             }
         }
     }
-
+    
     func statBox(value: String, label: String) -> some View {
         VStack(spacing: 3) {
             Text(value)
-                .font(.system(size: 15, weight: .semibold))
+                .font(AppTypeScale.title3)
                 .foregroundStyle(WeeklyReviewTheme.primaryText)
             Text(label)
-                .font(.system(size: 10))
+                .font(AppTypeScale.sectionHeader)
                 .foregroundStyle(WeeklyReviewTheme.tertiaryText)
         }
         .padding(.horizontal, 12)
@@ -220,18 +220,18 @@ struct WeeklyReviewDetailView: View {
         .background(WeeklyReviewTheme.statBackground)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
-
+    
     // MARK: - Section Divider
-
+    
     var sectionDivider: some View {
         Rectangle()
             .fill(WeeklyReviewTheme.sectionDivider)
             .frame(height: 0.5)
             .padding(.horizontal, 20)
     }
-
+    
     // MARK: - People Section
-
+    
     var peopleSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionLabel("People")
@@ -240,7 +240,7 @@ struct WeeklyReviewDetailView: View {
                     VStack(spacing: 4) {
                         personAvatar(name: name)
                         Text(name)
-                            .font(.system(size: 10))
+                            .font(AppTypeScale.caption)
                             .foregroundStyle(WeeklyReviewTheme.secondaryText)
                             .lineLimit(1)
                     }
@@ -248,7 +248,7 @@ struct WeeklyReviewDetailView: View {
             }
         }
     }
-
+    
     func personAvatar(name: String) -> some View {
         let person = allPersons.first { $0.name == name }
         return Group {
@@ -274,16 +274,16 @@ struct WeeklyReviewDetailView: View {
             }
         }
     }
-
+    
     // MARK: - Tags Section
-
+    
     var tagsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionLabel("Tags this week")
             FlowLayout(spacing: 6, maxRows: 3) {
                 ForEach(tagLines, id: \.self) { tag in
                     Text(tag)
-                        .font(.system(size: 11))
+                        .font(AppTypeScale.caption)
                         .foregroundStyle(WeeklyReviewTheme.accentPurple)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
@@ -293,9 +293,9 @@ struct WeeklyReviewDetailView: View {
             }
         }
     }
-
+    
     // MARK: - Music Section
-
+    
     var musicSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionLabel("Music saved")
@@ -306,7 +306,7 @@ struct WeeklyReviewDetailView: View {
                             .font(.system(size: 11))
                             .foregroundStyle(WeeklyReviewTheme.accentPurple)
                         Text(track)
-                            .font(.system(size: 12))
+                            .font(AppTypeScale.bodySecondary)
                             .foregroundStyle(WeeklyReviewTheme.primaryText)
                             .lineLimit(1)
                     }
@@ -314,9 +314,9 @@ struct WeeklyReviewDetailView: View {
             }
         }
     }
-
+    
     // MARK: - Media Section
-
+    
     var mediaSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionLabel("Media watched")
@@ -327,7 +327,7 @@ struct WeeklyReviewDetailView: View {
                             .font(.system(size: 11))
                             .foregroundStyle(WeeklyReviewTheme.accentPurple)
                         Text(item)
-                            .font(.system(size: 12))
+                            .font(AppTypeScale.bodySecondary)
                             .foregroundStyle(WeeklyReviewTheme.primaryText)
                             .lineLimit(1)
                     }
@@ -335,25 +335,25 @@ struct WeeklyReviewDetailView: View {
             }
         }
     }
-
+    
     // MARK: - Reflection Section
-
+    
     func reflectionSection(label: String, text: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionLabel(label)
             Text(text)
-                .font(.system(size: 14))
+                .font(AppTypeScale.body)
                 .foregroundStyle(WeeklyReviewTheme.primaryText)
                 .lineSpacing(4)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
-
+    
     // MARK: - Section Label
-
+    
     func sectionLabel(_ title: String) -> some View {
         Text(title.uppercased())
-            .font(.system(size: 10, weight: .medium))
+            .font(AppTypeScale.sectionHeader)
             .foregroundStyle(WeeklyReviewTheme.tertiaryText)
             .kerning(0.6)
     }

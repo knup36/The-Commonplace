@@ -4,25 +4,18 @@
 // Feed card for all entry types.
 // Displays type-specific content, tags, metadata, and favorite indicator.
 // Used in FeedView, CollectionDetailView, TagFeedView, and TodayView.
-// Screen: Feed, Collections, Tags, Today tabs
 //
-// Performance notes:
-//   - drawingGroup() flattens the entire card into a single Metal layer,
-//     eliminating per-frame redraw cost during scrolling
-//   - Photo images are loaded asynchronously via AsyncMediaImage to avoid
-//     blocking the main thread with disk reads during scroll
-//   - Shadows are only rendered on the Inkwell theme (style.usesSerifFonts)
+// Updated v1.13 — fully theme-aware, no hardcoded Inkwell references.
+// All colors derived from theme system. Shadows removed for Dusk theme.
 
 import SwiftUI
 import SwiftData
 
 // MARK: - ShimmerView
-// Animated placeholder shown while an image loads from disk.
-// Uses a sliding gradient to create a left-to-right shimmer effect.
 
 struct ShimmerView: View {
     @State private var phase: CGFloat = -1
-    
+
     var body: some View {
         GeometryReader { geo in
             let gradient = LinearGradient(
@@ -49,16 +42,13 @@ struct ShimmerView: View {
 }
 
 // MARK: - AsyncMediaImage
-// Loads a media file from disk on a background thread and displays it.
-// Shows a shimmer placeholder while loading, then cross-fades to the image.
-// Handles both static images and GIFs via AnimatedImageView.
 
 struct AsyncMediaImage: View {
     let path: String
-    
+
     @State private var imageData: Data? = nil
     @State private var isLoaded = false
-    
+
     var body: some View {
         Group {
             if let data = imageData {
@@ -81,23 +71,16 @@ struct AsyncMediaImage: View {
         }
         .task {
             guard imageData == nil else { return }
-            
-            // Check cache first — avoids disk read if already loaded recently
             if let cached = ImageCache.shared.get(path: path) {
                 imageData = cached
                 return
             }
-            
-            // Not in cache — load from disk on background thread
             let loaded = await Task.detached(priority: .userInitiated) {
                 MediaFileManager.load(path: path)
             }.value
-            
-            // Store in cache for next time
             if let loaded {
                 ImageCache.shared.set(path: path, data: loaded)
             }
-            
             await MainActor.run {
                 imageData = loaded
             }
@@ -111,51 +94,49 @@ struct EntryRowView: View {
     let entry: Entry
     @EnvironmentObject var themeManager: ThemeManager
     @Query var allPersonTags: [Tag]
-    
+
     var style: any AppThemeStyle { themeManager.style }
-    
-    // MARK: - Sub-views
-    
+    var accentColor: Color { entry.type.accentColor(for: themeManager.current) }
+        var cardColor: Color { entry.type.cardColor(for: themeManager.current) }
+        var labelColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
+
+    // MARK: - Type Label
+
     @ViewBuilder
     var typeLabel: some View {
-        if style.usesSerifFonts {
+        if style.showsEntryTypeLabel {
             HStack(spacing: 5) {
                 Circle()
-                    .fill(entry.type.accentColor)
+                    .fill(Color.white.opacity(0.5))
                     .frame(width: 5, height: 5)
                 if entry.type == .link, let contentType = entry.linkContentType {
-                    HStack(spacing: 0) {
-                        Text("LINK")
-                            .font(.system(size: 9, weight: .medium))
-                            .kerning(0.8)
-                            .foregroundStyle(entry.type.accentColor)
-                        Text(" · \(contentType.uppercased())")
-                            .font(.system(size: 9, weight: .medium))
-                            .kerning(0.8)
-                            .foregroundStyle(entry.type.accentColor.opacity(0.5))
-                    }
-                } else if entry.type == .photo {
-                    let subtype = entry.videoPath != nil ? "VIDEO" : "PHOTO"
-                    HStack(spacing: 0) {
-                        Text("SHOT")
-                            .font(.system(size: 9, weight: .medium))
-                            .kerning(0.8)
-                            .foregroundStyle(entry.type.accentColor)
-                        Text(" · \(subtype)")
-                            .font(.system(size: 9, weight: .medium))
-                            .kerning(0.8)
-                            .foregroundStyle(entry.type.accentColor.opacity(0.5))
-                    }
-                } else {
-                    Text(typeLabelText.uppercased())
-                        .font(.system(size: 9, weight: .medium))
-                        .kerning(0.8)
-                        .foregroundStyle(entry.type.accentColor)
-                }
+                                    HStack(spacing: 0) {
+                                        NYLabel("LINK", size: 11, weight: .regular,
+                                                color: UIColor(labelColor))
+                                            .fixedSize()
+                                        NYLabel(" · \(contentType.uppercased())", size: 11, weight: .regular,
+                                                color: UIColor(labelColor).withAlphaComponent(0.5))
+                                            .fixedSize()
+                                    }
+                                } else if entry.type == .photo {
+                                    let subtype = entry.videoPath != nil ? "VIDEO" : "PHOTO"
+                                    HStack(spacing: 0) {
+                                        NYLabel("SHOT", size: 11, weight: .regular,
+                                                color: UIColor(labelColor))
+                                            .fixedSize()
+                                        NYLabel(" · \(subtype)", size: 11, weight: .regular,
+                                                color: UIColor(labelColor).withAlphaComponent(0.5))
+                                            .fixedSize()
+                                    }
+                                } else {
+                                    NYLabel(typeLabelText.uppercased(), size: 11, weight: .regular,
+                                            color: UIColor(labelColor))
+                                        .fixedSize()
+                                }
             }
         }
     }
-    
+
     var typeLabelText: String {
         if entry.type == .media {
             switch entry.mediaType {
@@ -172,29 +153,23 @@ struct EntryRowView: View {
         }
         return entry.type.displayName
     }
-    
+
+    // MARK: - Metadata Column
+
     var metadataColumn: some View {
         HStack(spacing: 6) {
-            Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
-                .font(.caption)
-                .foregroundStyle(entry.type.accentColor.opacity(0.5))
-            Text(entry.createdAt.formatted(date: .abbreviated, time: .omitted))
-                .font(.caption)
-                .foregroundStyle(entry.type.accentColor.opacity(0.5))
-            if !style.usesSerifFonts {
-                ZStack {
-                    Circle()
-                        .fill(entry.type.accentColor.opacity(0.1))
-                        .frame(width: 22, height: 22)
-                    Image(systemName: entry.type.icon)
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(entry.type.accentColor.opacity(0.7))
+                    Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
+                        .font(style.typeCaption)
+                        .foregroundStyle(style.cardMetadataText)
+                    Text(entry.createdAt.formatted(date: .abbreviated, time: .omitted))
+                        .font(style.typeCaption)
+                        .foregroundStyle(style.cardMetadataText)
                 }
-            }
-        }
-        .fixedSize()
+                .fixedSize()
     }
-    
+
+    // MARK: - Card Content
+
     @ViewBuilder
     var cardContent: some View {
         switch entry.type {
@@ -224,30 +199,40 @@ struct EntryRowView: View {
             }
         case .journal:
             DailyNoteRowView(entry: entry)
-        case .sticky:
-            StickyEntryView(entry: entry, isPreview: true)
         case .audio:
             let displayText = entry.text.isEmpty ? (entry.transcript ?? "") : entry.text
             if !displayText.isEmpty {
                 Text(displayText)
-                    .font(style.body)
-                    .lineLimit(4)
-                    .foregroundStyle(style.primaryText)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .font(style.typeBody)
+                                    .lineLimit(4)
+                                    .foregroundStyle(style.cardPrimaryText)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         case .text:
-            if !entry.text.isEmpty {
-                Text(entry.text)
-                    .font(style.body)
-                    .lineLimit(4)
-                    .foregroundStyle(style.primaryText)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+                    if !entry.text.isEmpty {
+                        let parts = entry.text.components(separatedBy: "\n")
+                        let titleLine = parts.first ?? entry.text
+                        let bodyLines = parts.dropFirst().joined(separator: " ")
+                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(titleLine)
+                                                .font(style.typeTitle3)
+                                                .fontWeight(.semibold)
+                                                .lineLimit(2)
+                                                .foregroundStyle(style.cardPrimaryText)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                            if !bodyLines.isEmpty {
+                                                Text(bodyLines)
+                                                    .font(style.typeBody)
+                                                    .lineLimit(2)
+                                                    .foregroundStyle(style.cardSecondaryText)
+                                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                            }
+                                        }
+                    }
         case .music:
             MusicEntryView(entry: entry)
         case .media:
             HStack(spacing: 10) {
-                // Poster thumbnail
                 if let path = entry.mediaCoverPath,
                    let data = MediaFileManager.load(path: path),
                    let uiImage = UIImage(data: data) {
@@ -258,77 +243,82 @@ struct EntryRowView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                 } else {
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(entry.type.accentColor.opacity(0.2))
-                        .frame(width: 50, height: 75)
-                        .overlay(
-                            Image(systemName: "film.fill")
-                                .foregroundStyle(entry.type.accentColor)
-                        )
+                                            .fill(style.cardDivider)
+                                            .frame(width: 50, height: 75)
+                                            .overlay(
+                                                Image(systemName: "film.fill")
+                                                    .foregroundStyle(style.cardSecondaryText)
+                                            )
                 }
-                // Title + metadata
                 VStack(alignment: .leading, spacing: 4) {
                     if let title = entry.mediaTitle {
                         Text(title)
-                            .font(style.usesSerifFonts ? .system(.body, design: .serif) : .body)
-                            .fontWeight(.medium)
-                            .foregroundStyle(style.primaryText)
-                            .lineLimit(2)
+                                                    .font(style.typeTitle3)
+                                                    .fontWeight(.medium)
+                                                    .foregroundStyle(style.cardPrimaryText)
+                                                    .lineLimit(2)
                     }
                     HStack(spacing: 6) {
                         if let year = entry.mediaYear, !year.isEmpty {
                             Text(year)
-                                .font(.caption)
-                                .foregroundStyle(style.secondaryText)
-                        }
-                        if let genre = entry.mediaGenre, !genre.isEmpty {
-                            Text("· \(genre)")
-                                .font(.caption)
-                                .foregroundStyle(style.secondaryText)
-                        }
-                        if let runtime = entry.mediaRuntime, entry.mediaType == "movie" {
-                            let hours = runtime / 60
-                            let mins = runtime % 60
-                            let label = hours > 0 ? "\(hours)h \(mins)m" : "\(mins)m"
-                            Text("· \(label)")
-                                .font(.caption)
-                                .foregroundStyle(style.secondaryText)
-                        }
-                        if let seasons = entry.mediaSeasons, entry.mediaType == "tv" {
-                            Text("· \(seasons) \(seasons == 1 ? "Season" : "Seasons")")
-                                .font(.caption)
-                                .foregroundStyle(style.secondaryText)
-                        }
+                                                            .font(style.typeCaption)
+                                                            .foregroundStyle(style.cardSecondaryText)
+                                                    }
+                                                    if let genre = entry.mediaGenre, !genre.isEmpty {
+                                                        Text("· \(genre)")
+                                                            .font(style.typeCaption)
+                                                            .foregroundStyle(style.cardSecondaryText)
+                                                    }
+                                                    if let runtime = entry.mediaRuntime, entry.mediaType == "movie" {
+                                                        let hours = runtime / 60
+                                                        let mins = runtime % 60
+                                                        let label = hours > 0 ? "\(hours)h \(mins)m" : "\(mins)m"
+                                                        Text("· \(label)")
+                                                            .font(style.typeCaption)
+                                                            .foregroundStyle(style.cardSecondaryText)
+                                                    }
+                                                    if let seasons = entry.mediaSeasons, entry.mediaType == "tv" {
+                                                        Text("· \(seasons) \(seasons == 1 ? "Season" : "Seasons")")
+                                                            .font(style.typeCaption)
+                                                            .foregroundStyle(style.cardSecondaryText)
+                                                    }
                     }
                     if let status = entry.mediaStatus {
                         Text(mediaStatusLabel(for: status).uppercased())
                             .font(.system(size: 8, weight: .semibold))
                             .kerning(0.6)
-                            .foregroundStyle(mediaStatusColor(for: status))
+                            .foregroundStyle(mediaStatusColor(for: status, theme: themeManager.current))
                             .padding(.horizontal, 7)
                             .padding(.vertical, 3)
-                            .background(mediaStatusColor(for: status).opacity(0.15))
+                            .background(mediaStatusColor(for: status, theme: themeManager.current).opacity(0.2))
                             .clipShape(Capsule())
                     }
                 }
                 Spacer()
             }
+        case .sticky:
+            StickyEntryView(entry: entry, isPreview: true)
         }
     }
-    
+
+    // MARK: - Note Text
+
     func noteText(italic: Bool) -> some View {
-        Text(entry.text)
-            .font(style.body)
-            .italic(italic)
-            .lineLimit(4)
-            .foregroundStyle(style.secondaryText)
-            .frame(maxWidth: .infinity, alignment: .leading)
-    }
-    
+            Text(entry.text)
+                .font(style.typeBody)
+                .italic(italic)
+                .lineLimit(4)
+                .foregroundStyle(style.cardSecondaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+
+    // MARK: - Tags Row
+
     @ViewBuilder
     var tagsRow: some View {
         HStack(alignment: .bottom, spacing: 8) {
             HStack(alignment: .center, spacing: 6) {
-                // People avatars first
+                // People avatars
                 let personTags = entry.tagNames.filter { $0.hasPrefix("@") }
                 if !personTags.isEmpty {
                     HStack(spacing: 4) {
@@ -337,23 +327,7 @@ struct EntryRowView: View {
                             let personTag = allPersonTags.first { $0.name == name && $0.isPerson }
                             ZStack {
                                 Circle()
-                                    .strokeBorder(
-                                        AngularGradient(
-                                            colors: [
-                                                Color(hex: "#C8903A"),
-                                                Color(hex: "#F5D478"),
-                                                Color(hex: "#C8903A"),
-                                                Color(hex: "#8A6028"),
-                                                Color(hex: "#C8903A"),
-                                                Color(hex: "#F5D478"),
-                                                Color(hex: "#C8903A")
-                                            ],
-                                            center: .center,
-                                            startAngle: .degrees(0),
-                                            endAngle: .degrees(360)
-                                        ),
-                                        lineWidth: 1
-                                    )
+                                    .strokeBorder(SharedTheme.goldRingGradient, lineWidth: 1)
                                     .frame(width: 22, height: 22)
                                 if let path = personTag?.profilePhotoPath,
                                    let data = MediaFileManager.load(path: path),
@@ -365,47 +339,41 @@ struct EntryRowView: View {
                                         .clipShape(Circle())
                                 } else {
                                     Circle()
-                                        .fill(entry.type.accentColor.opacity(0.2))
-                                        .frame(width: 20, height: 20)
-                                        .overlay(
-                                            Text(String(name.prefix(1)).uppercased())
-                                                .font(.system(size: 9, weight: .medium))
-                                                .foregroundStyle(entry.type.accentColor)
-                                        )
+                                                                            .fill(style.personAvatarBackground)
+                                                                            .frame(width: 20, height: 20)
+                                                                            .overlay(
+                                                                                Text(String(name.prefix(1)).uppercased())
+                                                                                    .font(.system(size: 9, weight: .medium))
+                                                                                    .foregroundStyle(style.personAvatarForeground)
+                                                                            )
                                 }
                             }
                         }
                         if personTags.count > 3 {
-                            Text("+\(personTags.count - 3)")
-                                .font(.caption2)
-                                .foregroundStyle(style.secondaryText)
-                        }
+                                                    Text("+\(personTags.count - 3)")
+                                                        .font(style.typeCaption)
+                                                        .foregroundStyle(style.cardMetadataText)
+                                                }
                     }
                 }
-                // Tags after people
+                // Tag pills
                 let visibleTags = entry.tagNames.filter { !$0.hasPrefix("@") }
                 if !visibleTags.isEmpty {
                     HStack(spacing: 4) {
                         ForEach(visibleTags.prefix(3), id: \.self) { tag in
                             Text(tag)
-                                .font(.caption)
-                                .italic(style.usesSerifFonts)
+                                .font(style.typeCaption)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(entry.type.accentColor.opacity(0.15))
-                                .foregroundStyle(entry.type.accentColor.opacity(0.9))
+                                .background(style.pillBackground)
+                                .foregroundStyle(style.pillForeground)
                                 .clipShape(Capsule())
-                                .overlay(
-                                    style.usesSerifFonts
-                                    ? Capsule().strokeBorder(entry.type.accentColor.opacity(0.3), lineWidth: 0.5)
-                                    : nil
-                                )
                         }
                         if visibleTags.count > 3 {
-                            Text("+\(visibleTags.count - 3)")
-                                .font(.caption)
-                                .foregroundStyle(style.secondaryText)
-                        }
+                                                    Text("+\(visibleTags.count - 3)")
+                                                        .font(style.typeCaption)
+                                                        .foregroundStyle(style.cardMetadataText)
+                                                }
                     }
                 }
                 Spacer()
@@ -413,9 +381,9 @@ struct EntryRowView: View {
             metadataColumn
         }
     }
-    
+
     // MARK: - Body
-    
+
     var body: some View {
         if entry.tagNames.contains(WeeklyReviewTheme.weeklyReviewTag) {
             WeeklyReviewRowView(entry: entry)
@@ -427,48 +395,38 @@ struct EntryRowView: View {
             regularBody
         }
     }
-    
+
     var regularBody: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ZStack(alignment: .topTrailing) {
+            VStack(alignment: .leading, spacing: 8) {
+                ZStack(alignment: .topTrailing) {
                 ZStack(alignment: .topLeading) {
                     cardContent
                         .padding(.top, entry.type == .journal ? 0 : 18)
                     if entry.isPinned {
-                        Image(systemName: "bookmark.fill")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(style.accent.opacity(0.5))
-                            .padding(.top, -13)
-                    }
+                                            Image(systemName: "bookmark.fill")
+                                                .font(.system(size: 10, weight: .semibold))
+                                                .foregroundStyle(style.cardSecondaryText)
+                                                .padding(.top, -13)
+                                        }
                 }
                 typeLabel
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            Divider()
-                .overlay(style.usesSerifFonts ? InkwellTheme.cardBorderTop : Color(uiColor: .separator))
-                .opacity(style.usesSerifFonts ? 0.6 : 1)
-            tagsRow
-        }
-        .padding(12)
-        .background(entry.type.cardColor)
-        .clipShape(RoundedRectangle(cornerRadius: style.usesSerifFonts ? 14 : 12))
-        .overlay(
-            style.usesSerifFonts
-            ? RoundedRectangle(cornerRadius: 14)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [InkwellTheme.cardBorderTop, InkwellTheme.cardBorderColor(for: entry.type)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ),
-                    lineWidth: 0.5
-                )
-            : nil
-        )
-        .shadow(color: style.usesSerifFonts ? Color.black.opacity(0.4) : Color.clear, radius: 6, x: 0, y: 3)
+                Divider()
+                                .overlay(style.cardDivider)
+                            tagsRow
+                        }
+                        .padding(12)
+                        .background(cardColor)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .strokeBorder(style.cardBorder, lineWidth: 0.5)
+                        )
     }
 }
-// MARK: Helpers
+
+// MARK: - Helpers
 
 func mediaStatusLabel(for status: String) -> String {
     switch status {
@@ -479,11 +437,21 @@ func mediaStatusLabel(for status: String) -> String {
     }
 }
 
-func mediaStatusColor(for status: String) -> Color {
-    switch status {
-    case "wantTo":     return InkwellTheme.mediaAccent
-    case "inProgress": return InkwellTheme.stickyAccent
-    case "finished":   return InkwellTheme.locationAccent
-    default:           return InkwellTheme.inkSecondary
+func mediaStatusColor(for status: String, theme: AppTheme) -> Color {
+    switch theme {
+    case .dusk:
+        switch status {
+        case "wantTo":     return Color(hex: "#7A5855")
+        case "inProgress": return Color(hex: "#877662")
+        case "finished":   return Color(hex: "#526349")
+        default:           return Color.white.opacity(0.5)
+        }
+    default:
+        switch status {
+        case "wantTo":     return InkwellTheme.mediaAccent
+        case "inProgress": return InkwellTheme.stickyAccent
+        case "finished":   return InkwellTheme.locationAccent
+        default:           return InkwellTheme.inkSecondary
+        }
     }
 }

@@ -20,8 +20,8 @@ struct LocationDetailView: View {
     @FocusState private var textFieldFocused: Bool
     
     var style: any AppThemeStyle { themeManager.style }
-    var accentColor: Color { InkwellTheme.collectionAccentColor(for: "#30D158") }
-    var bgColor: Color { InkwellTheme.locationCard }
+    var accentColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
+    var bgColor: Color { entry.type.cardColor(for: themeManager.current) }
     
     var coordinate: CLLocationCoordinate2D? {
         guard let lat = entry.locationLatitude,
@@ -67,18 +67,17 @@ struct LocationDetailView: View {
                         VStack(alignment: .leading, spacing: 6) {
                             if let name = entry.locationName {
                                 Text(name)
-                                    .font(style.title)
-                                    .fontWeight(.bold)
-                                    .foregroundStyle(style.primaryText)
+                                    .font(style.typeLargeTitle)
+                                    .foregroundStyle(style.cardPrimaryText)
                             }
                             if let address = entry.locationAddress {
                                 Text(address)
-                                    .font(style.subheadline)
-                                    .foregroundStyle(style.secondaryText)
+                                    .font(style.typeBodySecondary)
+                                    .foregroundStyle(style.cardSecondaryText)
                             }
                             if let category = entry.locationCategory {
                                 Text(category)
-                                    .font(style.caption)
+                                    .font(style.typeCaption)
                                     .foregroundStyle(accentColor)
                             }
                         }
@@ -97,14 +96,14 @@ struct LocationDetailView: View {
                     // Note
                     if isEditing {
                         TextField("Add a note...", text: $editText, axis: .vertical)
-                            .font(style.body)
-                            .foregroundStyle(style.primaryText)
+                            .font(style.typeBody)
+                            .foregroundStyle(style.cardPrimaryText)
                             .focused($textFieldFocused)
                     } else {
                         Text(entry.text.isEmpty ? "Tap to add a note..." : entry.text)
-                            .font(style.body)
+                            .font(style.typeBody)
                             .italic(entry.text.isEmpty ? false : true)
-                            .foregroundStyle(entry.text.isEmpty ? style.tertiaryText : style.secondaryText)
+                            .foregroundStyle(entry.text.isEmpty ? style.cardMetadataText : style.cardSecondaryText)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .contentShape(Rectangle())
                             .onTapGesture {

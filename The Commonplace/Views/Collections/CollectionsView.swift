@@ -75,10 +75,8 @@ struct CollectionsView: View {
             // Header — title + picker
             VStack(alignment: .leading, spacing: 12) {
                 Text("Collections")
-                    .font(style.usesSerifFonts
-                          ? .system(size: 34, weight: .bold, design: .serif)
-                          : .largeTitle.bold())
-                    .foregroundStyle(style.primaryText)
+                                    .font(style.typeLargeTitle)
+                                    .foregroundStyle(style.primaryText)
                     .padding(.leading, 8)
                 Picker("", selection: $selectedTab) {
                     Text("Collections").tag(0)

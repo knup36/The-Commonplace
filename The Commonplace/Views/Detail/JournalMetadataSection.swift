@@ -18,30 +18,29 @@ struct JournalMetadataSection: View {
         if entry.type == .journal {
             VStack(alignment: .leading, spacing: 12) {
                 Text(entry.createdAt.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
-                    .font(style.title)
-                    .fontWeight(.bold)
-                    .foregroundStyle(accentColor)
+                                    .font(style.typeLargeTitle)
+                                    .foregroundStyle(style.cardPrimaryText)
 
                 HStack(spacing: 16) {
                     if !entry.weatherEmoji.isEmpty {
                         VStack(spacing: 2) {
                             Text(entry.weatherEmoji).font(.largeTitle)
-                            Text("Weather").font(.caption2)
-                                .foregroundStyle(style.secondaryText)
-                        }
-                    }
-                    if !entry.moodEmoji.isEmpty {
-                        VStack(spacing: 2) {
-                            Text(entry.moodEmoji).font(.largeTitle)
-                            Text("Mood").font(.caption2)
-                                .foregroundStyle(style.secondaryText)
-                        }
-                    }
-                    if !entry.vibeEmoji.isEmpty {
-                        VStack(spacing: 2) {
-                            Text(entry.vibeEmoji).font(.largeTitle)
-                            Text("Vibe").font(.caption2)
-                                .foregroundStyle(style.secondaryText)
+                            Text("Weather").font(style.typeCaption)
+                                                            .foregroundStyle(style.cardSecondaryText)
+                                                    }
+                                                }
+                                                if !entry.moodEmoji.isEmpty {
+                                                    VStack(spacing: 2) {
+                                                        Text(entry.moodEmoji).font(.largeTitle)
+                                                        Text("Mood").font(style.typeCaption)
+                                                            .foregroundStyle(style.cardSecondaryText)
+                                                    }
+                                                }
+                                                if !entry.vibeEmoji.isEmpty {
+                                                    VStack(spacing: 2) {
+                                                        Text(entry.vibeEmoji).font(.largeTitle)
+                                                        Text("Vibe").font(style.typeCaption)
+                                                            .foregroundStyle(style.cardSecondaryText)
                         }
                     }
                 }
@@ -61,25 +60,25 @@ struct JournalMetadataSection: View {
                 if !entry.completedHabitSnapshots.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Habits")
-                            .font(style.caption)
-                            .foregroundStyle(style.secondaryText)
-                        ForEach(entry.completedHabitSnapshots, id: \.self) { habitName in
-                            HStack(spacing: 8) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(accentColor)
-                                Text(habitName)
-                                    .font(style.subheadline)
-                                    .foregroundStyle(style.primaryText)
-                            }
-                        }
+                                                    .font(style.typeCaption)
+                                                    .foregroundStyle(style.cardSecondaryText)
+                                                ForEach(entry.completedHabitSnapshots, id: \.self) { habitName in
+                                                    HStack(spacing: 8) {
+                                                        Image(systemName: "checkmark.circle.fill")
+                                                            .foregroundStyle(accentColor)
+                                                        Text(habitName)
+                                                            .font(style.typeBodySecondary)
+                                                            .foregroundStyle(style.cardPrimaryText)
+                                                    }
+                                                }
                     }
                 }
 
                 Divider()
 
                 Text("Note")
-                    .font(style.caption)
-                    .foregroundStyle(style.secondaryText)
+                                    .font(style.typeCaption)
+                                    .foregroundStyle(style.cardSecondaryText)
             }
 
             // Journal photo

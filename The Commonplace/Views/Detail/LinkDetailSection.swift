@@ -30,9 +30,9 @@ struct LinkDetailSection: View {
                     .textInputAutocapitalization(.never)
                     .focused($linkFieldFocused)
                     .padding(12)
-                    .background(accentColor.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .onAppear {
+                    .background(style.cardDivider)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                        .onAppear {
                         linkFieldFocused = true
                         // Check clipboard for a URL
                         if let clip = UIPasteboard.general.string,
@@ -143,15 +143,15 @@ struct LinkDetailSection: View {
                     entry.linkContentType = type == "generic" ? nil : type
                 } label: {
                     HStack(spacing: 5) {
-                        Image(systemName: iconFor(type))
-                            .font(.system(size: 11))
-                        Text(type.capitalized)
-                            .font(.system(size: 12, weight: .medium))
-                    }
-                    .foregroundStyle(isSelected ? accentColor : style.tertiaryText)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 7)
-                    .background(isSelected ? accentColor.opacity(0.12) : Color.clear)
+                                            Image(systemName: iconFor(type))
+                                                .font(style.typeCaption)
+                                            Text(type.capitalized)
+                                                .font(style.typeLabel)
+                                        }
+                                        .foregroundStyle(isSelected ? accentColor : style.cardMetadataText)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 7)
+                                        .background(isSelected ? style.cardDivider : Color.clear)
                 }
                 .buttonStyle(.plain)
                 if type != "video" {
@@ -161,12 +161,12 @@ struct LinkDetailSection: View {
                 }
             }
         }
-        .background(accentColor.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(accentColor.opacity(0.15), lineWidth: 0.5)
-        )
+        .background(style.cardDivider.opacity(0.5))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .strokeBorder(style.cardBorder, lineWidth: 0.5)
+                )
     }
 
     func iconFor(_ type: String) -> String {
@@ -181,33 +181,33 @@ struct LinkDetailSection: View {
 
     func articlePreview(markdown: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let title = entry.linkTitle {
-                Text(title)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(style.primaryText)
-                    .lineLimit(2)
-            }
-            if let urlString = entry.url {
-                Text(urlString)
-                    .font(.caption)
-                    .foregroundStyle(style.tertiaryText)
-                    .lineLimit(1)
-            }
-            Divider()
-                .overlay(accentColor.opacity(0.2))
-            Text(String(markdown.prefix(300)).trimmingCharacters(in: .whitespacesAndNewlines) + "...")
-                .font(.system(size: 13))
-                .foregroundStyle(style.secondaryText)
-                .lineLimit(4)
-                .lineSpacing(3)
-        }
-        .padding(12)
-        .background(accentColor.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .strokeBorder(accentColor.opacity(0.15), lineWidth: 0.5)
-        )
+                    if let title = entry.linkTitle {
+                        Text(title)
+                            .font(style.typeTitle3)
+                            .foregroundStyle(style.cardPrimaryText)
+                            .lineLimit(2)
+                    }
+                    if let urlString = entry.url {
+                        Text(urlString)
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.cardMetadataText)
+                            .lineLimit(1)
+                    }
+                    Divider()
+                        .overlay(style.cardDivider)
+                    Text(String(markdown.prefix(300)).trimmingCharacters(in: .whitespacesAndNewlines) + "...")
+                        .font(style.typeBodySecondary)
+                        .foregroundStyle(style.cardSecondaryText)
+                        .lineLimit(4)
+                        .lineSpacing(3)
+                }
+                .padding(12)
+                .background(style.cardDivider)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(style.cardBorder, lineWidth: 0.5)
+                )
     }
     
     // MARK: - Helpers

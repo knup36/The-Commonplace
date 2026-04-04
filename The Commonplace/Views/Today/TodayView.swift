@@ -111,10 +111,8 @@ struct TodayView: View {
     var titleHeader: some View {
         HStack {
             Text(selectedTab == 0 ? "Today" : selectedTab == 1 ? "On This Day" : "Stats")
-                .font(style.usesSerifFonts
-                      ? .system(size: 34, weight: .bold, design: .serif)
-                      : .largeTitle.bold())
-                .foregroundStyle(style.primaryText)
+                            .font(style.typeLargeTitle)
+                            .foregroundStyle(style.primaryText)
             Spacer()
         }
         .padding(.horizontal)
@@ -136,8 +134,8 @@ struct TodayView: View {
         if !todayEntries.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Label("Captured Today", systemImage: "tray.fill")
-                    .font(.subheadline).fontWeight(.semibold)
-                    .foregroundStyle(style.secondaryText)
+                                    .font(style.typeTitle3)
+                                    .foregroundStyle(style.secondaryText)
                     .padding(.horizontal)
                 ForEach(todayEntries) { entry in
                     NavigationLink(destination: destinationView(for: entry)) {
@@ -158,8 +156,8 @@ struct TodayView: View {
                     .font(.system(size: 32))
                     .foregroundStyle(style.tertiaryText)
                 Text("Nothing captured yet today")
-                    .font(.subheadline)
-                    .foregroundStyle(style.tertiaryText)
+                                    .font(style.typeBodySecondary)
+                                    .foregroundStyle(style.tertiaryText)
             }
             .frame(maxWidth: .infinity)
             .padding(.top, 20)
@@ -174,8 +172,8 @@ struct TodayView: View {
                         .font(.system(size: 32))
                         .foregroundStyle(style.tertiaryText)
                     Text("Nothing on this day in previous years")
-                        .font(.subheadline)
-                        .foregroundStyle(style.tertiaryText)
+                                                .font(style.typeBodySecondary)
+                                                .foregroundStyle(style.tertiaryText)
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
@@ -184,8 +182,8 @@ struct TodayView: View {
                 ForEach(onThisDayEntries, id: \.yearsAgo) { group in
                     VStack(alignment: .leading, spacing: 6) {
                         Text(group.yearsAgo == 1 ? "1 year ago" : "\(group.yearsAgo) years ago")
-                            .font(.caption).fontWeight(.semibold)
-                            .foregroundStyle(style.accent)
+                                                    .font(style.typeSectionHeader)
+                                                    .foregroundStyle(style.accent)
                             .padding(.horizontal)
                         ForEach(group.entries) { entry in
                             ZStack {

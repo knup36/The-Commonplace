@@ -14,7 +14,7 @@ struct MiniSoundPlayerBar: View {
     @EnvironmentObject var themeManager: ThemeManager
 
     var style: any AppThemeStyle { themeManager.style }
-    var accentColor: Color { EntryType.audio.accentColor }
+    var accentColor: Color { EntryType.audio.detailAccentColor(for: themeManager.current) }
 
     var body: some View {
         if player.isReady {
@@ -35,12 +35,12 @@ struct MiniSoundPlayerBar: View {
                     // Title + time
                     VStack(alignment: .leading, spacing: 2) {
                         Text(player.currentTitle ?? "Sound")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(style.primaryText)
-                            .lineLimit(1)
+                                                    .font(style.typeBodySecondary)
+                                                    .foregroundStyle(style.primaryText)
+                                                    .lineLimit(1)
                         Text(player.formattedTime(player.currentTime) + " / " + player.formattedTime(player.duration))
-                            .font(.system(size: 10, design: .monospaced))
-                            .foregroundStyle(style.tertiaryText)
+                                                    .font(style.typeMono)
+                                                    .foregroundStyle(style.tertiaryText)
                     }
 
                     Spacer()

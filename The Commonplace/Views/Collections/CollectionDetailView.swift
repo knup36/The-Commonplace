@@ -12,7 +12,7 @@ struct CollectionDetailView: View {
     
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color {
-        InkwellTheme.collectionAccentColor(for: collection.colorHex)
+        Color(hex: collection.colorHex)
     }
     
     var hasNonTypeFilters: Bool {
@@ -40,7 +40,7 @@ struct CollectionDetailView: View {
                             .font(.system(size: 40))
                             .foregroundStyle(style.tertiaryText)
                         Text("Nothing matches these filters")
-                            .font(style.subheadline)
+                            .font(style.typeBodySecondary)
                             .foregroundStyle(style.tertiaryText)
                     }
                     .frame(maxWidth: .infinity)
@@ -61,16 +61,10 @@ struct CollectionDetailView: View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(InkwellTheme.collectionCardBackground(for: collection.colorHex))
+                    .fill(accentColor.opacity(0.15))
                     .frame(width: 52, height: 52)
                     .overlay(
-                        style.usesSerifFonts
-                        ? Circle().strokeBorder(
-                            LinearGradient(
-                                colors: [InkwellTheme.cardBorderTop, accentColor.opacity(0.2)],
-                                startPoint: .top, endPoint: .bottom
-                            ), lineWidth: 0.5)
-                        : nil
+                        Circle().strokeBorder(accentColor.opacity(0.3), lineWidth: 0.5)
                     )
                 Image(systemName: collection.icon)
                     .font(.title2)
@@ -79,7 +73,7 @@ struct CollectionDetailView: View {
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(collection.name)
-                    .font(style.title)
+                    .font(style.typeTitle2)
                     .fontWeight(.bold)
                     .foregroundStyle(style.primaryText)
                 
@@ -91,7 +85,7 @@ struct CollectionDetailView: View {
             Spacer()
             
             Text("\(filteredEntries.count)")
-                .font(.title)
+                .font(style.typeLargeTitle)
                 .fontWeight(.bold)
                 .foregroundStyle(accentColor)
         }

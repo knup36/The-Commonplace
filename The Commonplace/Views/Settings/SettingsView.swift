@@ -67,8 +67,8 @@ struct SettingsView: View {
             aboutSection
             dataSection
         }
-        .scrollContentBackground(style.usesSerifFonts ? .hidden : .visible)
-        .background(style.usesSerifFonts ? style.background : Color(uiColor: .systemGroupedBackground))
+        .scrollContentBackground(.hidden)
+                .background(style.background)
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingShareSheet) {
@@ -135,8 +135,8 @@ struct SettingsView: View {
             Text("Appearance")
                 .foregroundStyle(style.tertiaryText)
         } footer: {
-            Text("Inkwell uses a warm dark theme inspired by leather-bound books and candlelight.")
-                .foregroundStyle(style.tertiaryText)
+            Text("Dusk is the default theme. Inkwell uses a warm dark theme inspired by leather-bound books and candlelight.")
+                            .foregroundStyle(style.tertiaryText)
         }
     }
     

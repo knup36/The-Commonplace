@@ -12,7 +12,7 @@ struct FeedStatsView: View {
     @EnvironmentObject var themeManager: ThemeManager
     
     var style: any AppThemeStyle { themeManager.style }
-    var accentColor: Color { style.usesSerifFonts ? InkwellTheme.amber : .accentColor }
+    var accentColor: Color { style.accent }
     
     // MARK: - Computed stats
     
@@ -71,12 +71,11 @@ struct FeedStatsView: View {
             
             // Total
             Text("\(totalEntries) Entries")
-                .font(style.usesSerifFonts ? .system(size: 28, weight: .bold, design: .serif) : .system(size: 28, weight: .bold))
+                .font(style.typeLargeTitle)
                 .foregroundStyle(style.primaryText)
             
             Divider()
-                .overlay(style.usesSerifFonts ? InkwellTheme.cardBorderTop : Color(uiColor: .separator))
-                .opacity(0.6)
+                .overlay(style.tertiaryText.opacity(0.3))
             
             // Icon grid — 4 per row
             let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 4)
@@ -85,33 +84,32 @@ struct FeedStatsView: View {
                     VStack(spacing: 6) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(InkwellTheme.cardBackground(for: item.type))
+                                .fill(item.type.cardColor(for: themeManager.current))
                                 .frame(width: 72, height: 72)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .strokeBorder(InkwellTheme.cardBorderColor(for: item.type), lineWidth: 0.5)
+                                        .strokeBorder(style.cardBorder, lineWidth: 0.5)
                                 )
                             Image(systemName: item.type.icon)
                                 .font(.system(size: 32, weight: .medium))
-                                .foregroundStyle(InkwellTheme.accentColor(for: item.type))
+                                .foregroundStyle(item.type.detailAccentColor(for: themeManager.current))
                         }
                         Text("\(item.count)")
-                            .font(style.usesSerifFonts ? .system(.caption, design: .serif) : .caption)
+                            .font(style.typeCaption)
                             .fontWeight(.medium)
-                            .foregroundStyle(InkwellTheme.accentColor(for: item.type))
+                            .foregroundStyle(item.type.detailAccentColor(for: themeManager.current))
                     }
                 }
             }
             
             Divider()
-                .overlay(style.usesSerifFonts ? InkwellTheme.cardBorderTop : Color(uiColor: .separator))
-                .opacity(0.6)
+                .overlay(style.tertiaryText.opacity(0.3))
             
             // Capturing days + streak
             HStack {
                 if let days = daysSinceFirst {
                     Text("capturing for \(days) days")
-                        .font(style.caption)
+                        .font(style.typeCaption)
                         .foregroundStyle(style.tertiaryText)
                 }
                 Spacer()
@@ -121,15 +119,14 @@ struct FeedStatsView: View {
                             .font(.system(size: 11))
                             .foregroundStyle(accentColor)
                         Text("streak \(currentStreak)")
-                            .font(style.caption)
+                            .font(style.typeCaption)
                             .foregroundStyle(accentColor)
                     }
                 }
             }
             
             Divider()
-                .overlay(style.usesSerifFonts ? InkwellTheme.cardBorderTop : Color(uiColor: .separator))
-                .opacity(0.6)
+                .overlay(style.tertiaryText.opacity(0.3))
             
             // Most active day
             if let day = mostActiveDay {
@@ -138,7 +135,7 @@ struct FeedStatsView: View {
                         .font(.system(size: 11))
                         .foregroundStyle(style.tertiaryText)
                     Text("Most active: \(day)")
-                        .font(style.caption)
+                        .font(style.typeCaption)
                         .foregroundStyle(style.secondaryText)
                 }
             }
@@ -150,13 +147,13 @@ struct FeedStatsView: View {
                         .font(.system(size: 11))
                         .foregroundStyle(style.tertiaryText)
                     Text("\(entriesThisWeek) this week")
-                        .font(style.caption)
+                        .font(style.typeCaption)
                         .foregroundStyle(style.secondaryText)
                 }
                 Text("·")
                     .foregroundStyle(style.tertiaryText)
                 Text("\(entriesThisMonth) this month")
-                    .font(style.caption)
+                    .font(style.typeCaption)
                     .foregroundStyle(style.secondaryText)
             }
         }

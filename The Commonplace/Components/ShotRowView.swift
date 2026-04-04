@@ -5,41 +5,39 @@
 // Shows the video thumbnail with a play button overlay.
 // Photo-only Shot entries continue to use regularBody in EntryRowView.
 //
-// Tapping the card navigates to the detail view where VideoPlayer plays inline.
+// Updated v1.13 — theme-aware colors via themeManager.current
 
 import SwiftUI
 
 struct ShotRowView: View {
     let entry: Entry
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     var style: any AppThemeStyle { themeManager.style }
-    var accentColor: Color { entry.type.accentColor }
-
+    var accentColor: Color { entry.type.accentColor(for: themeManager.current) }
+    var cardColor: Color { entry.type.cardColor(for: themeManager.current) }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Type label — Inkwell only
-            if style.usesSerifFonts {
+            
+            // Type label
+            if style.showsEntryTypeLabel {
                 HStack {
                     Spacer()
                     HStack(spacing: 5) {
                         Circle()
-                            .fill(accentColor)
+                            .fill(style.cardSecondaryText)
                             .frame(width: 5, height: 5)
                         HStack(spacing: 0) {
-                            Text("SHOT")
-                                .font(.system(size: 9, weight: .medium))
-                                .kerning(0.8)
-                                .foregroundStyle(accentColor)
-                            Text(" · VIDEO")
-                                .font(.system(size: 9, weight: .medium))
-                                .kerning(0.8)
-                                .foregroundStyle(accentColor.opacity(0.5))
+                            NYLabel("SHOT", color: UIColor(style.cardPrimaryText))
+                                .fixedSize()
+                            NYLabel(" · VIDEO", color: UIColor(style.cardMetadataText))
+                                .fixedSize()
                         }
                     }
                 }
             }
-
+            
             // Thumbnail with play overlay
             ZStack {
                 if let thumbPath = entry.videoThumbnailPath,
@@ -54,12 +52,12 @@ struct ShotRowView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                 } else {
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(accentColor.opacity(0.1))
+                        .fill(style.cardDivider)
                         .frame(maxWidth: .infinity)
                         .frame(height: 180)
                 }
-
-                // Play button overlay
+                
+                // Play button
                 ZStack {
                     Circle()
                         .fill(Color.black.opacity(0.45))
@@ -69,7 +67,7 @@ struct ShotRowView: View {
                         .foregroundStyle(.white)
                         .offset(x: 2)
                 }
-
+                
                 // Duration badge
                 if let duration = entry.videoDuration {
                     VStack {
@@ -77,7 +75,7 @@ struct ShotRowView: View {
                         HStack {
                             Spacer()
                             Text(formatDuration(duration))
-                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .font(style.typeMono)
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
@@ -88,21 +86,18 @@ struct ShotRowView: View {
                     }
                 }
             }
-
+            
             // Note text
             if !entry.text.isEmpty {
                 Text(entry.text)
-                    .font(style.body)
-                    .foregroundStyle(style.primaryText)
+                    .font(style.typeBody)
+                    .foregroundStyle(style.cardPrimaryText)
                     .lineLimit(2)
             }
-
+            
             Divider()
-                .overlay(style.usesSerifFonts
-                    ? InkwellTheme.cardBorderTop
-                    : Color(uiColor: .separator))
-                .opacity(style.usesSerifFonts ? 0.6 : 1)
-
+                .overlay(style.cardDivider)
+            
             // Tags + metadata row
             HStack {
                 let visibleTags = entry.tagNames.filter { !$0.hasPrefix("@") }
@@ -110,55 +105,40 @@ struct ShotRowView: View {
                     HStack(spacing: 4) {
                         ForEach(visibleTags.prefix(3), id: \.self) { tag in
                             Text(tag)
-                                .font(.caption)
-                                .italic(style.usesSerifFonts)
+                                .font(style.typeCaption)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(accentColor.opacity(0.15))
-                                .foregroundStyle(accentColor.opacity(0.9))
+                                .background(style.pillBackground)
+                                .foregroundStyle(style.pillForeground)
                                 .clipShape(Capsule())
                         }
                         if visibleTags.count > 3 {
                             Text("+\(visibleTags.count - 3)")
-                                .font(.caption)
-                                .foregroundStyle(style.secondaryText)
+                                .font(style.typeCaption)
+                                .foregroundStyle(style.cardMetadataText)
                         }
                     }
                 }
                 Spacer()
                 HStack(spacing: 6) {
                     Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
-                        .font(.caption)
-                        .foregroundStyle(accentColor.opacity(0.5))
+                        .font(style.typeCaption)
+                        .foregroundStyle(style.cardMetadataText)
                     Text(entry.createdAt.formatted(date: .abbreviated, time: .omitted))
-                        .font(.caption)
-                        .foregroundStyle(accentColor.opacity(0.5))
+                        .font(style.typeCaption)
+                        .foregroundStyle(style.cardMetadataText)
                 }
             }
         }
         .padding(12)
-        .background(entry.type.cardColor)
-        .clipShape(RoundedRectangle(cornerRadius: style.usesSerifFonts ? 14 : 12))
+        .background(cardColor)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
-            style.usesSerifFonts
-            ? RoundedRectangle(cornerRadius: 14)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [InkwellTheme.cardBorderTop,
-                                 InkwellTheme.cardBorderColor(for: entry.type)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ),
-                    lineWidth: 0.5
-                )
-            : nil
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(style.cardBorder, lineWidth: 0.5)
         )
-        .shadow(color: style.usesSerifFonts
-            ? Color.black.opacity(0.4)
-            : Color.clear,
-            radius: 6, x: 0, y: 3)
     }
-
+    
     func formatDuration(_ duration: Double) -> String {
         let mins = Int(duration) / 60
         let secs = Int(duration) % 60

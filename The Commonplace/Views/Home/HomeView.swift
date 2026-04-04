@@ -21,7 +21,7 @@ struct HomeView: View {
     }
     @EnvironmentObject var themeManager: ThemeManager
     var style: any AppThemeStyle { themeManager.style }
-
+    
     var pinnedCollections: [Collection] {
         allCollections
             .filter { $0.isPinned }
@@ -29,7 +29,7 @@ struct HomeView: View {
             .prefix(5)
             .map { $0 }
     }
-
+    
     var pinnedEntries: [Entry] {
         allEntries
             .filter { $0.isPinned }
@@ -43,25 +43,23 @@ struct HomeView: View {
             .prefix(5)
             .map { $0 }
     }
-
+    
     func entryCount(for tag: Tag) -> Int {
         allEntries.filter { $0.tagNames.contains(tag.name) }.count
     }
-
+    
     var hasAnyPinned: Bool {
         !pinnedCollections.isEmpty || !pinnedEntries.isEmpty ||
         !favoritedEntries.isEmpty || !pinnedTags.isEmpty
     }
-
+    
     var body: some View {
         NavigationStack {
             List {
                 // Title
                 HStack {
                     Text("Home")
-                        .font(style.usesSerifFonts
-                              ? .system(size: 34, weight: .bold, design: .serif)
-                              : .largeTitle.bold())
+                        .font(style.typeLargeTitle)
                         .foregroundStyle(style.primaryText)
                     Spacer()
                 }
@@ -69,12 +67,12 @@ struct HomeView: View {
                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
-
+                
                 // Pages section
                 if !pinnedEntries.isEmpty {
                     pagesSection
                 }
-
+                
                 // Collections section
                 if !pinnedCollections.isEmpty {
                     collectionsSection
@@ -83,12 +81,12 @@ struct HomeView: View {
                 if !favoritedEntries.isEmpty {
                     favoritesSection
                 }
-
+                
                 // Tags section
                 if !pinnedTags.isEmpty {
                     tagsSection
                 }
-
+                
                 // Empty state
                 if !hasAnyPinned {
                     emptyState
@@ -100,9 +98,9 @@ struct HomeView: View {
             .navigationBarTitleDisplayMode(.inline)
         }
     }
-
+    
     // MARK: - Pages Section
-
+    
     var pagesSection: some View {
         Section {
             ForEach(pinnedEntries) { entry in
@@ -139,9 +137,9 @@ struct HomeView: View {
             .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 12, trailing: 16))
         }
     }
-
+    
     // MARK: - Collections Section
-
+    
     var collectionsSection: some View {
         Section {
             ForEach(pinnedCollections) { collection in
@@ -178,8 +176,8 @@ struct HomeView: View {
             .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 12, trailing: 16))
         }
     }
-
-// MARK: Favorites Section
+    
+    // MARK: Favorites Section
     
     var favoritesSection: some View {
         Section {
@@ -216,9 +214,9 @@ struct HomeView: View {
             .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 12, trailing: 16))
         }
     }
-
+    
     // MARK: - Empty State
-
+    
     var emptyState: some View {
         VStack(spacing: 12) {
             Image(systemName: "pin.slash")
@@ -239,7 +237,7 @@ struct HomeView: View {
     }
     
     // MARK: - Tags Section
-
+    
     var tagsSection: some View {
         Section {
             ForEach(pinnedTags) { tag in
@@ -250,28 +248,21 @@ struct HomeView: View {
                                 .font(.caption)
                                 .foregroundStyle(style.accent)
                             Text(tag.name)
-                                .font(style.body)
+                                .font(style.typeBody)
                                 .foregroundStyle(style.primaryText)
                         }
                         Spacer()
                         Text("\(entryCount(for: tag))")
-                            .font(.subheadline)
+                            .font(style.typeBodySecondary)
                             .fontWeight(.semibold)
                             .foregroundStyle(style.accent)
                     }
                     .padding(.vertical, 4)
                     .padding(.horizontal, 10)
                 }
-                .listRowBackground(
-                    style.usesSerifFonts
-                    ? style.surface
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .padding(.vertical, 2)
-                        .padding(.horizontal, 16)
-                    : nil
-                )
+                .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 3, leading: 16, bottom: 3, trailing: 24))
-                .listRowSeparator(style.usesSerifFonts ? .hidden : .visible)
+                .listRowSeparator(.visible)
             }
             Color.clear
                 .frame(height: 50)

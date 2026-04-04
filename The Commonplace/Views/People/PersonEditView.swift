@@ -20,16 +20,16 @@ struct PersonEditView: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     @State private var nameText: String = ""
     @State private var bioText: String = ""
     @State private var showingImagePicker = false
     @State private var selectedImage: UIImage? = nil
     @State private var showingDatePicker = false
-
+    
     var style: any AppThemeStyle { themeManager.style }
     var accent: Color { style.accent }
-
+    
     var body: some View {
         NavigationStack {
             Form {
@@ -56,32 +56,32 @@ struct PersonEditView: View {
                         Spacer()
                     }
                     .padding(.vertical, 8)
-                    .listRowBackground(style.usesSerifFonts ? style.surface : nil)
+                    .listRowBackground(style.surface)
                 }
-
+                
                 // Name
                 Section {
                     TextField("Name", text: $nameText)
-                        .font(style.usesSerifFonts ? .system(.body, design: .serif) : .body)
+                        .font(style.typeBody)
                         .foregroundStyle(style.primaryText)
-                        .listRowBackground(style.usesSerifFonts ? style.surface : nil)
+                        .listRowBackground(style.surface)
                 } header: {
                     Text("Name")
                         .foregroundStyle(style.tertiaryText)
                 }
-
+                
                 // Bio
                 Section {
                     TextField("Add a bio...", text: $bioText, axis: .vertical)
-                        .font(style.usesSerifFonts ? .system(.body, design: .serif) : .body)
+                        .font(style.typeBody)
                         .foregroundStyle(style.primaryText)
                         .lineLimit(3...6)
-                        .listRowBackground(style.usesSerifFonts ? style.surface : nil)
+                        .listRowBackground(style.surface)
                 } header: {
                     Text("Bio")
                         .foregroundStyle(style.tertiaryText)
                 }
-
+                
                 // Birthday
                 Section {
                     if showingDatePicker {
@@ -94,14 +94,14 @@ struct PersonEditView: View {
                             displayedComponents: .date
                         )
                         .datePickerStyle(.graphical)
-                        .listRowBackground(style.usesSerifFonts ? style.surface : nil)
-
+                        .listRowBackground(style.surface)
+                        
                         Button("Remove Birthday") {
                             tag.birthdate = nil
                             showingDatePicker = false
                         }
                         .foregroundStyle(.red)
-                        .listRowBackground(style.usesSerifFonts ? style.surface : nil)
+                        .listRowBackground(style.surface)
                     } else {
                         Button {
                             showingDatePicker = true
@@ -117,15 +117,15 @@ struct PersonEditView: View {
                                     .foregroundStyle(style.tertiaryText)
                             }
                         }
-                        .listRowBackground(style.usesSerifFonts ? style.surface : nil)
+                        .listRowBackground(style.surface)
                     }
                 } header: {
                     Text("Birthday")
                         .foregroundStyle(style.tertiaryText)
                 }
             }
-            .scrollContentBackground(style.usesSerifFonts ? .hidden : .visible)
-            .background(style.usesSerifFonts ? style.background : Color(uiColor: .systemGroupedBackground))
+            .scrollContentBackground(.hidden)
+                        .background(style.background)
             .navigationTitle("Edit Person")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -163,29 +163,29 @@ struct PersonEditView: View {
             }
         }
     }
-
+    
     // MARK: - Save
-
+    
     func save() {
-            let trimmedName = nameText.trimmingCharacters(in: .whitespaces)
-            if !trimmedName.isEmpty && trimmedName != tag.name {
-                // Rename: update all entries that reference the old person tag
-                let oldTagString = "@\(tag.name)"
-                let newTagString = "@\(trimmedName)"
-                let fetchDescriptor = FetchDescriptor<Entry>()
-                if let allEntries = try? modelContext.fetch(fetchDescriptor) {
-                    for entry in allEntries where entry.tagNames.contains(oldTagString) {
-                        entry.tagNames = entry.tagNames.map { $0 == oldTagString ? newTagString : $0 }
-                    }
+        let trimmedName = nameText.trimmingCharacters(in: .whitespaces)
+        if !trimmedName.isEmpty && trimmedName != tag.name {
+            // Rename: update all entries that reference the old person tag
+            let oldTagString = "@\(tag.name)"
+            let newTagString = "@\(trimmedName)"
+            let fetchDescriptor = FetchDescriptor<Entry>()
+            if let allEntries = try? modelContext.fetch(fetchDescriptor) {
+                for entry in allEntries where entry.tagNames.contains(oldTagString) {
+                    entry.tagNames = entry.tagNames.map { $0 == oldTagString ? newTagString : $0 }
                 }
-                tag.name = trimmedName
             }
-            tag.bio = bioText.trimmingCharacters(in: .whitespaces).isEmpty ? nil : bioText.trimmingCharacters(in: .whitespaces)
-            try? modelContext.save()
+            tag.name = trimmedName
         }
-
+        tag.bio = bioText.trimmingCharacters(in: .whitespaces).isEmpty ? nil : bioText.trimmingCharacters(in: .whitespaces)
+        try? modelContext.save()
+    }
+    
     // MARK: - Avatar
-
+    
     func avatarView(size: CGFloat) -> some View {
         Group {
             if let path = tag.profilePhotoPath,

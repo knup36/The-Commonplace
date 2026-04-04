@@ -8,20 +8,16 @@ struct CollectionListRowView: View {
     let collection: Collection
     @Query var entries: [Entry]
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     var style: any AppThemeStyle { themeManager.style }
-
-    var accentColor: Color {
-        return InkwellTheme.collectionAccentColor(for: collection.colorHex)
-    }
-    var cardBackground: Color {
-        InkwellTheme.collectionCardBackground(for: collection.colorHex)
-    }
-
+    
+    var accentColor: Color { Color(hex: collection.colorHex) }
+    var cardBackground: Color { accentColor.opacity(0.15) }
+    
     var entryCount: Int {
         entries.filter { collectionMatches(entry: $0, collection: collection) }.count
     }
-
+    
     var body: some View {
         HStack(spacing: 14) {
             ZStack {
@@ -29,29 +25,27 @@ struct CollectionListRowView: View {
                     .fill(accentColor.opacity(0.15))
                     .frame(width: 40, height: 40)
                     .overlay(
-                        style.usesSerifFonts
-                        ? Circle().strokeBorder(accentColor.opacity(0.3), lineWidth: 0.5)
-                        : nil
+                        Circle().strokeBorder(accentColor.opacity(0.3), lineWidth: 0.5)
                     )
                 Image(systemName: collection.icon)
                     .font(.system(size: 18))
                     .foregroundStyle(accentColor)
             }
-
+            
             Text(collection.name)
-                .font(style.body)
+                .font(style.typeBody)
                 .fontWeight(.medium)
                 .foregroundStyle(style.primaryText)
-
+            
             Spacer()
-
+            
             HStack(spacing: 6) {
                 Text("\(entryCount)")
-                    .font(style.subheadline)
+                    .font(style.typeBodySecondary)
                     .fontWeight(.semibold)
                     .foregroundStyle(accentColor)
                 Image(systemName: "chevron.right")
-                    .font(.caption)
+                    .font(style.typeCaption)
                     .fontWeight(.semibold)
                     .foregroundStyle(accentColor.opacity(0.6))
             }
@@ -61,18 +55,8 @@ struct CollectionListRowView: View {
         .background(cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
-            style.usesSerifFonts
-            ? RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [InkwellTheme.cardBorderTop, accentColor.opacity(0.2)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ),
-                    lineWidth: 0.5
-                )
-            : nil
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(accentColor.opacity(0.3), lineWidth: 0.5)
         )
-        .shadow(color: style.usesSerifFonts ? Color.black.opacity(0.3) : .clear, radius: 4, x: 0, y: 2)
     }
 }

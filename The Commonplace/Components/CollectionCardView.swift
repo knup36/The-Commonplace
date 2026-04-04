@@ -5,36 +5,32 @@ struct CollectionCardView: View {
     let collection: Collection
     @Query var entries: [Entry]
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     var style: any AppThemeStyle { themeManager.style }
-
-    var accentColor: Color {
-        InkwellTheme.collectionAccentColor(for: collection.colorHex)
-    }
-    var cardBackground: Color {
-        InkwellTheme.collectionCardBackground(for: collection.colorHex)
-    }
-
+    
+    var accentColor: Color { Color(hex: collection.colorHex) }
+    var cardBackground: Color { accentColor.opacity(0.15) }
+    
     var entryCount: Int {
         entries.filter { collectionMatches(entry: $0, collection: collection) }.count
     }
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Image(systemName: collection.icon)
                 .font(.title2)
                 .foregroundStyle(accentColor)
-
+            
             Spacer()
-
+            
             Text(collection.name)
-                .font(style.subheadline)
+                .font(style.typeBodySecondary)
                 .fontWeight(.semibold)
                 .foregroundStyle(style.primaryText)
                 .lineLimit(2)
-
+            
             Text("\(entryCount) entries")
-                .font(style.caption)
+                .font(style.typeCaption)
                 .foregroundStyle(style.tertiaryText)
         }
         .padding(12)
@@ -42,19 +38,9 @@ struct CollectionCardView: View {
         .background(cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
-            style.usesSerifFonts
-            ? RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [InkwellTheme.cardBorderTop, accentColor.opacity(0.2)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ),
-                    lineWidth: 0.5
-                )
-            : nil
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(accentColor.opacity(0.3), lineWidth: 0.5)
         )
-        .shadow(color: style.usesSerifFonts ? Color.black.opacity(0.3) : .clear, radius: 4, x: 0, y: 2)
         .onDrag {
             NSItemProvider(object: collection.id.uuidString as NSString)
         }

@@ -24,7 +24,11 @@ import SwiftUI
 struct CompactEntryCard: View {
     let entry: Entry
     var style: any AppThemeStyle
-
+    @EnvironmentObject var themeManager: ThemeManager
+    
+    var entryAccent: Color { entry.type.detailAccentColor(for: themeManager.current) }
+    var entryCard: Color { entry.type.cardColor(for: themeManager.current) }
+    
     private let cardWidth: CGFloat = 160
     private let cardHeight: CGFloat = 80
     
@@ -33,10 +37,10 @@ struct CompactEntryCard: View {
             // Background — hidden for photo and music which use full bleed images
             if entry.type != .photo && entry.type != .music && entry.type != .media {
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(entry.type.cardColor)
+                    .fill(entryCard)
                     .overlay(
                         RoundedRectangle(cornerRadius: 14)
-                            .strokeBorder(entry.type.accentColor.opacity(0.4), lineWidth: 0.5)
+                            .strokeBorder(style.cardBorder, lineWidth: 0.5)
                     )
             }
             
@@ -50,7 +54,6 @@ struct CompactEntryCard: View {
         }
         .frame(width: cardWidth, height: cardHeight)
         .contentShape(RoundedRectangle(cornerRadius: 14))
-        .shadow(color: .black.opacity(0.35), radius: 8, x: 0, y: 4)
         
     }
     
@@ -77,21 +80,21 @@ struct CompactEntryCard: View {
             mediaCard
         }
     }
-
+    
     // MARK: - Text Card
-
+    
     var textCard: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(entry.text.isEmpty ? "Empty note" : entry.text)
-                .font(style.usesSerifFonts ? .system(.caption, design: .serif) : .caption)
-                .foregroundStyle(style.primaryText)
+                .font(style.typeCaption)
+                .foregroundStyle(style.cardPrimaryText)
                 .lineLimit(3)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
-
+    
     // MARK: - Photo Card
-
+    
     var photoCard: some View {
         Group {
             if let path = entry.imagePath,
@@ -108,11 +111,11 @@ struct CompactEntryCard: View {
                 VStack(spacing: 6) {
                     Image(systemName: "photo.fill")
                         .font(.system(size: 24))
-                        .foregroundStyle(entry.type.accentColor)
+                        .foregroundStyle(entryAccent)
                     if !entry.text.isEmpty {
                         Text(entry.text)
-                            .font(.caption)
-                            .foregroundStyle(style.secondaryText)
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.cardSecondaryText)
                             .lineLimit(2)
                     }
                 }
@@ -120,31 +123,31 @@ struct CompactEntryCard: View {
             }
         }
     }
-
+    
     // MARK: - Audio Card
-
+    
     var audioCard: some View {
         VStack(alignment: .leading, spacing: 4) {
             Image(systemName: "waveform")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(entry.type.accentColor)
+                .foregroundStyle(entryAccent)
             Spacer()
             Image(systemName: "play.circle.fill")
                 .font(.system(size: 28))
-                .foregroundStyle(entry.type.accentColor)
+                .foregroundStyle(entryAccent)
                 .frame(maxWidth: .infinity, alignment: .center)
             Spacer()
             if let transcript = entry.transcript, !transcript.isEmpty {
                 Text(transcript)
-                    .font(.caption2)
-                    .foregroundStyle(style.secondaryText)
+                    .font(style.typeCaption)
+                    .foregroundStyle(style.cardSecondaryText)
                     .lineLimit(2)
             }
         }
     }
-
+    
     // MARK: - Link Card
-
+    
     var linkCard: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 4) {
@@ -158,21 +161,21 @@ struct CompactEntryCard: View {
                 } else {
                     Image(systemName: "link")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(entry.type.accentColor)
+                        .foregroundStyle(entryAccent)
                 }
             }
             Spacer()
             Text(entry.linkTitle ?? entry.url ?? "Link")
-                .font(style.usesSerifFonts ? .system(.caption, design: .serif) : .caption)
+                .font(style.typeCaption)
                 .fontWeight(.medium)
-                .foregroundStyle(style.primaryText)
+                .foregroundStyle(style.cardPrimaryText)
                 .lineLimit(3)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
-
+    
     // MARK: - Journal Card
-
+    
     var journalCard: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 4) {
@@ -182,42 +185,42 @@ struct CompactEntryCard: View {
             }
             Spacer()
             Text(entry.createdAt.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
-                .font(style.usesSerifFonts ? .system(.caption, design: .serif) : .caption)
+                .font(style.typeCaption)
                 .fontWeight(.medium)
-                .foregroundStyle(style.primaryText)
+                .foregroundStyle(style.cardPrimaryText)
         }
     }
-
+    
     // MARK: - Location Card
-
+    
     var locationCard: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(entry.locationName ?? "Unknown Location")
-                .font(style.usesSerifFonts ? .system(.caption, design: .serif) : .caption)
+                .font(style.typeCaption)
                 .fontWeight(.medium)
-                .foregroundStyle(style.primaryText)
+                .foregroundStyle(style.cardPrimaryText)
                 .lineLimit(1)
             if let address = entry.locationAddress {
                 Text(address)
-                    .font(.caption2)
-                    .foregroundStyle(style.secondaryText)
+                    .font(style.typeCaption)
+                    .foregroundStyle(style.cardSecondaryText)
                     .lineLimit(2)
             }
         }
     }
-
+    
     // MARK: - Sticky Card
-
+    
     var stickyCard: some View {
         let total = entry.stickyItems.count
         let checked = entry.stickyChecked.count
-
+        
         return VStack(alignment: .leading, spacing: 4) {
             if let title = entry.stickyTitle, !title.isEmpty {
                 Text(title)
-                    .font(style.usesSerifFonts ? .system(.caption, design: .serif) : .caption)
+                    .font(style.typeCaption)
                     .fontWeight(.medium)
-                    .foregroundStyle(style.primaryText)
+                    .foregroundStyle(style.cardPrimaryText)
                     .lineLimit(2)
             }
             Spacer()
@@ -226,24 +229,24 @@ struct CompactEntryCard: View {
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 2)
-                                .fill(entry.type.accentColor.opacity(0.2))
+                                .fill(entryAccent.opacity(0.2))
                             RoundedRectangle(cornerRadius: 2)
-                                .fill(entry.type.accentColor)
+                                .fill(entryAccent)
                                 .frame(width: total > 0 ? geo.size.width * CGFloat(checked) / CGFloat(total) : 0)
                         }
                     }
                     .frame(height: 4)
                     Text("\(checked)/\(total)")
-                        .font(.caption2)
-                        .foregroundStyle(style.secondaryText)
+                        .font(style.typeCaption)
+                        .foregroundStyle(style.cardSecondaryText)
                         .fixedSize()
                 }
             }
         }
     }
-
+    
     // MARK: - Music Card
-
+    
     var musicCard: some View {
         ZStack(alignment: .bottomLeading) {
             if let artworkPath = entry.musicArtworkPath,
@@ -282,17 +285,16 @@ struct CompactEntryCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Image(systemName: "music.note")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(entry.type.accentColor)
+                        .foregroundStyle(entryAccent)
                     Spacer()
                     Image(systemName: "play.circle.fill")
                         .font(.system(size: 28))
-                        .foregroundStyle(entry.type.accentColor)
-                        .frame(maxWidth: .infinity, alignment: .center)
+                        .foregroundStyle(entryAccent)
                     Spacer()
                     if let album = entry.musicAlbum {
                         Text(album)
-                            .font(.caption2)
-                            .foregroundStyle(style.secondaryText)
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.cardSecondaryText)
                             .lineLimit(1)
                     }
                 }
@@ -301,7 +303,7 @@ struct CompactEntryCard: View {
         }
     }
     // MARK: - Media Card
-
+    
     var mediaCard: some View {
         ZStack(alignment: .bottomLeading) {
             if let coverPath = entry.mediaCoverPath,
@@ -334,12 +336,12 @@ struct CompactEntryCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Image(systemName: "film.fill")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(entry.type.accentColor)
+                        .foregroundStyle(entryAccent)
                     Spacer()
                     Text(entry.mediaTitle ?? "Media")
-                        .font(style.usesSerifFonts ? .system(.caption, design: .serif) : .caption)
+                        .font(style.typeCaption)
                         .fontWeight(.medium)
-                        .foregroundStyle(style.primaryText)
+                        .foregroundStyle(style.cardPrimaryText)
                         .lineLimit(2)
                 }
             }

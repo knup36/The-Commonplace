@@ -177,20 +177,45 @@ enum EntryType: String, Codable, CaseIterable {
     }
 
     var accentColor: Color {
-        switch self {
-        case .text:     return InkwellTheme.inkSecondary
-        case .photo:    return InkwellTheme.collectionAccentColor(for: "#FF375F")
-        case .audio:    return InkwellTheme.collectionAccentColor(for: "#FF9F0A")
-        case .link:     return InkwellTheme.collectionAccentColor(for: "#0A84FF")
-        case .journal:  return InkwellTheme.journalAccent
-        case .location: return InkwellTheme.collectionAccentColor(for: "#30D158")
-        case .sticky:   return InkwellTheme.amber
-        case .music:    return InkwellTheme.accentColor(for: .music)
-        case .media:    return InkwellTheme.collectionAccentColor(for: "#FF3B30")
+            switch self {
+            case .text:     return InkwellTheme.inkSecondary
+            case .photo:    return InkwellTheme.collectionAccentColor(for: "#FF375F")
+            case .audio:    return InkwellTheme.collectionAccentColor(for: "#FF9F0A")
+            case .link:     return InkwellTheme.collectionAccentColor(for: "#0A84FF")
+            case .journal:  return InkwellTheme.journalAccent
+            case .location: return InkwellTheme.collectionAccentColor(for: "#30D158")
+            case .sticky:   return InkwellTheme.amber
+            case .music:    return InkwellTheme.accentColor(for: .music)
+            case .media:    return InkwellTheme.collectionAccentColor(for: "#FF3B30")
+            }
         }
-    }
 
-    var cardColor: Color {
-        InkwellTheme.cardBackground(for: self)
-    }
+        var cardColor: Color {
+            InkwellTheme.cardBackground(for: self)
+        }
+
+        // Theme-aware versions — use these in all new and updated views
+        func accentColor(for theme: AppTheme) -> Color {
+            switch theme {
+            case .dusk:    return DuskTheme.accentColor(for: self)
+            case .inkwell: return accentColor
+            case .system:  return accentColor
+            }
+        }
+
+    func cardColor(for theme: AppTheme) -> Color {
+            switch theme {
+            case .dusk:    return DuskTheme.cardBackground(for: self)
+            case .inkwell: return cardColor
+            case .system:  return cardColor
+            }
+        }
+
+        func detailAccentColor(for theme: AppTheme) -> Color {
+            switch theme {
+            case .dusk:    return DuskTheme.detailAccentColor(for: self)
+            case .inkwell: return accentColor
+            case .system:  return accentColor
+            }
+        }
 }

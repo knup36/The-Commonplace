@@ -12,7 +12,7 @@ struct AudioDetailSection: View {
     @Bindable var entry: Entry
     var style: any AppThemeStyle
     var accentColor: Color
-
+    
     var body: some View {
         if entry.type == .audio {
             if entry.audioPath == nil {
@@ -27,23 +27,23 @@ struct AudioDetailSection: View {
                 if let transcript = entry.transcript, !transcript.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
                         Label("Transcript", systemImage: "text.bubble")
-                            .font(.caption)
-                            .foregroundStyle(style.secondaryText)
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.cardSecondaryText)
                         Text(transcript)
-                            .font(style.body)
-                            .foregroundStyle(style.primaryText)
+                            .font(style.typeBody)
+                            .foregroundStyle(style.cardPrimaryText)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .padding(12)
-                    .background(accentColor.opacity(0.08))
+                    .background(style.cardDivider)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 } else {
                     Label("No transcript available", systemImage: "text.bubble")
-                        .font(.caption)
-                        .foregroundStyle(style.secondaryText)
+                        .font(style.typeCaption)
+                        .foregroundStyle(style.cardSecondaryText)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(12)
-                        .background(accentColor.opacity(0.08))
+                        .background(style.cardDivider)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }

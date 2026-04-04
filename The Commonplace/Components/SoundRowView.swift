@@ -6,6 +6,8 @@
 // optional note text, and tags.
 // Tapping the play button loads and plays via SoundPlayerService.
 // Waveform animates while this entry is playing.
+//
+// Updated v1.13 — fully theme-aware, no hardcoded Inkwell references.
 
 import SwiftUI
 
@@ -15,7 +17,8 @@ struct SoundRowView: View {
     @ObservedObject var player = SoundPlayerService.shared
 
     var style: any AppThemeStyle { themeManager.style }
-    var accentColor: Color { entry.type.accentColor }
+    var cardColor: Color { entry.type.cardColor(for: themeManager.current) }
+    var labelColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
 
     var isThisEntryPlaying: Bool {
         player.currentEntryID == entry.id && player.isPlaying
@@ -45,18 +48,17 @@ struct SoundRowView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Type label — Inkwell only
-            if style.usesSerifFonts {
+
+            // Type label
+            if style.showsEntryTypeLabel {
                 HStack {
                     Spacer()
                     HStack(spacing: 5) {
                         Circle()
-                            .fill(accentColor)
+                            .fill(style.cardSecondaryText)
                             .frame(width: 5, height: 5)
-                        Text("SOUND")
-                            .font(.system(size: 9, weight: .medium))
-                            .kerning(0.8)
-                            .foregroundStyle(accentColor)
+                        NYLabel("SOUND", color: UIColor(labelColor))
+                            .fixedSize()
                     }
                 }
             }
@@ -66,7 +68,7 @@ struct SoundRowView: View {
                 HStack(spacing: 8) {
                     SoundWaveformView(
                         entryID: entry.id,
-                        accentColor: accentColor,
+                        accentColor: labelColor,
                         isPlaying: isThisEntryActive && isThisEntryPlaying,
                         barCount: 10
                     )
@@ -74,8 +76,8 @@ struct SoundRowView: View {
 
                     if !durationText.isEmpty {
                         Text(durationText)
-                            .font(.system(size: 11, design: .monospaced))
-                            .foregroundStyle(accentColor.opacity(0.7))
+                            .font(style.typeMono)
+                            .foregroundStyle(style.cardSecondaryText)
                     }
                 }
 
@@ -86,11 +88,11 @@ struct SoundRowView: View {
                 } label: {
                     ZStack {
                         Circle()
-                            .fill(accentColor.opacity(0.15))
+                            .fill(style.cardDivider)
                             .frame(width: 40, height: 40)
                         Image(systemName: isThisEntryPlaying ? "pause.fill" : "play.fill")
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundStyle(accentColor)
+                            .foregroundStyle(labelColor)
                             .offset(x: isThisEntryPlaying ? 0 : 1)
                     }
                 }
@@ -100,16 +102,13 @@ struct SoundRowView: View {
             // Note text
             if !entry.text.isEmpty {
                 Text(entry.text)
-                    .font(style.body)
-                    .foregroundStyle(style.primaryText)
+                    .font(style.typeBody)
+                    .foregroundStyle(style.cardPrimaryText)
                     .lineLimit(2)
             }
 
             Divider()
-                .overlay(style.usesSerifFonts
-                    ? InkwellTheme.cardBorderTop
-                    : Color(uiColor: .separator))
-                .opacity(style.usesSerifFonts ? 0.6 : 1)
+                .overlay(style.cardDivider)
 
             // Tags row
             HStack {
@@ -118,53 +117,38 @@ struct SoundRowView: View {
                     HStack(spacing: 4) {
                         ForEach(visibleTags.prefix(3), id: \.self) { tag in
                             Text(tag)
-                                .font(.caption)
-                                .italic(style.usesSerifFonts)
+                                .font(style.typeCaption)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(accentColor.opacity(0.15))
-                                .foregroundStyle(accentColor.opacity(0.9))
+                                .background(style.pillBackground)
+                                .foregroundStyle(style.pillForeground)
                                 .clipShape(Capsule())
                         }
                         if visibleTags.count > 3 {
                             Text("+\(visibleTags.count - 3)")
-                                .font(.caption)
-                                .foregroundStyle(style.secondaryText)
+                                .font(style.typeCaption)
+                                .foregroundStyle(style.cardMetadataText)
                         }
                     }
                 }
                 Spacer()
                 HStack(spacing: 6) {
                     Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
-                        .font(.caption)
-                        .foregroundStyle(accentColor.opacity(0.5))
+                        .font(style.typeCaption)
+                        .foregroundStyle(style.cardMetadataText)
                     Text(entry.createdAt.formatted(date: .abbreviated, time: .omitted))
-                        .font(.caption)
-                        .foregroundStyle(accentColor.opacity(0.5))
+                        .font(style.typeCaption)
+                        .foregroundStyle(style.cardMetadataText)
                 }
             }
         }
         .padding(12)
-        .background(entry.type.cardColor)
-        .clipShape(RoundedRectangle(cornerRadius: style.usesSerifFonts ? 14 : 12))
+        .background(cardColor)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
-            style.usesSerifFonts
-            ? RoundedRectangle(cornerRadius: 14)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [InkwellTheme.cardBorderTop,
-                                 InkwellTheme.cardBorderColor(for: entry.type)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ),
-                    lineWidth: 0.5
-                )
-            : nil
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(style.cardBorder, lineWidth: 0.5)
         )
-        .shadow(color: style.usesSerifFonts
-            ? Color.black.opacity(0.4)
-            : Color.clear,
-            radius: 6, x: 0, y: 3)
     }
 
     // MARK: - Play Handler

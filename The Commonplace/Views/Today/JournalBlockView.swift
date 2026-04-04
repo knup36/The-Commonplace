@@ -22,9 +22,9 @@ struct JournalBlockView: View {
     @FocusState private var noteFieldFocused: Bool
     
     var style: any AppThemeStyle { themeManager.style }
-    var journalAccent: Color { InkwellTheme.journalAccent }
-    var journalCardBg: Color { InkwellTheme.journalCard }
-    var journalDivider: Color { InkwellTheme.journalBorder }
+    var journalAccent: Color { EntryType.journal.detailAccentColor(for: themeManager.current) }
+    var journalCardBg: Color { EntryType.journal.cardColor(for: themeManager.current) }
+    var journalDivider: Color { style.cardDivider }
     
     var today: Date { Calendar.current.startOfDay(for: Date()) }
     
@@ -63,15 +63,9 @@ struct JournalBlockView: View {
         .background(journalCardBg)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
-            style.usesSerifFonts
-            ? RoundedRectangle(cornerRadius: 16).strokeBorder(
-                LinearGradient(
-                    colors: [InkwellTheme.cardBorderTop, journalAccent.opacity(0.2)],
-                    startPoint: .top, endPoint: .bottom
-                ), lineWidth: 0.5)
-            : nil
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(style.cardBorder, lineWidth: 0.5)
         )
-        .shadow(color: style.usesSerifFonts ? .black.opacity(0.3) : .clear, radius: 6, x: 0, y: 3)
         .padding(.horizontal)
         .sheet(isPresented: $showingJournalPhotoPicker) {
             ImagePicker(image: $journalImage).ignoresSafeArea()
@@ -99,8 +93,8 @@ struct JournalBlockView: View {
     var vibeBlock: some View {
         VStack(alignment: .leading, spacing: 6) {
             Label("Vibe", systemImage: "sparkles")
-                .font(.subheadline).fontWeight(.medium)
-                .foregroundStyle(style.secondaryText)
+                .font(style.typeBodySecondary)
+                .foregroundStyle(style.cardSecondaryText)
             Button {
                 showingVibePicker = true
             } label: {
@@ -118,8 +112,8 @@ struct JournalBlockView: View {
                         .buttonStyle(.plain)
                     } else {
                         Text("Tap to set your vibe...")
-                            .font(style.body)
-                            .foregroundStyle(style.tertiaryText)
+                            .font(style.typeBody)
+                            .foregroundStyle(style.cardMetadataText)
                     }
                 }
             }
@@ -147,8 +141,8 @@ struct JournalBlockView: View {
                 if let moodEmoji = todayEntry?.moodEmoji, !moodEmoji.isEmpty,
                    let label = MoodOption.label(for: moodEmoji) {
                     Text("Mood: \(label) \(moodEmoji)")
-                        .font(.subheadline).fontWeight(.medium)
-                        .foregroundStyle(style.secondaryText)
+                        .font(style.typeBodySecondary)
+                        .foregroundStyle(style.cardSecondaryText)
                     Button {
                         todayEntry?.moodEmoji = ""
                     } label: {
@@ -159,8 +153,8 @@ struct JournalBlockView: View {
                     .buttonStyle(.plain)
                 } else {
                     Text("Mood")
-                        .font(.subheadline).fontWeight(.medium)
-                        .foregroundStyle(style.secondaryText)
+                        .font(style.typeBodySecondary)
+                        .foregroundStyle(style.cardSecondaryText)
                 }
             }
             LazyVGrid(
@@ -178,7 +172,7 @@ struct JournalBlockView: View {
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                         .overlay(
-                            todayEntry?.moodEmoji == mood.emoji && style.usesSerifFonts
+                            todayEntry?.moodEmoji == mood.emoji
                             ? RoundedRectangle(cornerRadius: 8)
                                 .strokeBorder(journalAccent.opacity(0.4), lineWidth: 0.5)
                             : nil
@@ -196,13 +190,13 @@ struct JournalBlockView: View {
     var journalHeader: some View {
         HStack {
             Text(dateString)
-                .font(style.usesSerifFonts ? .system(.title3, design: .serif) : .title3)
+                .font(style.typeTitle3)
                 .fontWeight(.bold)
-                .foregroundStyle(style.primaryText)
+                .foregroundStyle(style.cardPrimaryText)
             Spacer()
             HStack(spacing: 6) {
                 Text("Journal")
-                    .font(.caption).fontWeight(.light)
+                    .font(style.typeCaption)
                     .foregroundStyle(journalAccent)
                 ZStack {
                     Circle().fill(journalAccent).frame(width: 18, height: 18)
@@ -217,12 +211,12 @@ struct JournalBlockView: View {
     var habitsBlock: some View {
         VStack(alignment: .leading, spacing: 10) {
             Label("Habits", systemImage: "checkmark.circle.fill")
-                .font(.subheadline).fontWeight(.medium)
-                .foregroundStyle(style.secondaryText)
+                .font(style.typeBodySecondary)
+                .foregroundStyle(style.cardSecondaryText)
             if habits.isEmpty {
                 Text("Tap + to add habits to track")
-                    .font(.caption)
-                    .foregroundStyle(style.tertiaryText)
+                    .font(style.typeCaption)
+                    .foregroundStyle(style.cardMetadataText)
                     .padding(.top, 2)
             } else {
                 VStack(spacing: 4) {
@@ -243,15 +237,15 @@ struct JournalBlockView: View {
     var dailyNoteBlock: some View {
         VStack(alignment: .leading, spacing: 6) {
             Label("Daily Note", systemImage: "pencil")
-                .font(.subheadline).fontWeight(.medium)
-                .foregroundStyle(style.secondaryText)
+                .font(style.typeBodySecondary)
+                .foregroundStyle(style.cardSecondaryText)
             CommonplaceTextEditor(
                 text: $dailyNoteText,
                 placeholder: "How was your day...",
-                usesSerifFont: style.usesSerifFonts,
+                usesSerifFont: false,
                 minHeight: 60
             )
-            .foregroundStyle(style.primaryText)
+            .foregroundStyle(style.cardPrimaryText)
             .focused($noteFieldFocused)
             .onChange(of: dailyNoteText) { _, newValue in saveDailyNote(newValue) }
         }
@@ -260,8 +254,8 @@ struct JournalBlockView: View {
     var dailyPhotoBlock: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Daily Photo", systemImage: "camera.fill")
-                .font(.subheadline).fontWeight(.medium)
-                .foregroundStyle(style.secondaryText)
+                .font(style.typeBodySecondary)
+                .foregroundStyle(style.cardSecondaryText)
             if let path = todayEntry?.journalImagePath,
                let data = MediaFileManager.load(path: path),
                let uiImage = UIImage(data: data) {
@@ -293,10 +287,8 @@ struct JournalBlockView: View {
                     .background(journalAccent.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(
-                        style.usesSerifFonts
-                        ? RoundedRectangle(cornerRadius: 10)
+                        RoundedRectangle(cornerRadius: 10)
                             .strokeBorder(journalAccent.opacity(0.3), lineWidth: 0.5)
-                        : nil
                     )
                 }
                 .buttonStyle(.plain)
@@ -308,8 +300,8 @@ struct JournalBlockView: View {
     func emojiPickerRow(label: String, icon: String, options: [String], selected: String, onSelect: @escaping (String) -> Void) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Label(label, systemImage: icon)
-                .font(.subheadline).fontWeight(.medium)
-                .foregroundStyle(style.secondaryText)
+                .font(style.typeBodySecondary)
+                .foregroundStyle(style.cardSecondaryText)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(options, id: \.self) { emoji in
@@ -319,7 +311,7 @@ struct JournalBlockView: View {
                             .background(selected == emoji ? journalAccent.opacity(0.2) : Color.clear)
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                             .overlay(
-                                selected == emoji && style.usesSerifFonts
+                                selected == emoji
                                 ? RoundedRectangle(cornerRadius: 8)
                                     .strokeBorder(journalAccent.opacity(0.4), lineWidth: 0.5)
                                 : nil

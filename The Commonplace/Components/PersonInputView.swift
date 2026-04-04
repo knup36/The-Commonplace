@@ -1,23 +1,10 @@
 // PersonInputView.swift
 // Commonplace
 //
-// Dedicated input section for tagging people on entries.
-// Appears below TagInputView on all entry detail views.
-//
+// Dedicated people tagging section for all entry detail views.
+// Collapses to a small + button once people are tagged — expands on tap.
 // People are stored in entry.tagNames with an "@" prefix (e.g. "@Sarah").
-// The @ prefix is an internal namespace — users never see or type it.
-// Person objects are auto-created when a new name is added.
-//
-// UI:
-//   - Shows existing people on this entry as circular avatar chips
-//   - Search field shows matching Person objects as suggestions
-//   - "Create [name]" option appears when no match exists
-//   - Tapping X on a chip removes the person from this entry
-//
-// Architecture:
-//   - Reads/writes entry.tagNames directly (@ prefixed strings)
-//   - Creates Person objects in SwiftData when new names are added
-//   - Same pattern as TagInputView + Tag creation
+// The @ prefix is internal — users never see or type it.
 
 import SwiftUI
 import SwiftData
@@ -31,17 +18,16 @@ struct PersonInputView: View {
     var style: (any AppThemeStyle)?
 
     @State private var inputText = ""
+    @State private var isExpanded = false
     @FocusState private var isFocused: Bool
 
     @Environment(\.modelContext) var modelContext
 
-    /// People currently tagged on this entry (tag strings with @ prefix)
     var taggedPersonNames: [String] {
         tags.filter { $0.hasPrefix("@") }
-            .map { String($0.dropFirst()) } // strip @ for display
+            .map { String($0.dropFirst()) }
     }
 
-    /// Person suggestions based on input text, excluding already tagged ones
     var suggestions: [Tag] {
         let tagged = Set(taggedPersonNames)
         if inputText.isEmpty {
@@ -53,7 +39,6 @@ struct PersonInputView: View {
         }
     }
 
-    /// Whether to show a "Create [name]" option
     var showCreateOption: Bool {
         let trimmed = inputText.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return false }
@@ -65,45 +50,68 @@ struct PersonInputView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
 
-            // Current people chips
-            if !taggedPersonNames.isEmpty {
+            // Chips row — always visible when people are tagged
+            if !taggedPersonNames.isEmpty || isExpanded {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(taggedPersonNames, id: \.self) { name in
                             personChip(name: name)
                         }
+                        // + button inline with chips
+                        if !isExpanded {
+                            Button {
+                                isExpanded = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                    isFocused = true
+                                }
+                            } label: {
+                                Image(systemName: "plus")
+                                                                    .font(.system(size: 9, weight: .bold))
+                                                                    .padding(.horizontal, 8)
+                                                                    .padding(.vertical, 5)
+                                                                    .background((style?.pillBackground ?? accentColor.opacity(0.15)).opacity(0.4))
+                                                                    .foregroundStyle((style?.pillForeground ?? accentColor).opacity(0.5))
+                                                                    .clipShape(Capsule())
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                 }
             }
 
-            // Input field
-            HStack(spacing: 6) {
-                Image(systemName: "person")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                TextField("Tag a person...", text: $inputText)
-                    .font(.body)
-                    .focused($isFocused)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.words)
-                    .onSubmit {
-                        if let first = suggestions.first {
-                            addPerson(first.name)
-                        } else if !inputText.trimmingCharacters(in: .whitespaces).isEmpty {
-                            addPerson(inputText.trimmingCharacters(in: .whitespaces))
+            // Input field — shown when empty or expanded
+            if taggedPersonNames.isEmpty || isExpanded {
+                HStack(spacing: 6) {
+                    Image(systemName: "person")
+                        .font(.caption)
+                        .foregroundStyle(style?.pillForeground ?? .secondary)
+                    TextField("Tag a person...", text: $inputText)
+                        .font(.body)
+                        .focused($isFocused)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.words)
+                        .onSubmit {
+                            if let first = suggestions.first {
+                                addPerson(first.name)
+                            } else if !inputText.trimmingCharacters(in: .whitespaces).isEmpty {
+                                addPerson(inputText.trimmingCharacters(in: .whitespaces))
+                            }
                         }
-                    }
-                if !inputText.isEmpty {
-                    Button {
-                        if let first = suggestions.first {
-                            addPerson(first.name)
-                        } else {
-                            addPerson(inputText.trimmingCharacters(in: .whitespaces))
+                        .onChange(of: isFocused) { _, focused in
+                            if !focused { isExpanded = false }
                         }
-                    } label: {
-                        Image(systemName: "return")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    if !inputText.isEmpty {
+                        Button {
+                            if let first = suggestions.first {
+                                addPerson(first.name)
+                            } else {
+                                addPerson(inputText.trimmingCharacters(in: .whitespaces))
+                            }
+                        } label: {
+                            Image(systemName: "return")
+                                .font(.caption)
+                                .foregroundStyle(style?.pillForeground ?? .secondary)
+                        }
                     }
                 }
             }
@@ -112,7 +120,6 @@ struct PersonInputView: View {
             if isFocused && (!suggestions.isEmpty || showCreateOption) {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
-                        // Existing person suggestions
                         ForEach(suggestions.prefix(8)) { person in
                             Button {
                                 addPerson(person.name)
@@ -125,14 +132,12 @@ struct PersonInputView: View {
                                 }
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 5)
-                                .background(style?.surface ?? Color(uiColor: .systemGray5))
-                                .foregroundStyle(style?.primaryText ?? .primary)
+                                .background(style?.pillBackground ?? Color(uiColor: .systemGray5))
+                                .foregroundStyle(style?.pillForeground ?? .primary)
                                 .clipShape(Capsule())
                             }
                             .buttonStyle(.plain)
                         }
-
-                        // Create new person option
                         if showCreateOption {
                             Button {
                                 addPerson(inputText.trimmingCharacters(in: .whitespaces))
@@ -145,8 +150,8 @@ struct PersonInputView: View {
                                 }
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 5)
-                                .background(accentColor.opacity(0.15))
-                                .foregroundStyle(accentColor)
+                                .background(style?.pillBackground ?? accentColor.opacity(0.15))
+                                .foregroundStyle(style?.pillForeground ?? accentColor)
                                 .clipShape(Capsule())
                             }
                             .buttonStyle(.plain)
@@ -157,31 +162,24 @@ struct PersonInputView: View {
             }
         }
         .animation(.easeInOut(duration: 0.15), value: isFocused)
+        .animation(.easeInOut(duration: 0.15), value: isExpanded)
         .animation(.easeInOut(duration: 0.15), value: suggestions.count)
     }
 
     // MARK: - Person Chip
 
     func personChip(name: String) -> some View {
-        HStack(spacing: 5) {
-            // Find person object for photo
             let person = allPersons.first { $0.name == name }
-            personAvatar(name: name, photoPath: person?.profilePhotoPath, size: 18)
-            Text(name)
-                .font(.caption)
-            Button {
+            return ZStack {
+                Circle()
+                    .strokeBorder(SharedTheme.goldRingGradient, lineWidth: 1.5)
+                    .frame(width: 28, height: 28)
+                personAvatar(name: name, photoPath: person?.profilePhotoPath, size: 26)
+            }
+            .onLongPressGesture {
                 tags.removeAll { $0 == "@\(name)" }
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
-        .background(accentColor.opacity(0.15))
-        .foregroundStyle(accentColor)
-        .clipShape(Capsule())
-    }
 
     // MARK: - Person Avatar
 
@@ -196,14 +194,13 @@ struct PersonInputView: View {
                     .frame(width: size, height: size)
                     .clipShape(Circle())
             } else {
-                // Initial letter fallback
                 Circle()
-                    .fill(accentColor.opacity(0.3))
+                    .fill(style?.personAvatarBackground ?? accentColor.opacity(0.3))
                     .frame(width: size, height: size)
                     .overlay(
                         Text(String(name.prefix(1)).uppercased())
                             .font(.system(size: size * 0.5, weight: .semibold))
-                            .foregroundStyle(accentColor)
+                            .foregroundStyle(style?.personAvatarForeground ?? accentColor)
                     )
             }
         }
@@ -214,25 +211,20 @@ struct PersonInputView: View {
     func addPerson(_ name: String) {
         let cleaned = name.trimmingCharacters(in: .whitespaces)
         guard !cleaned.isEmpty else { return }
-
         let tagString = "@\(cleaned)"
         guard !tags.contains(tagString) else {
             inputText = ""
             return
         }
-        
-        // Add to entry's tagNames
         tags.append(tagString)
         inputText = ""
-        
-        // Create Tag with subjectType "person" if one doesn't exist
-                let existingNames = allPersons.map { $0.name }
-                if !existingNames.contains(where: { $0.lowercased() == cleaned.lowercased() }) {
-                    let tag = Tag(name: cleaned)
-                    tag.subjectType = "person"
-                    modelContext.insert(tag)
-                    try? modelContext.save()
-                    print("👤 Created Person Tag: '\(tag.name)'")
-                }
+        isExpanded = false
+        let existingNames = allPersons.map { $0.name }
+        if !existingNames.contains(where: { $0.lowercased() == cleaned.lowercased() }) {
+            let tag = Tag(name: cleaned)
+            tag.subjectType = "person"
+            modelContext.insert(tag)
+            try? modelContext.save()
+        }
     }
 }

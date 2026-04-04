@@ -10,7 +10,7 @@ struct EntryMetadataFooter: View {
     let entry: Entry
     var style: any AppThemeStyle
     var accentColor: Color
-
+    
     var body: some View {
         HStack(alignment: .top) {
             // Left column — location
@@ -22,26 +22,26 @@ struct EntryMetadataFooter: View {
                         entry.captureLocationName ?? "\(String(format: "%.4f", lat)), \(String(format: "%.4f", lon))",
                         systemImage: "location.fill"
                     )
-                    .font(.caption)
-                    .foregroundStyle(style.secondaryText)
+                    .font(style.typeCaption)
+                    .foregroundStyle(style.cardMetadataText)
                 }
                 .buttonStyle(.plain)
             }
-
+            
             Spacer()
-
+            
             // Right column — date + time
             VStack(alignment: .trailing, spacing: 4) {
                 Text(entry.createdAt.formatted(date: .long, time: .omitted))
-                    .font(.caption)
-                    .foregroundStyle(style.secondaryText)
+                    .font(style.typeCaption)
+                    .foregroundStyle(style.cardMetadataText)
                 Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
-                    .font(.caption)
-                    .foregroundStyle(style.secondaryText)
+                    .font(style.typeCaption)
+                    .foregroundStyle(style.cardMetadataText)
             }
         }
     }
-
+    
     func openInMaps(lat: Double, lon: Double, name: String?) {
         let coordinate = CLLocationCoordinate2D(latitude: lat, longitude: lon)
         let mapItem = MKMapItem(placemark: MKPlacemark(coordinate: coordinate))

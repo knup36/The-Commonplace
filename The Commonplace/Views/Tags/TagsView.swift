@@ -33,9 +33,7 @@ struct TagsView: View {
             // Header
             VStack(alignment: .leading, spacing: 12) {
                 Text("Tags")
-                    .font(style.usesSerifFonts
-                          ? .system(size: 34, weight: .bold, design: .serif)
-                          : .largeTitle.bold())
+                    .font(style.typeLargeTitle)
                     .foregroundStyle(style.primaryText)
                     .padding(.leading, 8)
                 Picker("", selection: $selectedTab) {
@@ -47,17 +45,17 @@ struct TagsView: View {
             .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
-
+            
             if allTagObjects.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "tag.slash")
                         .font(.system(size: 48))
                         .foregroundStyle(style.tertiaryText)
                     Text("No Tags Yet")
-                        .font(.headline)
+                        .font(style.typeTitle3)
                         .foregroundStyle(style.secondaryText)
                     Text("Add tags to your entries to see them here")
-                        .font(.caption)
+                        .font(style.typeCaption)
                         .foregroundStyle(style.tertiaryText)
                         .multilineTextAlignment(.center)
                 }
@@ -66,7 +64,7 @@ struct TagsView: View {
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
             }
-
+            
             ForEach(allTagObjects.sorted { $0.name < $1.name }) { tag in
                 let count = entries.filter { $0.tagNames.contains(tag.name) }.count
                 ZStack {
@@ -80,12 +78,12 @@ struct TagsView: View {
                                 .font(.caption)
                                 .foregroundStyle(style.accent)
                             Text(tag.name)
-                                .font(style.body)
+                                .font(style.typeBody)
                                 .foregroundStyle(style.primaryText)
                         }
                         Spacer()
                         Text("\(count)")
-                            .font(.subheadline)
+                            .font(style.typeBodySecondary)
                             .fontWeight(.semibold)
                             .foregroundStyle(style.accent)
                             .padding(.trailing, -12)
@@ -94,15 +92,8 @@ struct TagsView: View {
                     .padding(.horizontal, 10)
                 }
                 .listRowInsets(EdgeInsets(top: 3, leading: 16, bottom: 3, trailing: 24))
-                .listRowBackground(
-                    style.usesSerifFonts
-                    ? style.surface
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .padding(.vertical, 2)
-                        .padding(.horizontal, 16)
-                    : nil
-                )
-                .listRowSeparator(style.usesSerifFonts ? .hidden : .visible)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.visible)
                 .buttonStyle(.plain)
                 .swipeActions {
                     Button("Test") { }

@@ -11,14 +11,14 @@ struct CompactCollectionCard: View {
     let collection: Collection
     let entryCount: Int
     var style: any AppThemeStyle
-
+    
     private let cardWidth: CGFloat = 160
     private let cardHeight: CGFloat = 80
-
+    
     var accentColor: Color {
         Color(hex: collection.colorHex)
     }
-
+    
     var body: some View {
         ZStack(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: 14)
@@ -27,21 +27,20 @@ struct CompactCollectionCard: View {
                     RoundedRectangle(cornerRadius: 14)
                         .strokeBorder(accentColor.opacity(0.25), lineWidth: 0.5)
                 )
-
+            
             VStack(alignment: .leading, spacing: 4) {
                 Text(collection.name)
-                    .font(style.usesSerifFonts ? .system(.caption, design: .serif) : .caption)
+                    .font(style.typeCaption)
                     .fontWeight(.medium)
                     .foregroundStyle(style.primaryText)
                     .lineLimit(2)
                 Text("\(entryCount) \(entryCount == 1 ? "entry" : "entries")")
-                    .font(.caption2)
+                    .font(style.typeCaption)
                     .foregroundStyle(style.secondaryText)
             }
             .padding(12)
         }
         .frame(width: cardWidth, height: cardHeight)
-        .shadow(color: style.usesSerifFonts ? .black.opacity(0.3) : .clear, radius: 4, x: 0, y: 2)
     }
 }
 
@@ -54,10 +53,10 @@ struct CompactTagCard: View {
     let tag: Tag
     let entryCount: Int
     var style: any AppThemeStyle
-
+    
     private let cardWidth: CGFloat = 160
     private let cardHeight: CGFloat = 80
-
+    
     var body: some View {
         ZStack(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: 14)
@@ -66,21 +65,20 @@ struct CompactTagCard: View {
                     RoundedRectangle(cornerRadius: 14)
                         .strokeBorder(style.accent.opacity(0.25), lineWidth: 0.5)
                 )
-
+            
             VStack(alignment: .leading, spacing: 4) {
                 Spacer()
                 Text(tag.name)
-                    .font(style.usesSerifFonts ? .system(.caption, design: .serif) : .caption)
+                    .font(style.typeCaption)
                     .fontWeight(.medium)
                     .foregroundStyle(style.primaryText)
                     .lineLimit(2)
                 Text("\(entryCount) \(entryCount == 1 ? "entry" : "entries")")
-                    .font(.caption2)
+                    .font(style.typeCaption)
                     .foregroundStyle(style.secondaryText)
             }
             .padding(12)
         }
         .frame(width: cardWidth, height: cardHeight)
-        .shadow(color: style.usesSerifFonts ? .black.opacity(0.3) : .clear, radius: 4, x: 0, y: 2)
     }
 }

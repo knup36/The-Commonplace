@@ -60,7 +60,7 @@ struct MediaDetailView: View {
                 }
             }
         }
-        .background(entry.type.cardColor.ignoresSafeArea())
+        .background(entry.type.cardColor(for: themeManager.current).ignoresSafeArea())
         .keyboardAvoiding()
         .navigationTitle(isPopulated ? (entry.mediaTitle ?? "Media") : "New Media Entry")        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -74,13 +74,13 @@ struct MediaDetailView: View {
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
-                            .foregroundStyle(entry.type.accentColor)
-                    }
-                    Button {
-                        withAnimation { entry.isPinned.toggle() }
-                    } label: {
-                        Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
-                            .foregroundStyle(entry.type.accentColor)
+                                                    .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
+                                            }
+                                            Button {
+                                                withAnimation { entry.isPinned.toggle() }
+                                            } label: {
+                                                Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
+                                                    .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
                     }
                 }
             }
@@ -107,19 +107,15 @@ struct MediaDetailView: View {
             // Hero prompt
             VStack(spacing: 12) {
                 Image(systemName: "film.fill")
-                    .font(.system(size: 48))
-                    .foregroundStyle(entry.type.accentColor)
-                Text("What are you watching?")
-                    .font(style.usesSerifFonts
-                          ? .system(.title2, design: .serif)
-                          : .title2)
-                    .fontWeight(.bold)
-                    .foregroundStyle(style.primaryText)
-                Text("Search for a movie or TV show to get started.")
-                    .font(style.usesSerifFonts
-                          ? .system(.subheadline, design: .serif)
-                          : .subheadline)
-                    .foregroundStyle(style.secondaryText)
+                                    .font(.system(size: 48))
+                                    .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
+                                Text("What are you watching?")
+                                    .font(style.typeTitle2)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(style.cardPrimaryText)
+                                Text("Search for a movie or TV show to get started.")
+                                    .font(style.typeBodySecondary)
+                                    .foregroundStyle(style.cardSecondaryText)
                     .multilineTextAlignment(.center)
             }
             .padding(.top, 40)
@@ -178,8 +174,8 @@ struct MediaDetailView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
-                .background(entry.type.accentColor)
-                .foregroundStyle(.white)
+                .background(entry.type.detailAccentColor(for: themeManager.current))
+                                .foregroundStyle(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .padding(.horizontal, 24)
@@ -197,9 +193,8 @@ struct MediaDetailView: View {
             if !searchResults.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Results")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(style.secondaryText)
+                                            .font(style.typeSectionHeader)
+                                            .foregroundStyle(style.cardSecondaryText)
                         .padding(.horizontal, 24)
                         .padding(.bottom, 8)
                     
@@ -245,22 +240,20 @@ struct MediaDetailView: View {
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(result.title)
-                    .font(style.usesSerifFonts
-                          ? .system(.body, design: .serif)
-                          : .body)
-                    .fontWeight(.medium)
-                    .foregroundStyle(style.primaryText)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                HStack(spacing: 6) {
-                    if !result.year.isEmpty {
-                        Text(result.year)
-                            .font(.caption)
-                            .foregroundStyle(style.secondaryText)
-                    }
-                    Text(result.mediaType.displayName)
-                        .font(.caption)
-                        .foregroundStyle(style.secondaryText)
+                                    .font(style.typeTitle3)
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(style.cardPrimaryText)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.leading)
+                                HStack(spacing: 6) {
+                                    if !result.year.isEmpty {
+                                        Text(result.year)
+                                            .font(style.typeCaption)
+                                            .foregroundStyle(style.cardSecondaryText)
+                                    }
+                                    Text(result.mediaType.displayName)
+                                        .font(style.typeCaption)
+                                        .foregroundStyle(style.cardSecondaryText)
                 }
             }
             
@@ -305,20 +298,19 @@ struct MediaDetailView: View {
                 logSection
                 
                 // Tags
-                TagInputView(tags: $entry.tagNames, accentColor: entry.type.accentColor, style: style)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 4)
-                
-                // People
-                PersonInputView(tags: $entry.tagNames, accentColor: entry.type.accentColor, style: style)
-                    .padding(.horizontal, 20)
-                
-                Divider()
-                    .padding(.horizontal, 20)
-                
-                // Metadata footer
-                EntryMetadataFooter(entry: entry, style: style, accentColor: entry.type.accentColor)
-                    .padding(.horizontal, 20)
+                TagInputView(tags: $entry.tagNames, accentColor: entry.type.detailAccentColor(for: themeManager.current), style: style)
+                                    .padding(.horizontal, 20)
+                                    .padding(.top, 4)
+                                
+                                // People
+                                PersonInputView(tags: $entry.tagNames, accentColor: entry.type.detailAccentColor(for: themeManager.current), style: style)
+                                    .padding(.horizontal, 20)
+                                
+                                Divider()
+                                    .padding(.horizontal, 20)
+                                
+                                // Metadata footer
+                                EntryMetadataFooter(entry: entry, style: style, accentColor: entry.type.detailAccentColor(for: themeManager.current))                    .padding(.horizontal, 20)
                     .padding(.bottom, 40)
             }
             .padding(.top, 20)
@@ -341,61 +333,59 @@ struct MediaDetailView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                 } else {
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(entry.type.cardColor)
-                        .frame(width: 125, height: 188)
-                        .overlay(
-                            Image(systemName: "film.fill")
-                                .font(.system(size: 32))
-                                .foregroundStyle(entry.type.accentColor.opacity(0.5))
-                        )
+                                            .fill(style.cardDivider)
+                                            .frame(width: 125, height: 188)
+                                            .overlay(
+                                                Image(systemName: "film.fill")
+                                                    .font(.system(size: 32))
+                                                    .foregroundStyle(style.cardSecondaryText)
+                                            )
                 }
             }
             
             // Metadata column
             VStack(alignment: .leading, spacing: 5) {
                 if let title = entry.mediaTitle {
-                    Text(title)
-                        .font(style.usesSerifFonts
-                              ? .system(.headline, design: .serif)
-                              : .headline)
-                        .fontWeight(.bold)
-                        .foregroundStyle(style.primaryText)
-                        .lineLimit(3)
-                }
-                
-                Spacer().frame(height: 4)
-                
-                if let year = entry.mediaYear, !year.isEmpty {
-                    Text(year)
-                        .font(.subheadline)
-                        .foregroundStyle(style.secondaryText)
-                }
-                
-                if let type = entry.mediaType {
-                    Text(type == "tv" ? "Television Series" : "Movie")
-                        .font(.subheadline)
-                        .foregroundStyle(style.secondaryText)
-                }
-                
-                if let genre = entry.mediaGenre, !genre.isEmpty {
-                    Text(genre)
-                        .font(.subheadline)
-                        .foregroundStyle(style.secondaryText)
-                }
-                
-                if let runtime = entry.mediaRuntime, entry.mediaType == "movie" {
-                    let hours = runtime / 60
-                    let mins = runtime % 60
-                    Text(hours > 0 ? "\(hours)h \(mins)m" : "\(mins)m")
-                        .font(.subheadline)
-                        .foregroundStyle(style.secondaryText)
-                }
-                
-                if let seasons = entry.mediaSeasons, entry.mediaType == "tv" {
-                    Text("\(seasons) \(seasons == 1 ? "Season" : "Seasons")")
-                        .font(.subheadline)
-                        .foregroundStyle(style.secondaryText)
-                }
+                                    Text(title)
+                                        .font(style.typeTitle3)
+                                        .fontWeight(.bold)
+                                        .foregroundStyle(style.cardPrimaryText)
+                                        .lineLimit(3)
+                                }
+                                
+                                Spacer().frame(height: 4)
+                                
+                                if let year = entry.mediaYear, !year.isEmpty {
+                                    Text(year)
+                                        .font(style.typeBodySecondary)
+                                        .foregroundStyle(style.cardSecondaryText)
+                                }
+                                
+                                if let type = entry.mediaType {
+                                    Text(type == "tv" ? "Television Series" : "Movie")
+                                        .font(style.typeBodySecondary)
+                                        .foregroundStyle(style.cardSecondaryText)
+                                }
+                                
+                                if let genre = entry.mediaGenre, !genre.isEmpty {
+                                    Text(genre)
+                                        .font(style.typeBodySecondary)
+                                        .foregroundStyle(style.cardSecondaryText)
+                                }
+                                
+                                if let runtime = entry.mediaRuntime, entry.mediaType == "movie" {
+                                    let hours = runtime / 60
+                                    let mins = runtime % 60
+                                    Text(hours > 0 ? "\(hours)h \(mins)m" : "\(mins)m")
+                                        .font(style.typeBodySecondary)
+                                        .foregroundStyle(style.cardSecondaryText)
+                                }
+                                
+                                if let seasons = entry.mediaSeasons, entry.mediaType == "tv" {
+                                    Text("\(seasons) \(seasons == 1 ? "Season" : "Seasons")")
+                                        .font(style.typeBodySecondary)
+                                        .foregroundStyle(style.cardSecondaryText)
+                                }
             }
             
             Spacer()
@@ -410,9 +400,8 @@ struct MediaDetailView: View {
     var statusSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("STATUS")
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundStyle(style.secondaryText)
+                            .font(style.typeSectionHeader)
+                            .foregroundStyle(style.cardSecondaryText)
                 .padding(.horizontal, 20)
             
             HStack(spacing: 10) {
@@ -425,13 +414,8 @@ struct MediaDetailView: View {
     }
     
     func statusColor(for value: String) -> Color {
-        switch value {
-        case "wantTo":     return InkwellTheme.mediaAccent   // red
-        case "inProgress": return InkwellTheme.stickyAccent  // amber/yellow
-        case "finished":   return InkwellTheme.locationAccent // green
-        default:           return entry.type.accentColor
+            return mediaStatusColor(for: value, theme: themeManager.current)
         }
-    }
     
     func statusButton(label: String, value: String, icon: String) -> some View {
         let isSelected = localStatus == value
@@ -471,9 +455,8 @@ struct MediaDetailView: View {
     var ratingSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("YOUR RATING")
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundStyle(style.secondaryText)
+                            .font(style.typeSectionHeader)
+                            .foregroundStyle(style.cardSecondaryText)
                 .padding(.horizontal, 20)
             
             HStack(spacing: 12) {
@@ -503,9 +486,8 @@ struct MediaDetailView: View {
     var notesSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("NOTES")
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundStyle(style.secondaryText)
+                .font(style.typeSectionHeader)
+                .foregroundStyle(style.cardSecondaryText)
                 .padding(.horizontal, 20)
             
             CommonplaceTextEditor(
@@ -514,7 +496,7 @@ struct MediaDetailView: View {
                     set: { entry.text = $0; try? modelContext.save() }
                 ),
                 placeholder: "Add notes about this title...",
-                usesSerifFont: style.usesSerifFonts
+                usesSerifFont: false
             )
             .padding(.horizontal, 20)        }
     }
@@ -525,16 +507,15 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("LOG")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(style.secondaryText)
+                    .font(style.typeSectionHeader)
+                    .foregroundStyle(style.cardSecondaryText)
                 Spacer()
                 Button {
-                    showingLogInput.toggle()
-                } label: {
-                    Image(systemName: "plus.circle")
-                        .foregroundStyle(entry.type.accentColor)
-                }
+                                    showingLogInput.toggle()
+                                } label: {
+                                    Image(systemName: "plus.circle")
+                                        .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
+                                }
             }
             .padding(.horizontal, 20)
             
@@ -542,10 +523,10 @@ struct MediaDetailView: View {
             if showingLogInput {
                 VStack(spacing: 8) {
                     CommonplaceTextEditor(
-                        text: $newLogText,
-                        placeholder: "What are you thinking?",
-                        usesSerifFont: style.usesSerifFonts
-                    )
+                                            text: $newLogText,
+                                            placeholder: "What are you thinking?",
+                                            usesSerifFont: false
+                                        )
                     .padding(.horizontal, 20)
                     
                     HStack {
@@ -558,10 +539,10 @@ struct MediaDetailView: View {
                         .padding(.trailing, 8)
                         
                         Button("Add") {
-                            appendLogEntry()
-                        }
-                        .fontWeight(.semibold)
-                        .foregroundStyle(entry.type.accentColor)
+                                                    appendLogEntry()
+                                                }
+                                                .fontWeight(.semibold)
+                                                .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
                         .disabled(newLogText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
                     .padding(.horizontal, 20)
@@ -575,8 +556,8 @@ struct MediaDetailView: View {
             // Existing log entries
             if entry.mediaLog.isEmpty && !showingLogInput {
                 Text("No log entries yet. Tap + to add one.")
-                    .font(.subheadline)
-                    .foregroundStyle(style.tertiaryText)
+                                    .font(style.typeBodySecondary)
+                                    .foregroundStyle(style.cardMetadataText)
                     .padding(.horizontal, 20)
             } else {
                 VStack(spacing: 0) {
@@ -595,12 +576,12 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 4) {
             if let date = ISO8601DateFormatter().date(from: dateString) {
                 Text(date.formatted(.dateTime.month(.abbreviated).day().year().hour().minute()))
-                    .font(.caption)
-                    .foregroundStyle(style.tertiaryText)
-            }
-            Text(text)
-                .font(style.usesSerifFonts ? .system(.body, design: .serif) : .body)
-                .foregroundStyle(style.primaryText)
+                                    .font(style.typeCaption)
+                                    .foregroundStyle(style.cardMetadataText)
+                            }
+                            Text(text)
+                                .font(style.typeBody)
+                                .foregroundStyle(style.cardPrimaryText)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.vertical, 12)
