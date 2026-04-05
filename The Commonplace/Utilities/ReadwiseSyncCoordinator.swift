@@ -139,8 +139,13 @@ class ReadwiseSyncCoordinator {
         entry.linkTitle = doc.title
         entry.linkContentType = "article"
         
-        // Cover image — stored as URL string in previewImagePath for link entries
-        entry.previewImagePath = doc.imageURL
+        // Cover image — download and save locally so LinkPreviewView can load it
+        if let imageURLString = doc.imageURL, let imageURL = URL(string: imageURLString) {
+            if let data = try? Data(contentsOf: imageURL),
+               let path = try? MediaFileManager.save(data, type: .preview, id: entry.id.uuidString) {
+                entry.previewImagePath = path
+            }
+        }
         
         // Build the highlight bullet list
         let (bulletText, highlightIDs) = formatHighlights(paired.highlights)

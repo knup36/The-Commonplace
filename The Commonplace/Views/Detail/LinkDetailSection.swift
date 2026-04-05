@@ -54,14 +54,9 @@ struct LinkDetailSection: View {
                         contentTypeSelector
                     }
                     
-                    // Content based on type
-                    if entry.linkContentType == "article",
-                       let markdown = entry.markdownContent,
-                       markdown != "__failed__" {
-                        articlePreview(markdown: markdown)
-                    } else {
-                        LinkPreviewView(entry: entry)
-                    }
+                    // Always show the rich link preview card regardless of content type
+                                        // Content type selector affects labelling only, not preview rendering
+                                        LinkPreviewView(entry: entry)
                     
                     if let urlString = entry.url, let url = URL(string: urlString) {
                         HStack(spacing: 10) {
