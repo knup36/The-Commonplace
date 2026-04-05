@@ -3,11 +3,11 @@ import CoreLocation
 
 func collectionMatches(entry: Entry, collection: Collection) -> Bool {
     if collection.filterSearchText == "__bookmarks__" {
-            return entry.isPinned
-        }
-        if collection.filterSearchText == "__favorites__" {
-            return entry.isPinned
-        }
+        return entry.isPinned
+    }
+    if collection.filterSearchText == "__favorites__" {
+        return entry.isPinned
+    }
     if !collection.filterTypes.isEmpty {
         guard collection.filterTypes.contains(entry.type.rawValue) else { return false }
     }
@@ -44,6 +44,11 @@ func collectionMatches(entry: Entry, collection: Collection) -> Bool {
         guard entry.type == .media,
               let status = entry.mediaStatus,
               collection.filterMediaStatus.contains(status) else { return false }
+    }
+    if !collection.filterLocationStatus.isEmpty {
+        guard entry.type == .location else { return false }
+        let visitedValue = entry.locationVisited ? "beenHere" : "wantToVisit"
+        guard collection.filterLocationStatus.contains(visitedValue) else { return false }
     }
     if let searchText = collection.filterSearchText,
        !searchText.isEmpty,

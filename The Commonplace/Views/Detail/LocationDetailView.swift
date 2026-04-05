@@ -73,19 +73,33 @@ struct LocationDetailView: View {
                                     .font(style.typeLargeTitle)
                                     .foregroundStyle(style.cardPrimaryText)
                             }
-                            // Star rating
-                            HStack(spacing: 4) {
-                                ForEach(1...5, id: \.self) { star in
-                                    Image(systemName: (entry.locationRating ?? 0) >= star ? "star.fill" : "star")
-                                        .font(.system(size: 16))
-                                        .foregroundStyle((entry.locationRating ?? 0) >= star ? .yellow : style.cardMetadataText)
-                                        .onTapGesture {
-                                            entry.locationRating = (entry.locationRating == star) ? nil : star
-                                            entry.touch()
-                                        }
+                            // Star rating + visited toggle
+                            HStack {
+                                HStack(spacing: 4) {
+                                    ForEach(1...5, id: \.self) { star in
+                                        Image(systemName: (entry.locationRating ?? 0) >= star ? "star.fill" : "star")
+                                            .font(.system(size: 16))
+                                            .foregroundStyle((entry.locationRating ?? 0) >= star ? .yellow : style.cardMetadataText)
+                                            .onTapGesture {
+                                                entry.locationRating = (entry.locationRating == star) ? nil : star
+                                                entry.touch()
+                                            }
+                                    }
                                 }
+                                .transaction { $0.animation = nil }
+                                Spacer()
+                                Button {
+                                    withAnimation(.spring(duration: 0.2)) {
+                                        entry.locationVisited.toggle()
+                                        entry.touch()
+                                    }
+                                } label: {
+                                    Image(systemName: entry.locationVisited ? "checkmark.seal.fill" : "checkmark.seal")
+                                        .font(.system(size: 24, weight: .semibold))
+                                        .foregroundStyle(entry.locationVisited ? .green : style.cardMetadataText)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .transaction { $0.animation = nil }
                             if let address = entry.locationAddress {
                                 Text(address)
                                     .font(style.typeBodySecondary)

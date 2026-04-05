@@ -32,6 +32,7 @@ struct CollectionFormView: View {
     @State private var locationFilterEnabled = false
     @State private var favoritesOnly = false
     @State private var selectedMediaStatuses: Set<String> = []
+        @State private var selectedLocationStatuses: Set<String> = []
     
     var isEditing: Bool { collection != nil }
     var canSave: Bool { !name.isEmpty }
@@ -145,8 +146,32 @@ struct CollectionFormView: View {
                     )
                 }
                 
-                if selectedTypes.contains("media") {
-                    Section("Filter by Watch Status") {
+                if selectedTypes.contains("location") {
+                                    Section("Filter by Visit Status") {
+                                        ForEach([("wantToVisit", "Want to Visit", "checkmark.seal"), ("beenHere", "Been Here", "checkmark.seal.fill")], id: \.0) { value, label, icon in
+                                            HStack {
+                                                Label(label, systemImage: selectedLocationStatuses.contains(value) ? (value == "beenHere" ? "checkmark.seal.fill" : "checkmark.seal") : icon)
+                                                    .foregroundStyle(value == "beenHere" && selectedLocationStatuses.contains(value) ? .green : .primary)
+                                                Spacer()
+                                                if selectedLocationStatuses.contains(value) {
+                                                    Image(systemName: "checkmark")
+                                                        .foregroundStyle(Color(hex: selectedColorHex))
+                                                }
+                                            }
+                                            .contentShape(Rectangle())
+                                            .onTapGesture {
+                                                if selectedLocationStatuses.contains(value) {
+                                                    selectedLocationStatuses.remove(value)
+                                                } else {
+                                                    selectedLocationStatuses.insert(value)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if selectedTypes.contains("media") {
+                                    Section("Filter by Watch Status") {
                         ForEach([("wantTo", "Want to Watch", "bookmark"), ("inProgress", "In Progress", "play.circle"), ("finished", "Finished", "checkmark.circle")], id: \.0) { value, label, icon in
                             HStack {
                                 Label(label, systemImage: selectedMediaStatuses.contains(value) ? "\(icon).fill" : icon)
@@ -230,6 +255,7 @@ struct CollectionFormView: View {
                     locationFilterEnabled = collection.filterLocationLatitude != nil
                     favoritesOnly = collection.filterSearchText == "__favorites__"
                     selectedMediaStatuses = Set(collection.filterMediaStatus)
+                                        selectedLocationStatuses = Set(collection.filterLocationStatus)
                     filterSearchText = collection.filterSearchText == "__favorites__" ? "" : (collection.filterSearchText ?? "")
                 }
             }
@@ -282,7 +308,8 @@ struct CollectionFormView: View {
         c.filterLocationRadius = filterLocationRadius
         c.filterSearchText = favoritesOnly ? "__favorites__" : (filterSearchText.isEmpty ? nil : filterSearchText)
         c.filterMediaStatus = Array(selectedMediaStatuses)
-        modelContext.insert(c)
+                c.filterLocationStatus = Array(selectedLocationStatuses)
+                modelContext.insert(c)
     }
     
     func saveEdits() {
@@ -299,5 +326,6 @@ struct CollectionFormView: View {
         collection.filterLocationRadius = filterLocationRadius
         collection.filterSearchText = favoritesOnly ? "__favorites__" : (filterSearchText.isEmpty ? nil : filterSearchText)
         collection.filterMediaStatus = Array(selectedMediaStatuses)
-    }
+                collection.filterLocationStatus = Array(selectedLocationStatuses)
+            }
 }
