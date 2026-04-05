@@ -155,6 +155,12 @@ class DataImporter {
             entry.weeklyReviewCarryForward = dto.weeklyReviewCarryForward
             entry.weeklyReviewGratitude = dto.weeklyReviewGratitude
             entry.weeklyReviewStats = dto.weeklyReviewStats
+            // Location status (v1.14.1)
+            entry.locationRating = dto.locationRating
+            entry.locationVisited = dto.locationVisited ?? false
+            // Readwise (v1.14)
+            entry.readwiseSourceID = dto.readwiseSourceID
+            entry.readwiseImportedHighlightIDs = dto.readwiseImportedHighlightIDs ?? []
             
             // Media files
             if let filename = dto.imageFile,

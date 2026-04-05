@@ -24,9 +24,9 @@ import SwiftData
 import ZIPFoundation
 
 class DataExporter {
-
+    
     // MARK: - Codable DTOs
-
+    
     struct ExportManifest: Codable {
         var version: Int = 2
         var exportedAt: Date
@@ -35,7 +35,7 @@ class DataExporter {
         var habits: [HabitDTO]
         var journalEntries: [JournalEntryDTO] = [] // kept for backward compatibility
     }
-
+    
     struct EntryDTO: Codable {
         var id: String
         var createdAt: Date
@@ -111,6 +111,12 @@ class DataExporter {
         var weeklyReviewCarryForward: String?
         var weeklyReviewGratitude: String?
         var weeklyReviewStats: Data?
+        // Location status (v1.14.1)
+        var locationRating: Int?
+        var locationVisited: Bool?
+        // Readwise (v1.14)
+        var readwiseSourceID: String?
+        var readwiseImportedHighlightIDs: [String]?
     }
     
     struct CollectionDTO: Codable {
@@ -140,7 +146,7 @@ class DataExporter {
         var icon: String
         var order: Int
     }
-
+    
     // Kept for decoding old archives
     struct JournalEntryDTO: Codable {
         var id: String
@@ -152,22 +158,22 @@ class DataExporter {
         var totalHabitsAtTime: Int
         var journalImageFile: String?
     }
-
+    
     // MARK: - Export Summary
-
+    
     /// Returned after a successful export so the UI can show a verification message.
     struct ExportSummary {
         let entryCount: Int
         let mediaFileCount: Int
         let exportURL: URL
-
+        
         var message: String {
             "\(entryCount) entries and \(mediaFileCount) media files exported successfully."
         }
     }
-
+    
     // MARK: - iCloud Sync Check
-
+    
     /// Checks how many media files referenced by entries are not yet downloaded
     /// from iCloud to this device.
     ///
@@ -186,7 +192,7 @@ class DataExporter {
         }
         return unsyncedCount
     }
-
+    
     /// Triggers iCloud to download all media files that are not yet on device.
     /// Waits until all files are downloaded or a timeout is reached.
     ///
@@ -208,14 +214,14 @@ class DataExporter {
                 }
             }
         }
-
+        
         guard !pendingURLs.isEmpty else { return true }
-
+        
         // Trigger download for each file
         for url in pendingURLs {
             try? FileManager.default.startDownloadingUbiquitousItem(at: url)
         }
-
+        
         // Poll until all files are downloaded or timeout is reached
         let deadline = Date().addingTimeInterval(timeoutSeconds)
         while Date() < deadline {
@@ -223,12 +229,12 @@ class DataExporter {
             let stillPending = pendingURLs.filter { isFileNotDownloaded($0) }
             if stillPending.isEmpty { return true }
         }
-
+        
         return false // timed out
     }
-
+    
     // MARK: - Export
-
+    
     static func export(
         entries: [Entry],
         collections: [Collection],
@@ -239,9 +245,9 @@ class DataExporter {
         let mediaDir = tempDir.appendingPathComponent("media")
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: mediaDir, withIntermediateDirectories: true)
-
+        
         var mediaFileCount = 0
-
+        
         // Build entry DTOs
         var entryDTOs: [EntryDTO] = []
         for entry in entries {
@@ -312,7 +318,11 @@ class DataExporter {
                 weeklyReviewHighlight: entry.weeklyReviewHighlight,
                 weeklyReviewCarryForward: entry.weeklyReviewCarryForward,
                 weeklyReviewGratitude: entry.weeklyReviewGratitude,
-                weeklyReviewStats: entry.weeklyReviewStats
+                weeklyReviewStats: entry.weeklyReviewStats,
+                locationRating: entry.locationRating,
+                locationVisited: entry.locationVisited,
+                readwiseSourceID: entry.readwiseSourceID,
+                readwiseImportedHighlightIDs: entry.readwiseImportedHighlightIDs.isEmpty ? nil : entry.readwiseImportedHighlightIDs
             )
             
             // Media files
@@ -381,10 +391,10 @@ class DataExporter {
                 dto.mediaCoverFile = filename
                 mediaFileCount += 1
             }
-
+            
             entryDTOs.append(dto)
         }
-
+        
         // Build collection DTOs
         let collectionDTOs = collections.map { c in
             CollectionDTO(
@@ -413,7 +423,7 @@ class DataExporter {
         let habitDTOs = habits.map { h in
             HabitDTO(id: h.id.uuidString, name: h.name, icon: h.icon, order: h.order)
         }
-
+        
         // Build manifest
         let manifest = ExportManifest(
             exportedAt: Date(),
@@ -421,7 +431,7 @@ class DataExporter {
             collections: collectionDTOs,
             habits: habitDTOs
         )
-
+        
         // Write manifest.json
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -429,7 +439,7 @@ class DataExporter {
         let jsonData = try encoder.encode(manifest)
         let manifestURL = tempDir.appendingPathComponent("manifest.json")
         try jsonData.write(to: manifestURL)
-
+        
         // Build ZIP
         let zipURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("Commonplace_\(formattedDate()).commonplace")
@@ -446,16 +456,16 @@ class DataExporter {
             try archive.addEntry(with: "media/\(file.lastPathComponent)", fileURL: file)
         }
         try FileManager.default.removeItem(at: tempDir)
-
+        
         return ExportSummary(
             entryCount: entries.count,
             mediaFileCount: mediaFileCount,
             exportURL: zipURL
         )
     }
-
+    
     // MARK: - Private Helpers
-
+    
     /// Collects all media file paths referenced by an entry.
     /// Used by the iCloud sync check to know which files to inspect.
     private static func mediaPaths(for entry: Entry) -> [String] {
@@ -473,7 +483,7 @@ class DataExporter {
         // Note: journalImageData is stored in SwiftData directly, not as a file path,
         // so it is always available and does not need an iCloud download check
     }
-
+    
     /// Returns true if a file exists in iCloud but has not been downloaded to this device.
     private static func isFileNotDownloaded(_ url: URL) -> Bool {
         guard FileManager.default.fileExists(atPath: url.path) else { return false }
@@ -481,7 +491,7 @@ class DataExporter {
         let status = resourceValues?.ubiquitousItemDownloadingStatus
         return status == .notDownloaded
     }
-
+    
     private static func formattedDate() -> String {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"

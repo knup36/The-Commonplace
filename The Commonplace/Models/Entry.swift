@@ -27,6 +27,10 @@
 //   - If present, the entry is "owned" by Readwise — sync will append new highlights but never overwrite
 //   - `readwiseImportedHighlightIDs` tracks individual highlight IDs already imported —
 //     prevents duplicates when the same article is highlighted across multiple reading sessions
+//
+// Location status note (v1.14.1):
+//   - `locationVisited: Bool` — false = Want to Visit (default), true = Been Here
+//   - All existing location entries default to false on migration
 
 import SwiftData
 import Foundation
@@ -137,12 +141,17 @@ class Entry {
     var weeklyReviewStats: Data? = nil  // JSON encoded stats (entry count, habits, mood, calories, people, tags, music, media)
 
     // Readwise (v1.14)
-    // readwiseSourceID: permanent ID from Readwise/Reader — used as deduplication key
-    // If this field is present on an entry, that entry is "owned" by Readwise sync
-    // readwiseImportedHighlightIDs: tracks which individual highlights have already been
-    // imported — prevents duplicates when syncing a partially-read article over multiple sessions
-    var readwiseSourceID: String? = nil
-    var readwiseImportedHighlightIDs: [String] = []
+        // readwiseSourceID: permanent ID from Readwise/Reader — used as deduplication key
+        // If this field is present on an entry, that entry is "owned" by Readwise sync
+        // readwiseImportedHighlightIDs: tracks which individual highlights have already been
+        // imported — prevents duplicates when syncing a partially-read article over multiple sessions
+        var readwiseSourceID: String? = nil
+        var readwiseImportedHighlightIDs: [String] = []
+
+        // Location status (v1.14.1)
+        // locationVisited: false = Want to Visit (default), true = Been Here
+        // Displayed as checkmark.seal (outline) / checkmark.seal.fill (green) in feed and detail
+        var locationVisited: Bool = false
     
     init(type: EntryType = .text, text: String = "", tags: [String] = []) {
             self.id = UUID()
