@@ -68,14 +68,15 @@ class Entry {
     var previewURL: String? = nil
     var musicArtworkPath: String? = nil
     var musicTrackID: String? = nil
-
+    
     // Location entry fields
     var locationName: String? = nil
     var locationAddress: String? = nil
     var locationLatitude: Double? = nil
     var locationLongitude: Double? = nil
     var locationCategory: String? = nil
-
+    var locationRating: Int? = nil
+    
     // Capture location metadata
     var captureLatitude: Double? = nil
     var captureLongitude: Double? = nil

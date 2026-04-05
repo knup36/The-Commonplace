@@ -73,6 +73,19 @@ struct LocationDetailView: View {
                                     .font(style.typeLargeTitle)
                                     .foregroundStyle(style.cardPrimaryText)
                             }
+                            // Star rating
+                            HStack(spacing: 4) {
+                                ForEach(1...5, id: \.self) { star in
+                                    Image(systemName: (entry.locationRating ?? 0) >= star ? "star.fill" : "star")
+                                        .font(.system(size: 16))
+                                        .foregroundStyle((entry.locationRating ?? 0) >= star ? .yellow : style.cardMetadataText)
+                                        .onTapGesture {
+                                            entry.locationRating = (entry.locationRating == star) ? nil : star
+                                            entry.touch()
+                                        }
+                                }
+                            }
+                            .transaction { $0.animation = nil }
                             if let address = entry.locationAddress {
                                 Text(address)
                                     .font(style.typeBodySecondary)
