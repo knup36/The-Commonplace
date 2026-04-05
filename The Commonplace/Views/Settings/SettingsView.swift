@@ -49,6 +49,13 @@ struct SettingsView: View {
     
     // Import state
     @State private var isImporting = false
+    
+    // Readwise state
+    @State private var readwiseToken: String = ""
+    @State private var readwiseTokenSaved: Bool = ReadwiseKeychainService.retrieveToken() != nil
+    @State private var isSyncingReadwise: Bool = false
+    @State private var readwiseSyncMessage: String? = nil
+    @State private var readwiseLastSynced: Date? = UserDefaults.standard.object(forKey: "readwiseLastSyncedAt") as? Date
     @State private var importResult: DataImporter.ImportResult? = nil
     @State private var showingImportResult = false
     @State private var importError: String? = nil
@@ -64,11 +71,12 @@ struct SettingsView: View {
         Form {
             appearanceSection
             habitsSection
+            readwiseSection
             aboutSection
             dataSection
         }
         .scrollContentBackground(.hidden)
-                .background(style.background)
+        .background(style.background)
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingShareSheet) {
@@ -136,24 +144,24 @@ struct SettingsView: View {
                 .foregroundStyle(style.tertiaryText)
         } footer: {
             Text("Dusk is the default theme. Inkwell uses a warm dark theme inspired by leather-bound books and candlelight.")
-                            .foregroundStyle(style.tertiaryText)
+                .foregroundStyle(style.tertiaryText)
         }
     }
     
     var habitsSection: some View {
-            Section {
-                NavigationLink(destination: HabitSettingsView()) {
-                    Label("Daily Habits", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(style.primaryText)
-                }
-            } header: {
-                Text("Habits")
-                    .foregroundStyle(style.tertiaryText)
-            } footer: {
-                Text("Habits appear on your Today page every day, ready to check off.")
-                    .foregroundStyle(style.tertiaryText)
+        Section {
+            NavigationLink(destination: HabitSettingsView()) {
+                Label("Daily Habits", systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(style.primaryText)
             }
+        } header: {
+            Text("Habits")
+                .foregroundStyle(style.tertiaryText)
+        } footer: {
+            Text("Habits appear on your Today page every day, ready to check off.")
+                .foregroundStyle(style.tertiaryText)
         }
+    }
     
     var aboutSection: some View {
         Section {
@@ -229,6 +237,126 @@ struct SettingsView: View {
         } footer: {
             Text("Export All Data creates a .commonplace archive for backup and restore. Markdown Archive exports a human-readable ZIP for use in Obsidian, Bear, or any text editor.")
                 .foregroundStyle(style.tertiaryText)
+        }
+    }
+    
+    // MARK: - Readwise
+    
+    var readwiseSection: some View {
+        Section {
+            if readwiseTokenSaved {
+                // Token is stored — show confirmation and option to clear
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                    Text("API token saved")
+                        .foregroundStyle(style.primaryText)
+                    Spacer()
+                    Button("Remove") {
+                        _ = ReadwiseKeychainService.deleteToken()
+                        readwiseTokenSaved = false
+                        readwiseToken = ""
+                    }
+                    .foregroundStyle(.red)
+                    .font(.footnote)
+                }
+                
+                // Sync button
+                Button {
+                    performReadwiseSync()
+                } label: {
+                    if isSyncingReadwise {
+                        HStack(spacing: 10) {
+                            ProgressView()
+                            Text("Syncing...")
+                                .foregroundStyle(style.primaryText)
+                        }
+                    } else if let message = readwiseSyncMessage {
+                        Label(message, systemImage: "checkmark")
+                            .foregroundStyle(.green)
+                    } else {
+                        Label("Sync Readwise", systemImage: "arrow.triangle.2.circlepath")
+                            .foregroundStyle(accent)
+                    }
+                }
+                .disabled(isSyncingReadwise)
+                
+            } else {
+                // No token yet — show input field
+                SecureField("Paste API token", text: $readwiseToken)
+                    .foregroundStyle(style.primaryText)
+                
+                Button {
+                    saveReadwiseToken()
+                } label: {
+                    Label("Save Token", systemImage: "key.fill")
+                        .foregroundStyle(accent)
+                }
+                .disabled(readwiseToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            
+        } header: {
+            Text("Readwise")
+                .foregroundStyle(style.tertiaryText)
+        } footer: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Only articles tagged \"commonplace\" in Readwise Reader will be imported.")
+                    .foregroundStyle(style.tertiaryText)
+                if let lastSynced = readwiseLastSynced {
+                    Text("Last synced: \(lastSynced.formatted(.relative(presentation: .named)))")
+                        .foregroundStyle(style.tertiaryText)
+                        .font(.footnote)
+                }
+            }
+        }
+    }
+    
+    func saveReadwiseToken() {
+        let trimmed = readwiseToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let saved = ReadwiseKeychainService.saveToken(trimmed)
+        if saved {
+            readwiseTokenSaved = true
+            readwiseToken = ""
+        }
+    }
+    
+    func performReadwiseSync() {
+        isSyncingReadwise = true
+        readwiseSyncMessage = nil
+        
+        Task {
+            do {
+                let service = ReadwiseService()
+                let documents = try await service.fetchTaggedDocuments(tag: "commonplace")
+                for doc in documents {
+                }
+                
+                let coordinator = ReadwiseSyncCoordinator(
+                    modelContext: modelContext,
+                    searchIndex: SearchIndex.shared
+                )
+                let summary = try coordinator.sync(documents: documents)
+                
+                let syncedAt = Date()
+                UserDefaults.standard.set(syncedAt, forKey: "readwiseLastSyncedAt")
+                
+                await MainActor.run {
+                    isSyncingReadwise = false
+                    readwiseLastSynced = syncedAt
+                    readwiseSyncMessage = summary.displayMessage
+                    
+                    // Clear the result message after 4 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+                        readwiseSyncMessage = nil
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isSyncingReadwise = false
+                    readwiseSyncMessage = "Sync failed: \(error.localizedDescription)"
+                }
+            }
         }
     }
     

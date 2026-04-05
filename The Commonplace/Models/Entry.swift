@@ -21,6 +21,12 @@
 //     (renamed from `mediaArtist` etc. to avoid collision with the new .media type)
 //   - New .media fields use `tmdb*` prefix for API-sourced data and `mediaTitle`,
 //     `mediaType`, `mediaStatus`, `mediaRating`, `mediaLog` for user-facing fields
+//
+// Readwise note (v1.14):
+//   - `readwiseSourceID` stores the Reader/Readwise document ID — deduplication key for sync
+//   - If present, the entry is "owned" by Readwise — sync will append new highlights but never overwrite
+//   - `readwiseImportedHighlightIDs` tracks individual highlight IDs already imported —
+//     prevents duplicates when the same article is highlighted across multiple reading sessions
 
 import SwiftData
 import Foundation
@@ -129,6 +135,14 @@ class Entry {
     var weeklyReviewCarryForward: String? = nil
     var weeklyReviewGratitude: String? = nil
     var weeklyReviewStats: Data? = nil  // JSON encoded stats (entry count, habits, mood, calories, people, tags, music, media)
+
+    // Readwise (v1.14)
+    // readwiseSourceID: permanent ID from Readwise/Reader — used as deduplication key
+    // If this field is present on an entry, that entry is "owned" by Readwise sync
+    // readwiseImportedHighlightIDs: tracks which individual highlights have already been
+    // imported — prevents duplicates when syncing a partially-read article over multiple sessions
+    var readwiseSourceID: String? = nil
+    var readwiseImportedHighlightIDs: [String] = []
     
     init(type: EntryType = .text, text: String = "", tags: [String] = []) {
             self.id = UUID()
