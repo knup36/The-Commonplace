@@ -14,13 +14,18 @@ struct AudioDetailSection: View {
     var accentColor: Color
     
     var body: some View {
-        if entry.type == .audio {
-            if entry.audioPath == nil {
-                AudioEntryView(
-                    audioPath: Binding(get: { entry.audioPath }, set: { entry.audioPath = $0 }),
-                    transcript: Binding(get: { entry.transcript ?? "" }, set: { entry.transcript = $0.isEmpty ? nil : $0 })
-                )
-            }
+            if entry.type == .audio {
+                if entry.audioPath == nil {
+                    AudioEntryView(
+                        audioPath: Binding(get: { entry.audioPath }, set: { entry.audioPath = $0 }),
+                        transcript: Binding(get: { entry.transcript ?? "" }, set: { entry.transcript = $0.isEmpty ? nil : $0 })
+                    )
+                    .onChange(of: entry.audioPath) { _, newValue in
+                        if newValue != nil {
+                            entry.touch()
+                        }
+                    }
+                }
             if let path = entry.audioPath,
                let audioData = MediaFileManager.load(path: path) {
                 AudioPlayerView(audioData: audioData)

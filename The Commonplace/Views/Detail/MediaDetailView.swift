@@ -62,7 +62,8 @@ struct MediaDetailView: View {
         }
         .background(entry.type.cardColor(for: themeManager.current).ignoresSafeArea())
         .keyboardAvoiding()
-        .navigationTitle(isPopulated ? (entry.mediaTitle ?? "Media") : "New Media Entry")        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle(isPopulated ? "" : "New Media Entry")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 20) {
@@ -74,13 +75,13 @@ struct MediaDetailView: View {
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
-                                                    .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
-                                            }
-                                            Button {
-                                                withAnimation { entry.isPinned.toggle() }
-                                            } label: {
-                                                Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
-                                                    .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
+                            .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
+                    }
+                    Button {
+                        withAnimation { entry.isPinned.toggle() }
+                    } label: {
+                        Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
+                            .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
                     }
                 }
             }
@@ -107,15 +108,15 @@ struct MediaDetailView: View {
             // Hero prompt
             VStack(spacing: 12) {
                 Image(systemName: "film.fill")
-                                    .font(.system(size: 48))
-                                    .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
-                                Text("What are you watching?")
-                                    .font(style.typeTitle2)
-                                    .fontWeight(.bold)
-                                    .foregroundStyle(style.cardPrimaryText)
-                                Text("Search for a movie or TV show to get started.")
-                                    .font(style.typeBodySecondary)
-                                    .foregroundStyle(style.cardSecondaryText)
+                    .font(.system(size: 48))
+                    .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
+                Text("What are you watching?")
+                    .font(style.typeTitle2)
+                    .fontWeight(.bold)
+                    .foregroundStyle(style.cardPrimaryText)
+                Text("Search for a movie or TV show to get started.")
+                    .font(style.typeBodySecondary)
+                    .foregroundStyle(style.cardSecondaryText)
                     .multilineTextAlignment(.center)
             }
             .padding(.top, 40)
@@ -175,7 +176,7 @@ struct MediaDetailView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
                 .background(entry.type.detailAccentColor(for: themeManager.current))
-                                .foregroundStyle(.white)
+                .foregroundStyle(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .padding(.horizontal, 24)
@@ -193,8 +194,8 @@ struct MediaDetailView: View {
             if !searchResults.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Results")
-                                            .font(style.typeSectionHeader)
-                                            .foregroundStyle(style.cardSecondaryText)
+                        .font(style.typeSectionHeader)
+                        .foregroundStyle(style.cardSecondaryText)
                         .padding(.horizontal, 24)
                         .padding(.bottom, 8)
                     
@@ -240,20 +241,20 @@ struct MediaDetailView: View {
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(result.title)
-                                    .font(style.typeTitle3)
-                                    .fontWeight(.medium)
-                                    .foregroundStyle(style.cardPrimaryText)
-                                    .lineLimit(2)
-                                    .multilineTextAlignment(.leading)
-                                HStack(spacing: 6) {
-                                    if !result.year.isEmpty {
-                                        Text(result.year)
-                                            .font(style.typeCaption)
-                                            .foregroundStyle(style.cardSecondaryText)
-                                    }
-                                    Text(result.mediaType.displayName)
-                                        .font(style.typeCaption)
-                                        .foregroundStyle(style.cardSecondaryText)
+                    .font(style.typeTitle3)
+                    .fontWeight(.medium)
+                    .foregroundStyle(style.cardPrimaryText)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                HStack(spacing: 6) {
+                    if !result.year.isEmpty {
+                        Text(result.year)
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.cardSecondaryText)
+                    }
+                    Text(result.mediaType.displayName)
+                        .font(style.typeCaption)
+                        .foregroundStyle(style.cardSecondaryText)
                 }
             }
             
@@ -276,14 +277,7 @@ struct MediaDetailView: View {
             coverArtHeader
             
             VStack(spacing: 20) {
-                // Status picker
                 statusSection
-                
-                Divider()
-                    .padding(.horizontal, 20)
-                
-                // Rating
-                ratingSection
                 
                 Divider()
                     .padding(.horizontal, 20)
@@ -299,18 +293,18 @@ struct MediaDetailView: View {
                 
                 // Tags
                 TagInputView(tags: $entry.tagNames, accentColor: entry.type.detailAccentColor(for: themeManager.current), style: style)
-                                    .padding(.horizontal, 20)
-                                    .padding(.top, 4)
-                                
-                                // People
-                                PersonInputView(tags: $entry.tagNames, accentColor: entry.type.detailAccentColor(for: themeManager.current), style: style)
-                                    .padding(.horizontal, 20)
-                                
-                                Divider()
-                                    .padding(.horizontal, 20)
-                                
-                                // Metadata footer
-                                EntryMetadataFooter(entry: entry, style: style, accentColor: entry.type.detailAccentColor(for: themeManager.current))                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 4)
+                
+                // People
+                PersonInputView(tags: $entry.tagNames, accentColor: entry.type.detailAccentColor(for: themeManager.current), style: style)
+                    .padding(.horizontal, 20)
+                
+                Divider()
+                    .padding(.horizontal, 20)
+                
+                // Metadata footer
+                EntryMetadataFooter(entry: entry, style: style, accentColor: entry.type.detailAccentColor(for: themeManager.current))                    .padding(.horizontal, 20)
                     .padding(.bottom, 40)
             }
             .padding(.top, 20)
@@ -333,59 +327,74 @@ struct MediaDetailView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                 } else {
                     RoundedRectangle(cornerRadius: 8)
-                                            .fill(style.cardDivider)
-                                            .frame(width: 125, height: 188)
-                                            .overlay(
-                                                Image(systemName: "film.fill")
-                                                    .font(.system(size: 32))
-                                                    .foregroundStyle(style.cardSecondaryText)
-                                            )
+                        .fill(style.cardDivider)
+                        .frame(width: 125, height: 188)
+                        .overlay(
+                            Image(systemName: "film.fill")
+                                .font(.system(size: 32))
+                                .foregroundStyle(style.cardSecondaryText)
+                        )
                 }
             }
             
             // Metadata column
             VStack(alignment: .leading, spacing: 5) {
                 if let title = entry.mediaTitle {
-                                    Text(title)
-                                        .font(style.typeTitle3)
-                                        .fontWeight(.bold)
-                                        .foregroundStyle(style.cardPrimaryText)
-                                        .lineLimit(3)
-                                }
-                                
-                                Spacer().frame(height: 4)
-                                
-                                if let year = entry.mediaYear, !year.isEmpty {
-                                    Text(year)
-                                        .font(style.typeBodySecondary)
-                                        .foregroundStyle(style.cardSecondaryText)
-                                }
-                                
-                                if let type = entry.mediaType {
-                                    Text(type == "tv" ? "Television Series" : "Movie")
-                                        .font(style.typeBodySecondary)
-                                        .foregroundStyle(style.cardSecondaryText)
-                                }
-                                
-                                if let genre = entry.mediaGenre, !genre.isEmpty {
-                                    Text(genre)
-                                        .font(style.typeBodySecondary)
-                                        .foregroundStyle(style.cardSecondaryText)
-                                }
-                                
-                                if let runtime = entry.mediaRuntime, entry.mediaType == "movie" {
-                                    let hours = runtime / 60
-                                    let mins = runtime % 60
-                                    Text(hours > 0 ? "\(hours)h \(mins)m" : "\(mins)m")
-                                        .font(style.typeBodySecondary)
-                                        .foregroundStyle(style.cardSecondaryText)
-                                }
-                                
-                                if let seasons = entry.mediaSeasons, entry.mediaType == "tv" {
-                                    Text("\(seasons) \(seasons == 1 ? "Season" : "Seasons")")
-                                        .font(style.typeBodySecondary)
-                                        .foregroundStyle(style.cardSecondaryText)
-                                }
+                    Text(title)
+                        .font(style.typeTitle3)
+                        .fontWeight(.bold)
+                        .foregroundStyle(style.cardPrimaryText)
+                        .lineLimit(3)
+                }
+                
+                Spacer().frame(height: 4)
+                
+                if let year = entry.mediaYear, !year.isEmpty {
+                    Text(year)
+                        .font(style.typeBodySecondary)
+                        .foregroundStyle(style.cardSecondaryText)
+                }
+                
+                if let type = entry.mediaType {
+                    Text(type == "tv" ? "Television Series" : "Movie")
+                        .font(style.typeBodySecondary)
+                        .foregroundStyle(style.cardSecondaryText)
+                }
+                
+                if let genre = entry.mediaGenre, !genre.isEmpty {
+                    Text(genre)
+                        .font(style.typeBodySecondary)
+                        .foregroundStyle(style.cardSecondaryText)
+                }
+                
+                if let runtime = entry.mediaRuntime, entry.mediaType == "movie" {
+                    let hours = runtime / 60
+                    let mins = runtime % 60
+                    Text(hours > 0 ? "\(hours)h \(mins)m" : "\(mins)m")
+                        .font(style.typeBodySecondary)
+                        .foregroundStyle(style.cardSecondaryText)
+                }
+                
+                if let seasons = entry.mediaSeasons, entry.mediaType == "tv" {
+                    Text("\(seasons) \(seasons == 1 ? "Season" : "Seasons")")
+                        .font(style.typeBodySecondary)
+                        .foregroundStyle(style.cardSecondaryText)
+                }
+                
+                // Star rating inline
+                Spacer().frame(height: 4)
+                HStack(spacing: 4) {
+                    ForEach(1...5, id: \.self) { star in
+                        Image(systemName: localRating >= star ? "star.fill" : "star")
+                            .font(.system(size: 16))
+                            .foregroundStyle(localRating >= star ? .yellow : style.cardMetadataText)
+                            .onTapGesture {
+                                localRating = localRating == star ? 0 : star
+                                scheduleSave()
+                            }
+                    }
+                }
+                .transaction { $0.animation = nil }
             }
             
             Spacer()
@@ -398,24 +407,51 @@ struct MediaDetailView: View {
     // MARK: - Status Section
     
     var statusSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("STATUS")
-                            .font(style.typeSectionHeader)
-                            .foregroundStyle(style.cardSecondaryText)
-                .padding(.horizontal, 20)
-            
-            HStack(spacing: 10) {
-                statusButton(label: "Want to Watch", value: "wantTo",   icon: "bookmark")
-                statusButton(label: "In Progress",   value: "inProgress", icon: "play.circle")
-                statusButton(label: "Finished",      value: "finished", icon: "checkmark.circle")
+        let statuses: [(label: String, value: String, icon: String)] = [
+            ("Watchlist", "wantTo", "bookmark"),
+            ("In Progress", "inProgress", "play.circle"),
+            ("Finished", "finished", "checkmark.circle")
+        ]
+        return HStack(spacing: 0) {
+            ForEach(statuses, id: \.value) { item in
+                let isSelected = localStatus == item.value
+                let color = statusColor(for: item.value)
+                let inactiveColor = entry.type.detailAccentColor(for: themeManager.current)
+                Button {
+                    localStatus = item.value
+                    scheduleSave()
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: isSelected ? "\(item.icon).fill" : item.icon)
+                            .font(style.typeCaption)
+                        Text(item.label)
+                            .font(style.typeLabel)
+                    }
+                    .foregroundStyle(isSelected ? color : inactiveColor.opacity(0.4))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 7)
+                    .background(isSelected ? color.opacity(0.15) : Color.clear)
+                }
+                .buttonStyle(.plain)
+                if item.value != "finished" {
+                    Divider()
+                        .frame(height: 16)
+                        .overlay(style.tertiaryText.opacity(0.3))
+                }
             }
-            .padding(.horizontal, 20)
         }
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(entry.type.detailAccentColor(for: themeManager.current).opacity(0.3), lineWidth: 0.5)
+        )
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
     }
     
     func statusColor(for value: String) -> Color {
-            return mediaStatusColor(for: value, theme: themeManager.current)
-        }
+        return mediaStatusColor(for: value, theme: themeManager.current)
+    }
     
     func statusButton(label: String, value: String, icon: String) -> some View {
         let isSelected = localStatus == value
@@ -455,8 +491,8 @@ struct MediaDetailView: View {
     var ratingSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("YOUR RATING")
-                            .font(style.typeSectionHeader)
-                            .foregroundStyle(style.cardSecondaryText)
+                .font(style.typeSectionHeader)
+                .foregroundStyle(style.cardSecondaryText)
                 .padding(.horizontal, 20)
             
             HStack(spacing: 12) {
@@ -511,11 +547,11 @@ struct MediaDetailView: View {
                     .foregroundStyle(style.cardSecondaryText)
                 Spacer()
                 Button {
-                                    showingLogInput.toggle()
-                                } label: {
-                                    Image(systemName: "plus.circle")
-                                        .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
-                                }
+                    showingLogInput.toggle()
+                } label: {
+                    Image(systemName: "plus.circle")
+                        .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
+                }
             }
             .padding(.horizontal, 20)
             
@@ -523,10 +559,10 @@ struct MediaDetailView: View {
             if showingLogInput {
                 VStack(spacing: 8) {
                     CommonplaceTextEditor(
-                                            text: $newLogText,
-                                            placeholder: "What are you thinking?",
-                                            usesSerifFont: false
-                                        )
+                        text: $newLogText,
+                        placeholder: "What are you thinking?",
+                        usesSerifFont: false
+                    )
                     .padding(.horizontal, 20)
                     
                     HStack {
@@ -539,10 +575,10 @@ struct MediaDetailView: View {
                         .padding(.trailing, 8)
                         
                         Button("Add") {
-                                                    appendLogEntry()
-                                                }
-                                                .fontWeight(.semibold)
-                                                .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
+                            appendLogEntry()
+                        }
+                        .fontWeight(.semibold)
+                        .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
                         .disabled(newLogText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
                     .padding(.horizontal, 20)
@@ -556,8 +592,8 @@ struct MediaDetailView: View {
             // Existing log entries
             if entry.mediaLog.isEmpty && !showingLogInput {
                 Text("No log entries yet. Tap + to add one.")
-                                    .font(style.typeBodySecondary)
-                                    .foregroundStyle(style.cardMetadataText)
+                    .font(style.typeBodySecondary)
+                    .foregroundStyle(style.cardMetadataText)
                     .padding(.horizontal, 20)
             } else {
                 VStack(spacing: 0) {
@@ -576,12 +612,12 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 4) {
             if let date = ISO8601DateFormatter().date(from: dateString) {
                 Text(date.formatted(.dateTime.month(.abbreviated).day().year().hour().minute()))
-                                    .font(style.typeCaption)
-                                    .foregroundStyle(style.cardMetadataText)
-                            }
-                            Text(text)
-                                .font(style.typeBody)
-                                .foregroundStyle(style.cardPrimaryText)
+                    .font(style.typeCaption)
+                    .foregroundStyle(style.cardMetadataText)
+            }
+            Text(text)
+                .font(style.typeBody)
+                .foregroundStyle(style.cardPrimaryText)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.vertical, 12)
@@ -656,17 +692,18 @@ struct MediaDetailView: View {
         }
     }
     func scheduleSave() {
-        saveTask?.cancel()
-        saveTask = Task {
-            try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
-            guard !Task.isCancelled else { return }
-            await MainActor.run {
-                entry.mediaRating = localRating == 0 ? nil : localRating
-                entry.mediaStatus = localStatus
-                try? modelContext.save()
+            saveTask?.cancel()
+            saveTask = Task {
+                try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    entry.mediaRating = localRating == 0 ? nil : localRating
+                    entry.mediaStatus = localStatus
+                    entry.touch()
+                    try? modelContext.save()
+                }
             }
         }
-    }
     func appendLogEntry() {
         let trimmed = newLogText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }

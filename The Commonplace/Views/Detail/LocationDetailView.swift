@@ -56,7 +56,10 @@ struct LocationDetailView: View {
                         Marker(entry.locationName ?? "", coordinate: coordinate)
                             .tint(accentColor)
                     }
-                    .frame(height: 280)
+                    .frame(height: 196)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
                     .onTapGesture { openInMaps() }
                 }
                 
@@ -82,12 +85,15 @@ struct LocationDetailView: View {
                             }
                         }
                         
-                        Button { openInMaps() } label: {
-                            Label("Open in Maps", systemImage: "map.fill")
-                                .frame(maxWidth: .infinity)
+                        HStack {
+                            Button { openInMaps() } label: {
+                                Label("Maps", systemImage: "map.fill")
+                                    .font(style.typeLabel)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(accentColor)
+                            Spacer()
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(accentColor)
                     }
                     
                     Divider()
@@ -117,7 +123,7 @@ struct LocationDetailView: View {
                     PersonInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
                     
                     Divider()
-                        .overlay(style.surface)
+                        .overlay(style.cardDivider)
                     EntryMetadataFooter(entry: entry, style: style, accentColor: accentColor)
                 }
                 .padding()
@@ -139,7 +145,7 @@ struct LocationDetailView: View {
                             textFieldFocused = false
                         }
                         .bold()
-                        .foregroundStyle(style.accent)
+                        .foregroundStyle(accentColor)
                     }
                     Menu {
                         Button(role: .destructive) {
@@ -149,13 +155,13 @@ struct LocationDetailView: View {
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
-                            .foregroundStyle(style.accent)
+                            .foregroundStyle(accentColor)
                     }
                     Button {
                         withAnimation { entry.isPinned.toggle() }
                     } label: {
                         Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
-                            .foregroundStyle(style.accent)
+                            .foregroundStyle(accentColor)
                     }
                 }
             }

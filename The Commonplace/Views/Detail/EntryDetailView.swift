@@ -37,6 +37,7 @@ struct EntryDetailView: View {
         } else {
             entry.text = noteTitle + "\n" + noteBody
         }
+        entry.touch()
     }
     
     var style: any AppThemeStyle { themeManager.style }
@@ -54,7 +55,7 @@ struct EntryDetailView: View {
                 PersonInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
                 TagInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
                 Divider()
-                                    .overlay(style.cardDivider)
+                    .overlay(style.cardDivider)
                 EntryMetadataFooter(entry: entry, style: style, accentColor: entryAccent)
             }
             .padding()
@@ -75,6 +76,7 @@ struct EntryDetailView: View {
                                 entry.text = editText
                                 isEditing = false
                                 textFieldFocused = false
+                                entry.touch()
                             }
                         }
                         .bold()
@@ -100,17 +102,17 @@ struct EntryDetailView: View {
             }
         }
         .onAppear {
-                    if entry.type == .text {
-                        loadNoteParts()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            if entry.text.isEmpty {
-                                noteTitleFocused = true
-                            }
-                        }
-                    } else {
-                                    // Don't auto-focus for any other entry type
-                                    // User should tap the text area to start editing
-                                }
+            if entry.type == .text {
+                loadNoteParts()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    if entry.text.isEmpty {
+                        noteTitleFocused = true
+                    }
+                }
+            } else {
+                // Don't auto-focus for any other entry type
+                // User should tap the text area to start editing
+            }
         }
         .onDisappear {
             SearchIndex.shared.index(entry: entry)
@@ -175,18 +177,18 @@ struct EntryDetailView: View {
     var genericContentSection: some View {
         if isEditing {
             CommonplaceTextEditor(
-                            text: $editText,
-                            placeholder: "Start writing...",
-                            usesSerifFont: false,
-                            minHeight: 32
-                        )
+                text: $editText,
+                placeholder: "Start writing...",
+                usesSerifFont: false,
+                minHeight: 32
+            )
             .focused($textFieldFocused)
             .foregroundStyle(style.primaryText)
             .onChange(of: editText) { _, newValue in entry.text = newValue }
         } else {
             Text(entry.text.isEmpty ? "Tap to add a note..." : entry.text)
-                            .font(style.typeBody)
-                            .foregroundStyle(entry.text.isEmpty ? style.cardMetadataText : style.cardPrimaryText)
+                .font(style.typeBody)
+                .foregroundStyle(entry.text.isEmpty ? style.cardMetadataText : style.cardPrimaryText)
                 .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
                 .contentShape(Rectangle())
                 .onTapGesture {

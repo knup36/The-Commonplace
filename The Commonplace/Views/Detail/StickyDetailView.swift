@@ -28,7 +28,7 @@ struct StickyDetailView: View {
     
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
-        var bgColor: Color { entry.type.cardColor(for: themeManager.current) }
+    var bgColor: Color { entry.type.cardColor(for: themeManager.current) }
     
     // MARK: - Item model
     
@@ -164,8 +164,8 @@ struct StickyDetailView: View {
     var bottomInputBar: some View {
         HStack(spacing: 12) {
             TextField(editingItemID == nil ? "New item..." : "Edit item...", text: $inputText)
-                            .font(style.typeBody)
-                            .foregroundStyle(style.cardPrimaryText)
+                .font(style.typeBody)
+                .foregroundStyle(style.cardPrimaryText)
                 .focused($inputFocused)
                 .onSubmit {
                     commitInput()
@@ -195,22 +195,22 @@ struct StickyDetailView: View {
         .padding(.horizontal, 12)
         .padding(.bottom, 8)
         .overlay(alignment: .top) {
-                    Rectangle()
-                        .fill(style.cardDivider)
-                        .frame(height: 0.5)
-                        .padding(.horizontal, 16)
-                }
+            Rectangle()
+                .fill(style.cardDivider)
+                .frame(height: 0.5)
+                .padding(.horizontal, 16)
+        }
     }
     
     // MARK: - Title
     
     var titleField: some View {
         TextField("Title", text: Binding(
-                    get: { entry.stickyTitle ?? "" },
-                    set: { entry.stickyTitle = $0.isEmpty ? nil : $0 }
-                ))
-                .font(style.typeLargeTitle)
-                .foregroundStyle(style.cardPrimaryText)    }
+            get: { entry.stickyTitle ?? "" },
+            set: { entry.stickyTitle = $0.isEmpty ? nil : $0 }
+        ))
+        .font(style.typeLargeTitle)
+        .foregroundStyle(style.cardPrimaryText)    }
     
     // MARK: - Progress
     
@@ -221,8 +221,8 @@ struct StickyDetailView: View {
             ProgressView(value: Double(done), total: Double(total))
                 .tint(accentColor)
             Text("\(done) of \(total) completed")
-                            .font(style.typeCaption)
-                            .foregroundStyle(style.cardSecondaryText)
+                .font(style.typeCaption)
+                .foregroundStyle(style.cardSecondaryText)
         }
     }
     
@@ -240,9 +240,9 @@ struct StickyDetailView: View {
             .buttonStyle(.plain)
             
             Text(item.text)
-                            .font(style.typeBody)
-                            .foregroundStyle(checked ? style.cardMetadataText : style.cardPrimaryText)
-                            .strikethrough(checked, color: style.cardMetadataText)
+                .font(style.typeBody)
+                .foregroundStyle(checked ? style.cardMetadataText : style.cardPrimaryText)
+                .strikethrough(checked, color: style.cardMetadataText)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
                 .onTapGesture {
@@ -281,6 +281,7 @@ struct StickyDetailView: View {
             editingItemID = nil
             inputText = ""
             inputFocused = false
+            entry.touch()
         } else {
             // Adding new item
             guard !trimmed.isEmpty else { return }
@@ -289,6 +290,7 @@ struct StickyDetailView: View {
                 entry.stickyItems.insert("\(id)::\(trimmed)", at: 0)
             }
             inputText = ""
+            entry.touch()
             // Keep focused for rapid entry
             inputFocused = true
         }

@@ -13,30 +13,30 @@ struct TagInputView: View {
     @Query var entries: [Entry]
     var accentColor: Color = .accentColor
     var style: (any AppThemeStyle)?
-
+    
     @State private var inputText = ""
     @State private var isExpanded = false
     @FocusState private var isFocused: Bool
-
+    
     @Environment(\.modelContext) var modelContext
-
+    
     var visibleTags: [String] {
         tags.filter { !$0.hasPrefix("@") }
     }
-
+    
     var allExistingTags: [String] {
         Array(Set(entries.flatMap { $0.tagNames }))
             .sorted()
             .filter { !tags.contains($0) && !$0.hasPrefix("@") }
     }
-
+    
     var suggestions: [String] {
         if inputText.isEmpty { return allExistingTags }
         return allExistingTags.filter {
             $0.localizedCaseInsensitiveContains(inputText)
         }
     }
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Pills row — always visible when tags exist
@@ -59,8 +59,8 @@ struct TagInputView: View {
                                         .font(.system(size: 9, weight: .bold))
                                         .padding(.horizontal, 8)
                                         .padding(.vertical, 5)
-                                        .background((style?.pillBackground ?? accentColor.opacity(0.15)).opacity(0.4))
-                                        .foregroundStyle((style?.pillForeground ?? accentColor).opacity(0.5))
+                                        .background(accentColor.opacity(0.08))
+                                        .foregroundStyle(accentColor.opacity(0.6))
                                         .clipShape(Capsule())
                                 }
                                 .buttonStyle(.plain)
@@ -69,7 +69,7 @@ struct TagInputView: View {
                     }
                 }
             }
-
+            
             // Input field — shown when empty (no tags yet) or expanded
             if visibleTags.isEmpty || isExpanded {
                 HStack(spacing: 6) {
@@ -109,7 +109,7 @@ struct TagInputView: View {
                     }
                 }
             }
-
+            
             // Suggestions
             if isFocused && !suggestions.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -137,25 +137,25 @@ struct TagInputView: View {
         .animation(.easeInOut(duration: 0.15), value: isExpanded)
         .animation(.easeInOut(duration: 0.15), value: suggestions.count)
     }
-
+    
     func tagPill(_ tag: String) -> some View {
-            HStack(spacing: 4) {
-                Text(tag)
-                    .font(.caption)
-                Button {
-                    tags.removeAll { $0 == tag }
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 9, weight: .bold))
-                }
+        HStack(spacing: 4) {
+            Text(tag)
+                .font(.caption)
+            Button {
+                tags.removeAll { $0 == tag }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9, weight: .bold))
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(accentColor.opacity(0.2))
-            .foregroundStyle(accentColor)
-            .clipShape(Capsule())
         }
-
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(accentColor.opacity(0.2))
+        .foregroundStyle(accentColor)
+        .clipShape(Capsule())
+    }
+    
     func addTag(_ text: String) {
         let cleaned = text
             .trimmingCharacters(in: .whitespaces)

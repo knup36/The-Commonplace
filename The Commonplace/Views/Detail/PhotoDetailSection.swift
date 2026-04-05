@@ -267,6 +267,7 @@ struct PhotoDetailSection: View {
         entry.extractedText = result.extractedText.isEmpty ? nil : result.extractedText
         entry.visionTags = result.tags
         isAnalyzing = false
+        entry.touch()
     }
     
     // MARK: - Save Video
@@ -329,11 +330,12 @@ struct PhotoDetailSection: View {
         entry.videoDuration = duration.map { CMTimeGetSeconds($0) }
         
         // Clear photo fields if switching from photo to video
-        entry.extractedText = nil
-        entry.visionTags = []
-        
-        isProcessingVideo = false
-    }
+                entry.extractedText = nil
+                entry.visionTags = []
+                
+                entry.touch()
+                isProcessingVideo = false
+            }
     
     // MARK: - Helpers
     

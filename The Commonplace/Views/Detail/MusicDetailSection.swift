@@ -89,16 +89,17 @@ struct MusicDetailSection: View {
     // MARK: - Save URL
 
     func saveMusicURL() {
-        guard !linkURLText.isEmpty else { return }
-        let urlString = linkURLText.hasPrefix("http") ? linkURLText : "https://\(linkURLText)"
-        entry.url = urlString
-        linkFieldFocused = false
-        isExtracting = true
-        Task {
-            await fetchMusicMetadata(urlString: urlString)
-            isExtracting = false
+            guard !linkURLText.isEmpty else { return }
+            let urlString = linkURLText.hasPrefix("http") ? linkURLText : "https://\(linkURLText)"
+            entry.url = urlString
+            entry.touch()
+            linkFieldFocused = false
+            isExtracting = true
+            Task {
+                await fetchMusicMetadata(urlString: urlString)
+                isExtracting = false
+            }
         }
-    }
 
     // MARK: - Fetch Metadata
 

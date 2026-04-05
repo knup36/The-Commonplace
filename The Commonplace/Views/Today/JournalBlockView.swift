@@ -372,13 +372,15 @@ struct JournalBlockView: View {
     }
     
     func saveDailyNote(_ text: String) {
-        if let existing = todayEntry {
-            existing.text = text
-        } else if !text.isEmpty {
-            let entry = getOrCreateTodayEntry()
-            entry.text = text
+            if let existing = todayEntry {
+                existing.text = text
+                existing.touch()
+            } else if !text.isEmpty {
+                let entry = getOrCreateTodayEntry()
+                entry.text = text
+                entry.touch()
+            }
         }
-    }
     
     func loadDailyNote() {
         dailyNoteText = todayEntry?.text ?? ""

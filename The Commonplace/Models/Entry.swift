@@ -30,8 +30,11 @@ import SwiftUI
 class Entry {
     var id: UUID = UUID()
     var createdAt: Date = Date()
+    var modifiedAt: Date = Date()
     var type: EntryType = EntryType.text
     var text: String = ""
+    var wordCount: Int? = nil
+    var readingTime: Int? = nil
 
     var tagNames: [String] = []
     
@@ -127,15 +130,25 @@ class Entry {
     var weeklyReviewStats: Data? = nil  // JSON encoded stats (entry count, habits, mood, calories, people, tags, music, media)
     
     init(type: EntryType = .text, text: String = "", tags: [String] = []) {
-        self.id = UUID()
-        self.createdAt = Date()
-        self.type = type
-        self.text = text
-        self.tagNames = tags
-        self.isFavorited = false
-        self.visionTags = []
+            self.id = UUID()
+            self.createdAt = Date()
+            self.modifiedAt = Date()
+            self.type = type
+            self.text = text
+            self.tagNames = tags
+            self.isFavorited = false
+            self.visionTags = []
+        }
+
+        /// Call whenever meaningful content on the entry changes.
+        /// Updates modifiedAt and recalculates wordCount for text-heavy entries.
+    func touch() {
+            modifiedAt = Date()
+            if !text.isEmpty {
+                wordCount = text.split(whereSeparator: \.isWhitespace).count
+            }
+        }
     }
-}
 
 enum EntryType: String, Codable, CaseIterable {
     case text

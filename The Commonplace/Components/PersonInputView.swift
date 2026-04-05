@@ -66,19 +66,19 @@ struct PersonInputView: View {
                                 }
                             } label: {
                                 Image(systemName: "plus")
-                                                                    .font(.system(size: 9, weight: .bold))
-                                                                    .padding(.horizontal, 8)
-                                                                    .padding(.vertical, 5)
-                                                                    .background((style?.pillBackground ?? accentColor.opacity(0.15)).opacity(0.4))
-                                                                    .foregroundStyle((style?.pillForeground ?? accentColor).opacity(0.5))
-                                                                    .clipShape(Capsule())
+                                    .font(.system(size: 9, weight: .bold))
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 5)
+                                    .background(accentColor.opacity(0.08))
+                                    .foregroundStyle(accentColor.opacity(0.6))
+                                    .clipShape(Capsule())
                             }
                             .buttonStyle(.plain)
                         }
                     }
                 }
             }
-
+            
             // Input field — shown when empty or expanded
             if taggedPersonNames.isEmpty || isExpanded {
                 HStack(spacing: 6) {
