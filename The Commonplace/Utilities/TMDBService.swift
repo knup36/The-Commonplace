@@ -181,7 +181,12 @@ struct TMDBService {
     /// Downloads poster image data from a TMDBSearchResult or TMDBDetail posterURL.
     /// Returns nil if no poster is available or the download fails.
     static func downloadPoster(from url: URL) async -> Data? {
-        guard let (data, _) = try? await URLSession.shared.data(from: url) else { return nil }
-        return data
-    }
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                return data
+            } catch {
+                AppLogger.warning("Poster download failed for \(url.lastPathComponent)", domain: .api)
+                return nil
+            }
+        }
 }

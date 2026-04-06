@@ -24,11 +24,11 @@ struct MusicDetailSection: View {
     @Bindable var entry: Entry
     var style: any AppThemeStyle
     var accentColor: Color
-
+    
     @State private var linkURLText = ""
     @State private var isExtracting = false
     @FocusState private var linkFieldFocused: Bool
-
+    
     var body: some View {
         Group {
             if entry.type == .music {
@@ -40,8 +40,8 @@ struct MusicDetailSection: View {
                         .focused($linkFieldFocused)
                         .padding(12)
                         .background(style.cardDivider)
-                                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                                                .onChange(of: linkURLText) { _, newValue in
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .onChange(of: linkURLText) { _, newValue in
                             if newValue.contains("music.apple.com") {
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                                     if linkURLText == newValue { saveMusicURL() }
@@ -52,17 +52,17 @@ struct MusicDetailSection: View {
                     MusicEntryView(entry: entry)
                     if let urlString = entry.url, let url = URL(string: urlString) {
                         if isExtracting {
-                                                    HStack(spacing: 6) {
-                                                        ProgressView()
-                                                        Text("Fetching music info...")
-                                                            .font(style.typeCaption)
-                                                            .foregroundStyle(style.cardSecondaryText)
-                                                    }
-                                                } else if entry.linkTitle != nil {
-                                                    Label("Music info saved", systemImage: "checkmark.circle.fill")
-                                                        .font(style.typeCaption)
-                                                        .foregroundStyle(style.cardSecondaryText)
-                                                }
+                            HStack(spacing: 6) {
+                                ProgressView()
+                                Text("Fetching music info...")
+                                    .font(style.typeCaption)
+                                    .foregroundStyle(style.cardSecondaryText)
+                            }
+                        } else if entry.linkTitle != nil {
+                            Label("Music info saved", systemImage: "checkmark.circle.fill")
+                                .font(style.typeCaption)
+                                .foregroundStyle(style.cardSecondaryText)
+                        }
                         Button {
                             UIApplication.shared.open(url)
                         } label: {
@@ -85,69 +85,72 @@ struct MusicDetailSection: View {
             }
         }
     }
-
+    
     // MARK: - Save URL
-
+    
     func saveMusicURL() {
-            guard !linkURLText.isEmpty else { return }
-            let urlString = linkURLText.hasPrefix("http") ? linkURLText : "https://\(linkURLText)"
-            entry.url = urlString
-            entry.touch()
-            linkFieldFocused = false
-            isExtracting = true
-            Task {
-                await fetchMusicMetadata(urlString: urlString)
-                isExtracting = false
-            }
+        guard !linkURLText.isEmpty else { return }
+        let urlString = linkURLText.hasPrefix("http") ? linkURLText : "https://\(linkURLText)"
+        entry.url = urlString
+        entry.touch()
+        linkFieldFocused = false
+        isExtracting = true
+        Task {
+            await fetchMusicMetadata(urlString: urlString)
+            isExtracting = false
         }
-
+    }
+    
     // MARK: - Fetch Metadata
-
+    
     /// Fetches song metadata from iTunes Search API and saves to entry.
     /// Saves trackId as musicTrackID for full Apple Music playback via MusicPlayerService.
     func fetchMusicMetadata(urlString: String?) async {
         guard let urlString else { return }
-
+        
         let fetcher = await LinkPreviewFetcher()
         await fetcher.fetch(urlString: urlString)
         if let metadata = await fetcher.metadata {
             await MainActor.run { entry.linkTitle = metadata.title }
         }
-
+        
         guard let searchTerm = entry.linkTitle?.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let apiURL = URL(string: "https://itunes.apple.com/search?term=\(searchTerm)&limit=1&entity=song")
         else { return }
-
-        guard let (apiData, _) = try? await URLSession.shared.data(from: apiURL),
-              let json = try? JSONSerialization.jsonObject(with: apiData) as? [String: Any],
-              let results = json["results"] as? [[String: Any]],
-              let first = results.first
-        else { return }
-
-        await MainActor.run {
-            entry.musicArtist = first["artistName"] as? String
-            entry.musicAlbum = first["collectionName"] as? String
-            entry.previewURL = first["previewUrl"] as? String
-
-            // Save Apple Music track ID for full playback via MusicPlayerService
-            if let trackID = first["trackId"] as? Int {
-                entry.musicTrackID = String(trackID)
-            }
-        }
-
-        // Fetch and save artwork
-        if let artworkURLString = first["artworkUrl100"] as? String {
-            let hdArtworkURL = artworkURLString.replacingOccurrences(of: "100x100bb", with: "600x600bb")
-            if let artworkURL = URL(string: hdArtworkURL),
-               let (artworkData, _) = try? await URLSession.shared.data(from: artworkURL) {
-                await MainActor.run {
-                    entry.musicArtworkPath = try? MediaFileManager.save(
-                        artworkData,
-                        type: .image,
-                        id: "\(entry.id.uuidString)_artwork"
-                    )
+        
+        do {
+            let (apiData, _) = try await URLSession.shared.data(from: apiURL)
+            guard let json = try JSONSerialization.jsonObject(with: apiData) as? [String: Any],
+                  let results = json["results"] as? [[String: Any]],
+                  let first = results.first
+            else { return }
+            
+            await MainActor.run {
+                entry.musicArtist = first["artistName"] as? String
+                entry.musicAlbum = first["collectionName"] as? String
+                entry.previewURL = first["previewUrl"] as? String
+                
+                if let trackID = first["trackId"] as? Int {
+                    entry.musicTrackID = String(trackID)
                 }
             }
+            
+            // Fetch and save artwork
+            if let artworkURLString = first["artworkUrl100"] as? String {
+                let hdArtworkURL = artworkURLString.replacingOccurrences(of: "100x100bb", with: "600x600bb")
+                if let artworkURL = URL(string: hdArtworkURL),
+                   let (artworkData, _) = try? await URLSession.shared.data(from: artworkURL) {
+                    await MainActor.run {
+                        entry.musicArtworkPath = try? MediaFileManager.save(
+                            artworkData,
+                            type: .image,
+                            id: "\(entry.id.uuidString)_artwork"
+                        )
+                    }
+                }
+            }
+        } catch {
+            AppLogger.error("iTunes metadata fetch failed", domain: .api, error: error)
         }
     }
 }

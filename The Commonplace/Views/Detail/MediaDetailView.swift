@@ -652,9 +652,14 @@ struct MediaDetailView: View {
     }
     
     func selectResult(_ result: TMDBSearchResult) {
-        Task {
-            // Fetch full detail for genres
-            let detail = try? await TMDBService.fetchDetail(id: result.id, type: result.mediaType)
+            Task {
+                // Fetch full detail for genres
+                var detail: TMDBDetail? = nil
+                do {
+                    detail = try await TMDBService.fetchDetail(id: result.id, type: result.mediaType)
+                } catch {
+                    AppLogger.error("TMDB detail fetch failed for \(result.title)", domain: .api, error: error)
+                }
             
             // Download poster
             var posterData: Data? = nil
