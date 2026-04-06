@@ -21,6 +21,45 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "1.14.1",
+            title: "Been There, Done That",
+            notes: [
+                "Location entries now have a visited status — tap the seal badge to mark a place as Been Here",
+                "The seal badge appears on every location card in the feed and in the detail view alongside your star rating",
+                "All location entries default to Want to Visit — the most common reason to save a place is to remember to go",
+                "Collections can now filter by visit status — build a Want to Visit list or a places archive",
+                "Export and import now correctly round-trips all location and Readwise fields"
+            ]
+        ),
+        Release(
+            version: "1.14",
+            title: "The Post",
+            notes: [
+                "Commonplace now connects to Readwise Reader — tag any article with \"commonplace\" and it appears in your feed",
+                "Imported articles arrive as link entries with a rich preview, your highlights as a bullet list in the body, and the original Reader saved date",
+                "New highlights are appended automatically on subsequent syncs — nothing is ever overwritten",
+                "Deduplication ensures re-syncing never creates duplicate entries",
+                "Add your Readwise API token in Settings → Readwise, then tap Sync Readwise whenever you want to pull in new articles",
+                "API token stored securely in the iOS Keychain"
+            ]
+        ),
+        Release(
+            version: "1.13.1",
+            title: "The Housemaid",
+            notes: [
+                "People now show as a grid of avatars — four across, with a gold ring and entry count badge on each",
+                "Tag pills throughout the app now pick up the color of the entry they live on — green for places, blue for links, and so on",
+                "Entry type labels are subtler now — dimmed to half opacity so they inform without dominating",
+                "Tab titles got bolder — proper New York Black weight for Feed, Home, Today, Search and Collections",
+                "Location detail view got a full redesign — rounded map, smaller Open in Maps button, people tagging, and a star rating right under the place name",
+                "Media detail view cleaned up — status is now a slim tab bar under the poster, rating moved inline with the metadata",
+                "The plus button for adding tags and people now picks up the entry color instead of a generic brown",
+                "Added modifiedAt, wordCount and readingTime to every entry — groundwork for sorting, filtering and future insights",
+                "Star ratings now available on Place entries",
+                "Lots of small fixes and color corrections throughout"
+            ]
+        ),
+        Release(
             version: "1.13",
             title: "Dressed for Success",
             notes: [

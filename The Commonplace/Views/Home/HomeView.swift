@@ -105,7 +105,7 @@ struct HomeView: View {
         Section {
             ForEach(pinnedEntries) { entry in
                 ZStack {
-                    NavigationLink(destination: destinationView(for: entry)) {
+                    NavigationLink(destination: NavigationRouter.destination(for: entry)) {
                         EmptyView()
                     }
                     .opacity(0)
@@ -183,7 +183,7 @@ struct HomeView: View {
         Section {
             ForEach(favoritedEntries) { entry in
                 ZStack {
-                    NavigationLink(destination: destinationView(for: entry)) {
+                    NavigationLink(destination: NavigationRouter.destination(for: entry)) {
                         EmptyView()
                     }
                     .opacity(0)

@@ -89,7 +89,7 @@ struct MoodTimelineView: View {
                     .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
             )
             .navigationDestination(for: Entry.self) { entry in
-                destinationView(for: entry)
+                NavigationRouter.destination(for: entry)
             }
         }
     }
@@ -193,7 +193,7 @@ struct MoodTimelineView: View {
                                 .position(x: cx, y: stemTop + stemHeight / 2)
 
                             // Emoji
-                            NavigationLink(destination: destinationView(for: entry)) {
+                            NavigationLink(destination: NavigationRouter.destination(for: entry)) {
                                 Text(entry.moodEmoji)
                                     .font(.system(size: 14))
                                     .position(x: cx, y: y)

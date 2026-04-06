@@ -26,7 +26,7 @@ struct TagFeedView: View {
         ScrollView {
             LazyVStack(spacing: 0) {
                 ForEach(filteredEntries) { entry in
-                    NavigationLink(destination: destinationView(for: entry)) {
+                    NavigationLink(destination: NavigationRouter.destination(for: entry)) {
                         EntryRowView(entry: entry)
                     }
                     .buttonStyle(.plain)

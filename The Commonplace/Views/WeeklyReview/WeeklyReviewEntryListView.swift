@@ -18,7 +18,7 @@ struct WeeklyReviewEntryListView: View {
         ScrollView {
             LazyVStack(spacing: 0) {
                 ForEach(entries) { entry in
-                    NavigationLink(destination: destinationView(for: entry)) {
+                    NavigationLink(destination: NavigationRouter.destination(for: entry)) {
                         EntryRowView(entry: entry)
                     }
                     .buttonStyle(.plain)

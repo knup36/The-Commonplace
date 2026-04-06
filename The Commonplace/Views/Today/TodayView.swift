@@ -138,7 +138,7 @@ struct TodayView: View {
                                     .foregroundStyle(style.secondaryText)
                     .padding(.horizontal)
                 ForEach(todayEntries) { entry in
-                    NavigationLink(destination: destinationView(for: entry)) {
+                    NavigationLink(destination: NavigationRouter.destination(for: entry)) {
                         EntryRowView(entry: entry)
                     }
                     .buttonStyle(.plain)
@@ -187,7 +187,7 @@ struct TodayView: View {
                             .padding(.horizontal)
                         ForEach(group.entries) { entry in
                             ZStack {
-                                NavigationLink(destination: destinationView(for: entry)) { EmptyView() }
+                                NavigationLink(destination: NavigationRouter.destination(for: entry)) { EmptyView() }
                                     .opacity(0)
                                 EntryRowView(entry: entry)
                             }

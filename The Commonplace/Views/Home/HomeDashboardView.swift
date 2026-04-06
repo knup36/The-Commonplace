@@ -193,7 +193,7 @@ struct HomeDashboardView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHGrid(rows: [GridItem(.fixed(80), spacing: 10), GridItem(.fixed(80), spacing: 10)], spacing: 10) {
                     ForEach(pinnedEntries.prefix(maxCards)) { entry in
-                        NavigationLink(destination: destinationView(for: entry)) {
+                        NavigationLink(destination: NavigationRouter.destination(for: entry)) {
                             CompactEntryCard(entry: entry, style: style)
                         }
                         .buttonStyle(.plain)

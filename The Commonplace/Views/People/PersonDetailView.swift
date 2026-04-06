@@ -63,7 +63,7 @@ struct PersonDetailView: View {
                     .padding(.bottom, 40)
                 } else {
                     ForEach(taggedEntries) { entry in
-                        NavigationLink(destination: destinationView(for: entry)) {
+                        NavigationLink(destination: NavigationRouter.destination(for: entry)) {
                             EntryRowView(entry: entry)
                         }
                         .buttonStyle(.plain)

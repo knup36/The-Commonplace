@@ -19,7 +19,7 @@ struct PinnedPagesListView: View {
         List {
             ForEach(pinnedEntries) { entry in
                 ZStack {
-                    NavigationLink(destination: destinationView(for: entry)) {
+                    NavigationLink(destination: NavigationRouter.destination(for: entry)) {
                         EmptyView()
                     }
                     .opacity(0)

@@ -334,7 +334,7 @@ struct LibraryView: View {
                             CollectionDetailView(collection: collection)
                         }
                         .navigationDestination(for: Entry.self) { entry in
-                            destinationView(for: entry)
+                            NavigationRouter.destination(for: entry)
                         }
                         .navigationDestination(for: Tag.self) { tag in
                             PersonDetailView(tag: tag)
@@ -418,13 +418,13 @@ struct LibraryView: View {
                     }
                 }
 
-                Text(person.name)
-                    .font(style.typeCaption)
-                    .foregroundStyle(style.primaryText)
-                    .lineLimit(1)
-                    .multilineTextAlignment(.center)
-            }
-        }
+            Text(abbreviatedName(person.name))
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.primaryText)
+                            .lineLimit(1)
+                            .multilineTextAlignment(.center)
+                    }
+                }
 
         // MARK: - Person Avatar
 
@@ -450,4 +450,15 @@ struct LibraryView: View {
                 }
             }
         }
+    }
+//MARK: HELPERS
+
+func abbreviatedName(_ name: String) -> String {
+        guard name.count > 12 else { return name }
+        let parts = name.components(separatedBy: " ")
+        guard parts.count >= 2,
+              let lastName = parts.last,
+              let lastInitial = lastName.first else { return name }
+        let firstName = parts.dropLast().joined(separator: " ")
+        return "\(firstName) \(lastInitial)."
     }

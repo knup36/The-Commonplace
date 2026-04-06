@@ -54,7 +54,7 @@ struct FeedView: View {
     @ViewBuilder
     var entryRows: some View {
         ForEach(filteredEntries) { entry in
-            NavigationLink(destination: destinationView(for: entry)) {
+            NavigationLink(destination: NavigationRouter.destination(for: entry)) {
                 EntryRowView(entry: entry)
             }
             .buttonStyle(.plain)
@@ -151,7 +151,7 @@ struct FeedView: View {
                     TemplatePickerView(navigationPath: $navigationPath)
                 }
                 .navigationDestination(for: Entry.self) { entry in
-                    destinationView(for: entry)
+                    NavigationRouter.destination(for: entry)
                 }
                 .overlay(alignment: .topTrailing) {
                     if showingAddEntry {

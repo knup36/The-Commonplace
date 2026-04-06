@@ -350,7 +350,7 @@ struct SearchView: View {
                     groupLabel("Tagged")
                     VStack(spacing: 8) {
                         ForEach(displayTagged) { entry in
-                            NavigationLink(destination: destinationView(for: entry)) {
+                            NavigationLink(destination: NavigationRouter.destination(for: entry)) {
                                 EntryRowView(entry: entry)
                             }
                             .buttonStyle(.plain)
@@ -364,7 +364,7 @@ struct SearchView: View {
                     groupLabel("Mentioned in entries")
                     VStack(spacing: 8) {
                         ForEach(displayMentioned) { entry in
-                            NavigationLink(destination: destinationView(for: entry)) {
+                            NavigationLink(destination: NavigationRouter.destination(for: entry)) {
                                 EntryRowView(entry: entry)
                             }
                             .buttonStyle(.plain)

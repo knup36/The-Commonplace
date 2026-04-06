@@ -46,7 +46,7 @@ struct SearchResultsView: View {
                 if !taggedEntries.isEmpty {
                     groupHeader("Tagged")
                     ForEach(taggedEntries) { entry in
-                        NavigationLink(destination: destinationView(for: entry)) {
+                        NavigationLink(destination: NavigationRouter.destination(for: entry)) {
                             EntryRowView(entry: entry)
                         }
                         .buttonStyle(.plain)
@@ -58,7 +58,7 @@ struct SearchResultsView: View {
                 if !mentionedEntries.isEmpty {
                     groupHeader("Mentioned in entries")
                     ForEach(mentionedEntries) { entry in
-                        NavigationLink(destination: destinationView(for: entry)) {
+                        NavigationLink(destination: NavigationRouter.destination(for: entry)) {
                             EntryRowView(entry: entry)
                         }
                         .buttonStyle(.plain)
