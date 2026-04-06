@@ -29,6 +29,32 @@
 //   "book"     — Book Folio (v3.0)
 //   "project"  — Project Folio (v3.0, uses isProject fields below)
 
+// ============================================================
+// SCHEMA VERSION: 2
+// Last updated: v1.10.1
+//
+// Schema change policy: same as Entry.swift — optional fields safe to add
+// at any time. Never remove fields without deprecating first.
+//
+// Field version history:
+//   v1.3  — name, isPinned, createdAt
+//   v1.3  — colorHex
+//   v1.7  — isProject, isCompleted, completedAt (stored now, activated v3.0)
+//   v1.10.1 — subjectType, profilePhotoPath, bio, birthdate, subjectEmoji
+//
+// Architecture rules:
+//   - NEVER use SwiftData relationships between Tag and Entry —
+//     ModelContainer crashes. Always use name matching.
+//   - "@" prefix in tagNames is an internal namespace for person tags —
+//     never expose in UI, filter from all tag display
+//   - Query persons via allTags.filter { $0.isPerson } —
+//     do NOT query the dormant Person model
+//
+// Deprecated models:
+//   Person — dormant since v1.10.1, merged into Tag via subjectType.
+//            Safe to remove after SubjectMigrationService confirmed stable.
+// ============================================================
+
 import SwiftData
 import Foundation
 

@@ -1,21 +1,37 @@
 // Person.swift
 // Commonplace
 //
-// SwiftData model representing a person — a first-class contact object.
-// People are a richer version of tags, with metadata like photo, bio, and birthdate.
+// DEPRECATED — dormant since v1.10.1.
 //
-// Architecture note:
-//   People connect to entries via name matching, same pattern as Tag.
-//   Entry.tagNames stores "@Sarah" (with @ prefix as namespace).
-//   Person.name stores "Sarah" (without @).
+// ============================================================
+// SCHEMA VERSION: 1
+// Last updated: v1.10.1 (deprecated)
 //
-//   To find entries for a person: filter entries where tagNames.contains("@" + person.name)
-//   To find people for an entry: fetch Person objects where "@" + name is in entry.tagNames
+// STATUS: DORMANT — do not use, do not remove yet.
 //
-//   The @ prefix is an internal namespace — users never type or see it.
-//   They interact with people via a dedicated PersonInputView section on entry detail views.
+// History:
+//   v1.7   — Person model introduced for first-class contact support
+//   v1.10.1 — Person merged into Tag via subjectType = "person"
+//             SubjectMigrationService copies all Person objects into
+//             typed Tag objects at launch. Person is no longer written to.
 //
-// Profile photos are stored via MediaFileManager, same pattern as media cover art.
+// Why it still exists:
+//   SwiftData requires all models in the schema to remain present until
+//   a formal migration removes them. Removing Person from the schema
+//   without a migration would corrupt the ModelContainer on launch.
+//
+// Safe removal process (future):
+//   1. Confirm SubjectMigrationService has run on all active installs
+//   2. Verify no Person records remain in production data
+//   3. Add a MigrationCoordinator step that deletes all Person records
+//   4. Remove Person from the ModelContainer schema declaration
+//   5. Delete this file
+//
+// DO NOT:
+//   - Query this model for people — use allTags.filter { $0.isPerson }
+//   - Write new Person objects — use Tag with subjectType = "person"
+//   - Remove this file without following the safe removal process above
+// ============================================================
 
 import SwiftData
 import Foundation

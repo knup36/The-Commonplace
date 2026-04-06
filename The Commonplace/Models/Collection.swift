@@ -1,3 +1,33 @@
+// Collection.swift
+// Commonplace
+//
+// SwiftData model representing a user-defined collection of entries.
+// Collections are smart filters — they match entries dynamically based on
+// filter criteria rather than storing explicit entry references.
+//
+// ============================================================
+// SCHEMA VERSION: 3
+// Last updated: v1.14.1
+//
+// Schema change policy: same as Entry.swift — optional fields are safe to
+// add at any time. Never remove fields without deprecating first.
+//
+// Field version history:
+//   v1.1  — id, createdAt, name, icon, colorHex, order, isPinned, pinnedOrder, isSystem
+//   v1.1  — filterTypes, filterTags, filterDateRange, filterSearchText
+//   v1.3  — filterLocationName, filterLocationLatitude, filterLocationLongitude, filterLocationRadius
+//   v1.5  — filterMediaStatus (movie/TV watch status filter)
+//   v1.14.1 — filterLocationStatus (Want to Visit / Been Here filter)
+//
+// Filter notes:
+//   - filterSearchText == "__bookmarks__" or "__favorites__" are magic values
+//     that filter by isPinned — not actual text search
+//   - filterTypes contains EntryType rawValues (strings)
+//   - filterMediaStatus contains: "wantTo", "inProgress", "finished"
+//   - filterLocationStatus contains: "wantToVisit", "beenHere"
+//   - All filter fields are AND-combined in CollectionMatching.swift
+// ============================================================
+
 import SwiftData
 import Foundation
 

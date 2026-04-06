@@ -2,25 +2,64 @@
 // Commonplace
 //
 // SwiftData model representing a single captured entry (called a "page" in the UI).
-// All 9 entry types share this one model, differentiated by the `type` field.
+// All entry types share this one model, differentiated by the `type` field.
 //
-// Tag migration note (v1.3):
-//   - `tags: [String]` has been renamed to `tagNames: [String]` to preserve
-//     existing data during the Tag model migration
-//   - `tags: [Tag]` is the new many-to-many relationship to Tag objects
-//   - TagMigrationService reads tagNames and seeds Tag objects on first launch
-//   - tagNames should be removed in a future cleanup once migration is stable
+// ============================================================
+// SCHEMA VERSION: 7
+// Last updated: v1.14.1
+//
+// Schema change policy:
+//   - Adding optional fields: safe, no migration needed
+//   - Adding non-optional fields: must have a default value
+//   - Removing fields: NEVER remove immediately
+//       1. Retire — stop writing to the field, keep reading
+//       2. Deprecate — add a comment marking it deprecated + version
+//       3. Remove — only after one full version cycle of deprecation
+//   - Renaming fields: treat as remove + add — requires migration service
+//
+// SwiftData hard rules (learned the hard way):
+//   - NEVER attempt many-to-many relationships — ModelContainer crashes
+//   - Always use name-matching for Tag relationships (entry.tagNames)
+//   - Always save explicitly: try? modelContext.save()
+//   - entry.text is ALWAYS user-visible note text — never structured data
+//
+// Field version history:
+//   v1.0  — id, createdAt, type, text, tagNames, isFavorited, isPinned
+//   v1.0  — imagePath, extractedText, visionTags (photo)
+//   v1.0  — audioPath, transcript, duration (audio)
+//   v1.0  — url, linkTitle, previewImagePath, markdownContent, faviconPath (link)
+//   v1.0  — musicArtist, musicAlbum, previewURL, musicArtworkPath (music)
+//   v1.0  — locationName, locationAddress, locationLatitude, locationLongitude, locationCategory (location)
+//   v1.0  — captureLatitude, captureLongitude, captureLocationName (capture metadata)
+//   v1.0  — stickyTitle, stickyItems, stickyChecked (sticky)
+//   v1.0  — weatherEmoji, moodEmoji, vibeEmoji, completedHabits, completedHabitSnapshots, totalHabitsAtTime (journal)
+//   v1.5  — mediaTitle, mediaType, mediaYear, mediaGenre, mediaOverview, mediaCoverPath,
+//            mediaStatus, mediaRating, mediaLog, tmdbID, mediaRuntime, mediaSeasons (media)
+//   v1.5  — musicTrackID (music — renamed from mediaTrackID to avoid collision)
+//   v1.6  — journalImageData (journal — DEPRECATED v1.9.1, retained for legacy import only)
+//   v1.9  — healthActiveCalories, healthExerciseMinutes, healthStandHours,
+//            healthWorkoutName, healthWorkoutDuration, healthWorkoutCalories, healthDataFetched
+//   v1.9.1 — journalImagePath (replaces journalImageData blob)
+//   v1.11 — linkContentType (link)
+//   v1.12 — videoPath, videoDuration, videoThumbnailPath (photo/shot)
+//   v1.12.1 — weeklyReviewHighlight, weeklyReviewCarryForward, weeklyReviewGratitude, weeklyReviewStats
+//   v1.13.1 — modifiedAt, wordCount, readingTime, locationRating
+//   v1.14 — readwiseSourceID, readwiseImportedHighlightIDs
+//   v1.14.1 — locationVisited
+//
+// Deprecated fields (do not remove yet):
+//   journalImageData — deprecated v1.9.1, replaced by journalImagePath
+//                      retained for legacy archive import compatibility
+//   isFavorited      — deprecated v1.7.1, replaced by isPinned
+//                      retained in schema, safe to remove after v2.0
+// ============================================================
 //
 // UI language conventions (do not change these):
 //   - Entries are called "pages" in the UI
 //   - isPinned shows as "Bookmark" in the UI, not "Pin"
 //   - Stickies are checklists, not to-dos
-//
-// Media entry note (v1.5):
-//   - Music fields use `musicArtist`, `musicAlbum`, `musicArtworkPath` naming
-//     (renamed from `mediaArtist` etc. to avoid collision with the new .media type)
-//   - New .media fields use `tmdb*` prefix for API-sourced data and `mediaTitle`,
-//     `mediaType`, `mediaStatus`, `mediaRating`, `mediaLog` for user-facing fields
+//   - .photo display name is "Shot"
+//   - .audio display name is "Sound"
 //
 // Readwise note (v1.14):
 //   - `readwiseSourceID` stores the Reader/Readwise document ID — deduplication key for sync
