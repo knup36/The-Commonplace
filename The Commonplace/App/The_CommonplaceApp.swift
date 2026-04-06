@@ -87,11 +87,12 @@ struct CommonplaceApp: App {
             let context = container.mainContext
             let entries = try context.fetch(FetchDescriptor<Entry>())
             SearchIndex.shared.backfillIfNeeded(entries: entries)
-            TagMigrationService.migrateIfNeeded(context: context)
-            PersonMigrationService.migrateIfNeeded(context: context)
-            SubjectMigrationService.shared.migrateIfNeeded(context: context)
-            JournalImageMigrationService.shared.migrateIfNeeded(entries: entries, context: context)
-            WeeklyReviewMigrationService.shared.migrateIfNeeded(context: context)
+            // Bootstrap: if this is an existing install with no migration version stored,
+            // mark all current migrations as complete — they've already run individually.
+            if UserDefaults.standard.object(forKey: "completedMigrationVersion") == nil {
+                UserDefaults.standard.set(5, forKey: "completedMigrationVersion")
+            }
+            MigrationCoordinator.shared.runIfNeeded(context: context, entries: entries)
             ShareExtensionIngestor.ingestPendingEntries(context: context)
             entries.forEach { $0.healthDataFetched = false }
             try? context.save()
