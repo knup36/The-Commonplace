@@ -103,8 +103,8 @@ struct CommonplaceApp: App {
                 )
             }
         } catch {
-            print("Backfill fetch failed: \(error)")
-        }
+                    AppLogger.error("Startup fetch failed", domain: .swiftData, error: error)
+                }
     }
     
 }

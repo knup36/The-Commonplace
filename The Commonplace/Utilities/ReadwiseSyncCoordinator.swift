@@ -87,9 +87,7 @@ class ReadwiseSyncCoordinator {
         
         for paired in documents {
             // Skip documents with no highlights — nothing meaningful to import
-            guard !paired.highlights.isEmpty else { continue }
-            for h in paired.highlights {
-            }
+                        guard !paired.highlights.isEmpty else { continue }
             
             if let existing = try findExistingEntry(sourceID: paired.document.id) {
                 // Entry already exists — check for new highlights only
@@ -140,12 +138,14 @@ class ReadwiseSyncCoordinator {
         entry.linkContentType = "article"
         
         // Cover image — download and save locally so LinkPreviewView can load it
-        if let imageURLString = doc.imageURL, let imageURL = URL(string: imageURLString) {
-            if let data = try? Data(contentsOf: imageURL),
-               let path = try? MediaFileManager.save(data, type: .preview, id: entry.id.uuidString) {
-                entry.previewImagePath = path
-            }
-        }
+                if let imageURLString = doc.imageURL, let imageURL = URL(string: imageURLString) {
+                    do {
+                        let data = try Data(contentsOf: imageURL)
+                        entry.previewImagePath = try MediaFileManager.save(data, type: .preview, id: entry.id.uuidString)
+                    } catch {
+                        AppLogger.warning("Could not download cover image for \(doc.title ?? doc.id)", domain: .media)
+                    }
+                }
         
         // Build the highlight bullet list
         let (bulletText, highlightIDs) = formatHighlights(paired.highlights)

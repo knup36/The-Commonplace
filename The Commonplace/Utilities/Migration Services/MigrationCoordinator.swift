@@ -32,14 +32,14 @@ import SwiftData
 
 @MainActor
 final class MigrationCoordinator {
-
+    
     static let shared = MigrationCoordinator()
     private init() {}
-
+    
     private let userDefaultsKey = "completedMigrationVersion"
-
+    
     // MARK: - Migration Registry
-
+    
     /// The ordered list of all one-time migrations.
     /// Each migration has a version number and a run closure.
     /// NEVER reorder or renumber existing migrations — only append new ones.
@@ -48,7 +48,7 @@ final class MigrationCoordinator {
         let name: String
         let run: (ModelContext, [Entry]) -> Void
     }
-
+    
     private func migrations(entries: [Entry]) -> [Migration] {
         [
             Migration(version: 1, name: "TagMigration") { context, _ in
@@ -69,24 +69,25 @@ final class MigrationCoordinator {
             // Add future migrations here — append only, never reorder
         ]
     }
-
+    
     // MARK: - Public
-
+    
     /// Run all pending migrations in order.
     /// Call once from startupTasks() — safe to call on every launch.
     func runIfNeeded(context: ModelContext, entries: [Entry]) {
         let completedVersion = UserDefaults.standard.integer(forKey: userDefaultsKey)
         let pending = migrations(entries: entries).filter { $0.version > completedVersion }
-
+        
         guard !pending.isEmpty else {
+            AppLogger.info("All migrations up to date (v\(completedVersion))", domain: .migration)
             return
         }
-
+        
         for migration in pending {
+            AppLogger.info("Running migration \(migration.version): \(migration.name)", domain: .migration)
             migration.run(context, entries)
-            // Persist after each migration so a crash mid-run doesn't
-            // cause already-completed migrations to re-run on next launch
             UserDefaults.standard.set(migration.version, forKey: userDefaultsKey)
+            AppLogger.info("Migration \(migration.version) complete", domain: .migration)
         }
     }
 }
