@@ -15,6 +15,8 @@ struct FeedView: View {
     @StateObject private var locationManager = LocationManager()
     @State private var showingAddEntry = false
     @State private var showingTemplatePicker = false
+    @State private var isBackdated = false
+    @State private var backdatedDate = Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
     @State private var navigationPath = NavigationPath()
     @State private var deletedEntry: Entry? = nil
     @State private var showingUndoToast = false
@@ -338,6 +340,9 @@ struct FeedView: View {
                 .padding(.bottom, 12)
             entryTypeGrid
                 .padding(.horizontal, 12)
+            backdatedToggle
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
             templateButton
                 .padding(.horizontal, 12)
                 .padding(.top, 10)
@@ -354,6 +359,39 @@ struct FeedView: View {
         .padding(.horizontal, 16)
     }
     
+    // MARK: - Backdated Toggle
+    
+    var backdatedToggle: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle(isOn: $isBackdated.animation(.spring(duration: 0.25))) {
+                HStack(spacing: 6) {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.system(size: 14))
+                        .foregroundStyle(isBackdated ? style.accent : style.secondaryText)
+                    Text("Backdated")
+                        .font(style.typeBodySecondary)
+                        .foregroundStyle(isBackdated ? style.primaryText : style.secondaryText)
+                }
+            }
+            .tint(style.accent)
+            
+            if isBackdated {
+                DatePicker(
+                    "",
+                    selection: $backdatedDate,
+                    in: ...Date(),
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.graphical)
+                                .labelsHidden()
+                                .scaleEffect(0.9, anchor: .center)
+                                .frame(height: 320)
+                                .padding(.vertical, 8)
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+    }
+    
     // MARK: - Entry Type Grid
     
     var entryTypeGrid: some View {
@@ -367,7 +405,7 @@ struct FeedView: View {
                         showingAddEntry = false
                     }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        createEntry(type: item.type)
+                        createEntry(type: item.type, date: isBackdated ? backdatedDate : Date())
                     }
                 } label: {
                     entryTypeButton(item: item)
@@ -435,8 +473,10 @@ struct FeedView: View {
     
     // MARK: - Helpers
     
-    func createEntry(type: EntryType) {
+    func createEntry(type: EntryType, date: Date = Date()) {
         let entry = Entry(type: type, text: "", tags: [])
+        entry.createdAt = date
+        entry.modifiedAt = date
         if let location = locationManager.currentLocation {
             entry.captureLatitude = location.coordinate.latitude
             entry.captureLongitude = location.coordinate.longitude
@@ -446,6 +486,9 @@ struct FeedView: View {
         try? modelContext.save()
         SearchIndex.shared.index(entry: entry)
         navigationPath.append(entry)
+        // Reset backdated state for next entry
+        isBackdated = false
+        backdatedDate = Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
     }
     
     func createThought() {
