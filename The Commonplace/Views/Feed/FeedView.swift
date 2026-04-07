@@ -21,6 +21,12 @@ struct FeedView: View {
     @State private var filterType: EntryType? = nil
     @State private var filteredEntries: [Entry] = []
     @State private var visibleCount: Int = 50
+    @State private var thoughtText: String = ""
+    @State private var isCapturingThought: Bool = false
+    @FocusState private var thoughtFieldFocused: Bool
+    @State private var currentPrompt: String = ""
+    
+    var currentPromptText: String { currentPrompt.isEmpty ? ThoughtPrompts.random() : currentPrompt }
     @EnvironmentObject var themeManager: ThemeManager
     
     let addTypes: [(type: EntryType, label: String, icon: String, color: Color)] = [
@@ -39,15 +45,15 @@ struct FeedView: View {
     // MARK: - Feed Header
     
     @ViewBuilder
-        var feedHeader: some View {
-            Text("Feed")
-                .font(style.typeLargeTitle)
-                .foregroundStyle(style.primaryText)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.leading, 24)
-                .padding(.top, 8)
-                .id("feed-title")
-        }
+    var feedHeader: some View {
+        Text("Feed")
+            .font(style.typeLargeTitle)
+            .foregroundStyle(style.primaryText)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 24)
+            .padding(.top, 8)
+            .id("feed-title")
+    }
     
     // MARK: - Entry Rows
     
@@ -81,72 +87,20 @@ struct FeedView: View {
     
     // MARK: - Body
     
-    var filterButton: some View {
-        Menu {
-            Button {
-                filterType = nil
-            } label: {
-                Label("All Entries", systemImage: "tray.fill")
-            }
-            Divider()
-            ForEach(EntryType.allCases, id: \.self) { type in
-                Button {
-                    filterType = filterType == type ? nil : type
-                } label: {
-                    Label(type.displayName, systemImage: type.icon)
-                }
-            }
-        } label: {
-            HStack(spacing: 4) {
-                Image(systemName: filterType == nil ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
-                                    .foregroundStyle(filterType.map { $0.detailAccentColor(for: themeManager.current) } ?? style.accent)
-                                if let ft = filterType {
-                                    Text(ft.displayName)
-                                        .font(style.typeCaption)
-                                        .fontWeight(.medium)
-                                        .foregroundStyle(ft.detailAccentColor(for: themeManager.current))
-                                }
-            }
-        }
-    }
-    
     var body: some View {
         ZStack(alignment: .bottom) {
             NavigationStack(path: $navigationPath) {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         feedHeader
+                        entryFilterStrip
                         entryRows
                     }
                 }
                 .background(style.background)
                 .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        HStack(spacing: 16) {
-                            if !showingAddEntry {
-                                filterButton
-                            }
-                            Button {
-                                withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                                    showingAddEntry.toggle()
-                                }
-                            } label: {
-                                Image(systemName: "plus")
-                                    .fontWeight(.medium)
-                                    .foregroundStyle(style.accent)
-                                    .rotationEffect(.degrees(showingAddEntry ? 45 : 0))
-                                    .animation(.spring(response: 0.4, dampingFraction: 0.65), value: showingAddEntry)
-                            }
-                            .simultaneousGesture(
-                                LongPressGesture(minimumDuration: 0.5).onEnded { _ in
-                                    showingTemplatePicker = true
-                                }
-                            )
-                        }
-                    }
-                }
+                .toolbar(.hidden, for: .navigationBar)
                 .sheet(isPresented: $showingTemplatePicker) {
                     TemplatePickerView(navigationPath: $navigationPath)
                 }
@@ -191,6 +145,12 @@ struct FeedView: View {
                 .onChange(of: entries) { _, _ in updateFilter() }
                 .onChange(of: filterType) { _, _ in visibleCount = 50; updateFilter() }
                 .onChange(of: deletedEntry) { _, _ in updateFilter() }
+                .onAppear {
+                    currentPrompt = ThoughtPrompts.random()
+                }
+                .safeAreaInset(edge: .bottom) {
+                    thoughtCaptureBar
+                }
             }
             
             // Undo toast
@@ -219,14 +179,160 @@ struct FeedView: View {
         }
     }
     
+    // MARK: - Entry Filter Strip
+    
+    @Namespace private var filterNamespace
+    
+    var entryFilterStrip: some View {
+        ZStack(alignment: .leading) {
+            // Background pill
+            RoundedRectangle(cornerRadius: 10)
+                .fill(style.surface.opacity(0.5))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(style.cardBorder, lineWidth: 0.5)
+                )
+            
+            // Sliding selection indicator
+            if let selected = filterType {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(selected.detailAccentColor(for: themeManager.current).opacity(0.15))
+                    .matchedGeometryEffect(id: "filterSelector", in: filterNamespace)
+                    .frame(width: (UIScreen.main.bounds.width - 32) / CGFloat(EntryType.allCases.count))
+                    .offset(x: CGFloat(EntryType.allCases.firstIndex(of: selected) ?? 0) * (UIScreen.main.bounds.width - 32) / CGFloat(EntryType.allCases.count))
+                    .padding(2)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: filterType)
+            }
+            
+            // Icons row
+            HStack(spacing: 0) {
+                ForEach(EntryType.allCases, id: \.self) { type in
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            filterType = filterType == type ? nil : type
+                        }
+                    } label: {
+                        Image(systemName: type.icon)
+                            .font(.system(size: 14, weight: filterType == type ? .semibold : .regular))
+                            .foregroundStyle(
+                                filterType == type
+                                ? type.detailAccentColor(for: themeManager.current)
+                                : style.secondaryText.opacity(0.6)
+                            )
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .frame(height: 40)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 12)
+    }
+    
+    // MARK: - Thought Capture Bar
+    
+    var thoughtCaptureBar: some View {
+        HStack(spacing: 12) {
+            
+            // Search button — glass circle
+            NavigationLink(destination: SearchView()) {
+                ZStack {
+                    Circle()
+                        .fill(Color.primary.opacity(0.001))
+                        .frame(width: 44, height: 44)
+                        .glassEffect(.regular.interactive(), in: Circle())
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(style.accent)
+                }
+            }
+            .buttonStyle(.plain)
+            .contentShape(Circle())
+            // Thought capture field — glass capsule
+            HStack(spacing: 8) {
+                ZStack(alignment: .leading) {
+                    // Rotating prompt as placeholder — only shown when not capturing
+                    if !isCapturingThought && thoughtText.isEmpty {
+                        MarqueeText(
+                            text: currentPrompt,
+                            font: style.typeBody,
+                            color: Color(uiColor: .placeholderText)
+                        )
+                        .allowsHitTesting(false)
+                    }
+                    TextField("", text: $thoughtText, axis: .vertical)
+                        .font(style.typeBody)
+                        .foregroundStyle(style.primaryText)
+                        .focused($thoughtFieldFocused)
+                        .lineLimit(1...6)
+                        .onSubmit {
+                            createThought()
+                        }
+                        .onChange(of: thoughtFieldFocused) { _, focused in
+                            withAnimation(.spring(duration: 0.25)) {
+                                isCapturingThought = focused
+                            }
+                        }
+                }
+                
+                if isCapturingThought {
+                    Button {
+                        createThought()
+                    } label: {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 22))
+                            .foregroundStyle(style.accent)
+                    }
+                    .buttonStyle(.plain)
+                    .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 22))
+            
+            // Add button — glass circle
+            Button {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                    showingAddEntry.toggle()
+                }
+            } label: {
+                ZStack {
+                    Circle()
+                        .fill(Color.primary.opacity(0.001))
+                        .frame(width: 44, height: 44)
+                        .glassEffect(.regular.interactive(), in: Circle())
+                    Image(systemName: "plus")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(style.accent)
+                        .rotationEffect(.degrees(showingAddEntry ? 45 : 0))
+                        .animation(.spring(response: 0.4, dampingFraction: 0.65), value: showingAddEntry)
+                }
+            }
+            .buttonStyle(.plain)
+            .contentShape(Circle())
+            .simultaneousGesture(
+                LongPressGesture(minimumDuration: 0.5).onEnded { _ in
+                    showingTemplatePicker = true
+                }
+            )
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .animation(.spring(duration: 0.25), value: isCapturingThought)
+    }
+    
     // MARK: - Add Entry Card
     
     var addEntryCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("New Entry")
-                            .font(style.typeTitle3)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(style.primaryText)
+                .font(style.typeTitle3)
+                .fontWeight(.semibold)
+                .foregroundStyle(style.primaryText)
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
                 .padding(.bottom, 12)
@@ -235,15 +341,15 @@ struct FeedView: View {
             templateButton
                 .padding(.horizontal, 12)
                 .padding(.top, 10)
-                .padding(.bottom, 16)
+                .padding(.bottom, 80)
         }
         .background(style.background)
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .shadow(color: .black.opacity(0.25), radius: 20, x: 0, y: 8)
         .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .strokeBorder(style.surface.opacity(0.5), lineWidth: 0.5)
-                )
+            RoundedRectangle(cornerRadius: 20)
+                .strokeBorder(style.surface.opacity(0.5), lineWidth: 0.5)
+        )
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 16)
     }
@@ -274,27 +380,27 @@ struct FeedView: View {
     // MARK: - Entry Type Button
     
     func entryTypeButton(item: (type: EntryType, label: String, icon: String, color: Color)) -> some View {
-            let cardColor = item.type.cardColor(for: themeManager.current)
-            let accentColor = item.type.detailAccentColor(for: themeManager.current)
-            return ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(cardColor)
-                    .frame(maxWidth: .infinity, minHeight: 80)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .strokeBorder(style.cardBorder, lineWidth: 0.5)
-                    )
-                VStack(spacing: 6) {
-                    Image(systemName: item.icon)
-                        .font(.system(size: 22, weight: .medium))
-                        .foregroundStyle(accentColor)
-                    Text(item.label)
-                        .font(style.typeBodySecondary)
-                        .fontWeight(.medium)
-                        .foregroundStyle(accentColor)
-                }
+        let cardColor = item.type.cardColor(for: themeManager.current)
+        let accentColor = item.type.detailAccentColor(for: themeManager.current)
+        return ZStack {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(cardColor)
+                .frame(maxWidth: .infinity, minHeight: 80)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(style.cardBorder, lineWidth: 0.5)
+                )
+            VStack(spacing: 6) {
+                Image(systemName: item.icon)
+                    .font(.system(size: 22, weight: .medium))
+                    .foregroundStyle(accentColor)
+                Text(item.label)
+                    .font(style.typeBodySecondary)
+                    .fontWeight(.medium)
+                    .foregroundStyle(accentColor)
             }
         }
+    }
     
     // MARK: - Template Button
     
@@ -342,12 +448,36 @@ struct FeedView: View {
         navigationPath.append(entry)
     }
     
-    func updateFilter() {
-            var base = entries
-            if let filterType {
-                base = base.filter { $0.type == filterType }
-            }
-            base = base.filter { $0.id != deletedEntry?.id }
-            filteredEntries = Array(base.prefix(visibleCount))
+    func createThought() {
+        let trimmed = thoughtText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            thoughtFieldFocused = false
+            isCapturingThought = false
+            return
         }
+        
+        let entry = Entry(type: .text, text: trimmed, tags: [])
+        if let location = locationManager.currentLocation {
+            entry.captureLatitude = location.coordinate.latitude
+            entry.captureLongitude = location.coordinate.longitude
+            entry.captureLocationName = locationManager.currentPlaceName
+        }
+        modelContext.insert(entry)
+        try? modelContext.save()
+        SearchIndex.shared.index(entry: entry)
+        
+        thoughtText = ""
+        thoughtFieldFocused = false
+        isCapturingThought = false
+        updateFilter()
+    }
+    
+    func updateFilter() {
+        var base = entries
+        if let filterType {
+            base = base.filter { $0.type == filterType }
+        }
+        base = base.filter { $0.id != deletedEntry?.id }
+        filteredEntries = Array(base.prefix(visibleCount))
+    }
 }
