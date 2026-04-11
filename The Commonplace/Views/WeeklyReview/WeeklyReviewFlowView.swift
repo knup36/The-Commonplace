@@ -22,8 +22,8 @@ struct WeeklyReviewFlowView: View {
     @EnvironmentObject var themeManager: ThemeManager
     
     let allEntries: [Entry]
-        let allPersons: [Tag]
-        let weekStart: Date
+    let allPersons: [Tag]
+    let weekStart: Date
     
     @State private var highlight: String = ""
     @State private var carryForward: String = ""
@@ -42,25 +42,25 @@ struct WeeklyReviewFlowView: View {
     // MARK: - Week Data
     
     var weekEnd: Date {
-            Calendar.current.date(byAdding: .day, value: 7, to: weekStart) ?? Date()
+        Calendar.current.date(byAdding: .day, value: 7, to: weekStart) ?? Date()
+    }
+    
+    var weekRange: String {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "MMM d"
+        let fmtYear = DateFormatter()
+        fmtYear.dateFormat = "MMM d, yyyy"
+        let saturday = Calendar.current.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+        return "\(fmt.string(from: weekStart)) — \(fmtYear.string(from: saturday))"
+    }
+    
+    var weekEntries: [Entry] {
+        allEntries.filter {
+            $0.createdAt >= weekStart &&
+            $0.createdAt < weekEnd &&
+            !$0.tagNames.contains(WeeklyReviewTheme.weeklyReviewTag)
         }
-
-        var weekRange: String {
-            let fmt = DateFormatter()
-            fmt.dateFormat = "MMM d"
-            let fmtYear = DateFormatter()
-            fmtYear.dateFormat = "MMM d, yyyy"
-            let saturday = Calendar.current.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
-            return "\(fmt.string(from: weekStart)) — \(fmtYear.string(from: saturday))"
-        }
-
-        var weekEntries: [Entry] {
-            allEntries.filter {
-                $0.createdAt >= weekStart &&
-                $0.createdAt < weekEnd &&
-                !$0.tagNames.contains(WeeklyReviewTheme.weeklyReviewTag)
-            }
-        }
+    }
     
     var weekPeople: [String] {
         let personTags = weekEntries.flatMap { $0.tagNames.filter { $0.hasPrefix("@") } }
@@ -71,7 +71,9 @@ struct WeeklyReviewFlowView: View {
     var weekTags: [String] {
         let tags = weekEntries.flatMap { $0.tagNames.filter { !$0.hasPrefix("@") } }
         let counts = Dictionary(tags.map { ($0, 1) }, uniquingKeysWith: +)
-        return counts.sorted { $0.value > $1.value }.prefix(8).map { $0.key }
+        return counts.sorted { $0.value > $1.value || ($0.value == $1.value && $0.key < $1.key) }
+            .prefix(8)
+            .map { $0.key }
     }
     
     var weekMusic: [Entry] {
@@ -396,19 +398,19 @@ struct WeeklyReviewFlowView: View {
     // MARK: - People Section
     
     var peopleSection: some View {
-            FlowLayout(spacing: 12, maxRows: 10) {
-                ForEach(weekPeople, id: \.self) { name in
-                    VStack(spacing: 4) {
-                        personAvatar(name: name)
-                        Text(name)
-                            .font(AppTypeScale.caption)
-                            .foregroundStyle(WeeklyReviewTheme.secondaryText)
-                            .lineLimit(1)
-                            .frame(width: 44)
-                    }
+        FlowLayout(spacing: 12, maxRows: 10) {
+            ForEach(weekPeople, id: \.self) { name in
+                VStack(spacing: 4) {
+                    personAvatar(name: name)
+                    Text(name)
+                        .font(AppTypeScale.caption)
+                        .foregroundStyle(WeeklyReviewTheme.secondaryText)
+                        .lineLimit(1)
+                        .frame(width: 44)
                 }
             }
         }
+    }
     
     func personAvatar(name: String) -> some View {
         let person = allPersons.first { $0.name == name }
@@ -658,7 +660,14 @@ struct WeeklyReviewFlowView: View {
     func saveReview() {
         let entry = Entry(type: .journal, text: "", tags: [WeeklyReviewTheme.weeklyReviewTag])
         entry.tagNames = [WeeklyReviewTheme.weeklyReviewTag]
-        entry.createdAt = Date()
+        // Save at 11:59 PM on the Saturday that ends the reviewed week
+        // This places it as the last entry of that week in the feed
+        let saturday = Calendar.current.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+        var components = Calendar.current.dateComponents([.year, .month, .day], from: saturday)
+        components.hour = 23
+        components.minute = 59
+        components.second = 59
+        entry.createdAt = Calendar.current.date(from: components) ?? saturday
         
         // Reflection answers
         entry.weeklyReviewHighlight    = highlight.isEmpty ? nil : highlight

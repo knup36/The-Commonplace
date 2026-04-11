@@ -97,8 +97,8 @@ struct FolioDetailView: View {
                         withAnimation { tag.isPinned.toggle() }
                         try? modelContext.save()
                     } label: {
-                        Label(tag.isPinned ? "Unpin from Home" : "Pin to Home",
-                              systemImage: tag.isPinned ? "pin.slash" : "pin")
+                        Label(tag.isPinned ? "Remove Bookmark" : "Bookmark",
+                                                      systemImage: tag.isPinned ? "bookmark.slash" : "bookmark")
                     }
                     Divider()
                     Button(role: .destructive) {
@@ -229,76 +229,7 @@ struct FolioDetailView: View {
 
     // MARK: - Slim Feed
 
-    var slimFeed: some View {
-        VStack(spacing: 0) {
-            ForEach(slimEntries) { entry in
-                NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                    slimRow(entry: entry)
-                }
-                .buttonStyle(.plain)
-
-                if entry.id != slimEntries.last?.id {
-                    Divider()
-                        .overlay(style.cardDivider)
-                        .padding(.leading, 20)
-                }
-            }
+        var slimFeed: some View {
+            SlimEntryFeed(entries: slimEntries, style: style)
         }
-        .background(style.surface.opacity(0.3))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-    }
-
-    func slimRow(entry: Entry) -> some View {
-        HStack(spacing: 10) {
-            // Colored dot — entry type accent
-            Circle()
-                .fill(entry.type.detailAccentColor(for: themeManager.current))
-                .frame(width: 7, height: 7)
-                .padding(.leading, 12)
-
-            // Title / preview text
-            Text(slimTitle(for: entry))
-                .font(style.typeBodySecondary)
-                .foregroundStyle(style.primaryText)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            // Date
-            Text(entry.createdAt.formatted(.dateTime.month(.abbreviated).day()))
-                .font(style.typeCaption)
-                .foregroundStyle(style.tertiaryText)
-                .padding(.trailing, 12)
-        }
-        .padding(.vertical, 10)
-        .contentShape(Rectangle())
-    }
-
-    func slimTitle(for entry: Entry) -> String {
-        switch entry.type {
-        case .text:
-            let parts = entry.text.components(separatedBy: "\n")
-            let title = parts.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            return title.isEmpty ? "Thought" : title
-        case .link:
-            return entry.linkTitle ?? entry.url ?? "Link"
-        case .location:
-            return entry.locationName ?? "Place"
-        case .music:
-            if let title = entry.linkTitle, !title.isEmpty { return title }
-            if let artist = entry.musicArtist { return artist }
-            return "Music"
-        case .media:
-            return entry.mediaTitle ?? "Media"
-        case .journal:
-            return entry.createdAt.formatted(.dateTime.weekday(.wide).month(.wide).day())
-        case .audio:
-            if let transcript = entry.transcript, !transcript.isEmpty {
-                return String(transcript.prefix(60))
-            }
-            return "Sound"
-        default:
-            let text = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            return text.isEmpty ? entry.type.displayName : String(text.prefix(60))
-        }
-    }
 }

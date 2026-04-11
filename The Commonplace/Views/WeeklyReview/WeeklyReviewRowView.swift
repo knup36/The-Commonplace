@@ -29,8 +29,9 @@ struct WeeklyReviewRowView: View {
     }
     
     var weekStartDate: Date? {
-        Calendar.current.dateInterval(of: .weekOfYear, for: entry.createdAt)?.start
-    }
+            // Review is saved at Saturday 11:59pm — weekStart is the Sunday 6 days prior
+            Calendar.current.date(byAdding: .day, value: -6, to: Calendar.current.startOfDay(for: entry.createdAt))
+        }
     
     var stats: [String: String] {
         guard let data = entry.weeklyReviewStats,
@@ -57,7 +58,7 @@ struct WeeklyReviewRowView: View {
     }
     
     var body: some View {
-        ZStack {
+        ZStack(alignment: .topLeading) {
             // Gold ring border
             RoundedRectangle(cornerRadius: 16)
                 .strokeBorder(WeeklyReviewTheme.goldRingGradient, lineWidth: 2)
