@@ -18,37 +18,36 @@ import SwiftUI
 
 struct ScrapbookNoteCard: View {
     let entry: Entry
-    @EnvironmentObject var themeManager: ThemeManager
-
-    private let inkColor     = Color(red: 0.15, green: 0.12, blue: 0.08)
-    private let mutedColor   = Color(red: 0.35, green: 0.28, blue: 0.18)
-    private let subtleColor  = Color(red: 0.55, green: 0.48, blue: 0.35)
-
+    
+    private var inkColor: Color { ScrapbookTheme.inkPrimary }
+        private var mutedColor: Color { ScrapbookTheme.inkSecondary }
+        private var subtleColor: Color { ScrapbookTheme.inkDecorative }
+    
     var titleText: String {
         let parts = entry.text.components(separatedBy: "\n")
         return parts.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     }
-
+    
     var bodyText: String {
         let parts = entry.text.components(separatedBy: "\n")
         return parts.dropFirst()
             .joined(separator: "\n")
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
-
+    
     var body: some View {
         VStack(spacing: 0) {
             VStack(spacing: 12) {
                 // Title
                 if !titleText.isEmpty {
                     Text(titleText)
-                        .font(.custom("Georgia", size: 22))
+                                            .font(ScrapbookTheme.titleFont(size: 22))
                         .italic()
                         .foregroundStyle(inkColor)
                         .multilineTextAlignment(.center)
                         .lineSpacing(4)
                 }
-
+                
                 // Divider — only if both title and body exist
                 if !titleText.isEmpty && !bodyText.isEmpty {
                     HStack(spacing: 8) {
@@ -64,11 +63,11 @@ struct ScrapbookNoteCard: View {
                     }
                     .padding(.horizontal, 24)
                 }
-
+                
                 // Body
                 if !bodyText.isEmpty {
                     Text(bodyText)
-                        .font(.custom("Georgia", size: 16))
+                                            .font(ScrapbookTheme.bodyFont(size: 16))
                         .foregroundStyle(mutedColor)
                         .multilineTextAlignment(.center)
                         .lineSpacing(4)
@@ -77,14 +76,15 @@ struct ScrapbookNoteCard: View {
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 28)
-
+            
             // Date
             Text(entry.createdAt.formatted(.dateTime.month(.wide).day().year()))
-                .font(.system(size: 10, weight: .medium))
+                            .font(ScrapbookTheme.captionFont(size: 10))
                 .kerning(1.2)
-                .foregroundStyle(subtleColor.opacity(0.6))
+                .foregroundStyle(ScrapbookTheme.inkTertiary)
                 .padding(.bottom, 20)
         }
-        .frame(maxWidth: UIScreen.main.bounds.width * 0.85)
+        .padding(.horizontal, 32)
+                .frame(maxWidth: .infinity)
     }
 }

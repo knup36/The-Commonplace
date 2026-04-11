@@ -44,10 +44,10 @@ struct ScrapbookStickyCard: View {
 
     /// Deterministic rotation seeded from entry UUID
     var rotation: Double {
-        let hash = abs(entry.id.uuidString.hashValue)
-        let normalized = Double(hash % 600) / 100.0  // 0.0 to 6.0
-        return normalized - 3.0  // -3.0 to +3.0 degrees
-    }
+            let hash = abs(entry.id.uuidString.hashValue)
+            let normalized = Double(hash % 1200) / 100.0  // 0.0 to 12.0
+            return normalized - 6.0  // -6.0 to +6.0 degrees
+        }
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -65,7 +65,7 @@ struct ScrapbookStickyCard: View {
                 // Items
                 if !items.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
-                        ForEach(items.prefix(6)) { item in
+                        ForEach(items.prefix(4)) { item in
                             HStack(spacing: 8) {
                                 Circle()
                                     .stroke(item.isChecked ? ScrapbookTheme.inkTertiary : ScrapbookTheme.inkSecondary, lineWidth: 1)
@@ -80,8 +80,8 @@ struct ScrapbookStickyCard: View {
                                     .lineLimit(1)
                             }
                         }
-                        if items.count > 6 {
-                            Text("+\(items.count - 6) more")
+                        if items.count > 4 {
+                                                    Text("+\(items.count - 4) more")
                                 .font(ScrapbookTheme.captionFont(size: 11))
                                 .foregroundStyle(ScrapbookTheme.inkTertiary)
                                 .padding(.leading, 20)
@@ -108,7 +108,7 @@ struct ScrapbookStickyCard: View {
             .padding(.horizontal, 16)
             .padding(.top, 28)
             .padding(.bottom, 16)
-            .frame(width: UIScreen.main.bounds.width * 0.72)
+            .frame(width: 260, height: 260)
             .background(ScrapbookTheme.stickyYellow)
             .clipShape(RoundedRectangle(cornerRadius: ScrapbookTheme.cardCornerRadius))
             .shadow(color: ScrapbookTheme.stickyShadow, radius: 4, x: 1, y: 3)
@@ -120,6 +120,7 @@ struct ScrapbookStickyCard: View {
                 .offset(y: -8)
         }
         .rotationEffect(.degrees(rotation))
-        .padding(.vertical, 12)
+                .padding(.vertical, 20)
+                .padding(.horizontal, 20)
     }
 }

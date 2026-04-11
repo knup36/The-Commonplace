@@ -19,13 +19,13 @@ import SwiftUI
 
 struct ScrapbookSoundCard: View {
     let entry: Entry
-
+    
     private let barCount = 32
     private let maxBarHeight: CGFloat = 48
     private let minBarHeight: CGFloat = 4
     private let barWidth: CGFloat = 4
     private let barSpacing: CGFloat = 3
-
+    
     /// Deterministic bar heights seeded from entry UUID
     var barHeights: [CGFloat] {
         var result: [CGFloat] = []
@@ -41,31 +41,35 @@ struct ScrapbookSoundCard: View {
         }
         return result
     }
-
+    
     var body: some View {
         VStack(spacing: 16) {
-
-            // Waveform
-            HStack(alignment: .center, spacing: barSpacing) {
-                ForEach(0..<barCount, id: \.self) { i in
-                    RoundedRectangle(cornerRadius: barWidth / 2)
-                        .fill(ScrapbookTheme.inkSecondary.opacity(0.7))
-                        .frame(width: barWidth, height: barHeights[i])
+            
+            // Waveform + play button inline
+            HStack(alignment: .center, spacing: 12) {
+                HStack(alignment: .center, spacing: barSpacing) {
+                    ForEach(0..<barCount, id: \.self) { i in
+                        RoundedRectangle(cornerRadius: barWidth / 2)
+                            .fill(Color.orange.opacity(0.8))
+                            .frame(width: barWidth, height: barHeights[i])
+                            .shadow(color: .orange.opacity(0.3), radius: 3, x: 0, y: 2)
+                    }
                 }
+                .frame(height: maxBarHeight)
+                
+                ZStack {
+                    Circle()
+                        .stroke(Color.orange.opacity(0.5), lineWidth: 1)
+                        .frame(width: 44, height: 44)
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.orange.opacity(0.8))
+                        .offset(x: 2)
+                }
+                .shadow(color: .orange.opacity(0.3), radius: 3, x: 0, y: 2)
             }
-            .frame(height: maxBarHeight)
-
-            // Play button
-            ZStack {
-                Circle()
-                    .stroke(ScrapbookTheme.inkSecondary.opacity(0.4), lineWidth: 1)
-                    .frame(width: 44, height: 44)
-                Image(systemName: "play.fill")
-                    .font(.system(size: 14))
-                    .foregroundStyle(ScrapbookTheme.inkSecondary)
-                    .offset(x: 2)
-            }
-
+            .padding(.horizontal, 24)
+            
             // Transcript preview
             if let transcript = entry.transcript, !transcript.isEmpty {
                 Text(transcript)
@@ -77,12 +81,13 @@ struct ScrapbookSoundCard: View {
                     .lineSpacing(3)
                     .padding(.horizontal, 32)
             }
-
+            
             // Date
             Text(entry.createdAt.formatted(.dateTime.month(.wide).day().year()))
-                .font(ScrapbookTheme.captionFont(size: 10))
+                .font(ScrapbookTheme.captionFont(size: 13))
                 .kerning(1.2)
-                .foregroundStyle(ScrapbookTheme.inkTertiary)
+                .foregroundStyle(Color.orange.opacity(0.7))
+                .shadow(color: .orange.opacity(0.2), radius: 2, x: 0, y: 1)
         }
         .padding(.vertical, 28)
         .frame(maxWidth: .infinity)
