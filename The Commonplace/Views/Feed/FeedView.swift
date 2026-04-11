@@ -27,6 +27,9 @@ struct FeedView: View {
     @State private var isCapturingThought: Bool = false
     @FocusState private var thoughtFieldFocused: Bool
     @State private var currentPrompt: String = ""
+    @AppStorage("feedScrapbookMode") private var isScrapbookMode: Bool = false
+    @AppStorage("feedShuffleSeed") private var shuffleSeed: Int = 0
+    @State private var isShuffleMode: Bool = false
     
     var currentPromptText: String { currentPrompt.isEmpty ? ThoughtPrompts.random() : currentPrompt }
     @EnvironmentObject var themeManager: ThemeManager
@@ -48,13 +51,54 @@ struct FeedView: View {
     
     @ViewBuilder
     var feedHeader: some View {
-        Text("Feed")
-            .font(style.typeLargeTitle)
-            .foregroundStyle(style.primaryText)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.leading, 24)
-            .padding(.top, 8)
-            .id("feed-title")
+        HStack {
+            Text("Feed")
+                .font(style.typeLargeTitle)
+                .foregroundStyle(isScrapbookMode ? Color(red: 0.3, green: 0.25, blue: 0.18) : style.primaryText)
+            if isScrapbookMode {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        isShuffleMode.toggle()
+                        shuffleSeed = isShuffleMode ? Int.random(in: 1...999999) : 0
+                        updateFilter()
+                    }
+                } label: {
+                    Image(systemName: "clock.arrow.trianglehead.2.counterclockwise.rotate.90")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(isShuffleMode ? style.accent : style.secondaryText.opacity(0.7))
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer()
+            Button {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isScrapbookMode.toggle()
+                    if !isScrapbookMode {
+                        isShuffleMode = false
+                        shuffleSeed = 0
+                        updateFilter()
+                    }
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "list.bullet.rectangle.fill")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(!isScrapbookMode ? style.accent : style.secondaryText.opacity(0.4))
+                    Image(systemName: "rectangle.3.group.fill")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(isScrapbookMode ? Color(red: 0.5, green: 0.35, blue: 0.15) : style.secondaryText.opacity(0.4))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(isScrapbookMode ? Color(red: 0.91, green: 0.86, blue: 0.76).opacity(0.3) : style.surface.opacity(0.5))
+                .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.leading, 24)
+        .padding(.trailing, 16)
+        .padding(.top, 8)
+        .id("feed-title")
     }
     
     // MARK: - Entry Rows
@@ -63,11 +107,16 @@ struct FeedView: View {
     var entryRows: some View {
         ForEach(filteredEntries) { entry in
             NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                EntryRowView(entry: entry)
+                if isScrapbookMode {
+                    scrapbookCard(for: entry)
+                } else {
+                    EntryRowView(entry: entry)
+                }
             }
             .buttonStyle(.plain)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 4)
+            .padding(.horizontal, isScrapbookMode ? 0 : 16)
+            .padding(.vertical, isScrapbookMode ? -8 : 4)
+            .frame(maxWidth: .infinity)
         }
         let totalCount = entries.filter { $0.id != deletedEntry?.id }.count
         if visibleCount < totalCount {
@@ -99,7 +148,7 @@ struct FeedView: View {
                         entryRows
                     }
                 }
-                .background(style.background)
+                .background(isScrapbookMode ? AnyView(ScrapbookBackground().ignoresSafeArea()) : AnyView(style.background.ignoresSafeArea()))
                 .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar(.hidden, for: .navigationBar)
@@ -187,13 +236,15 @@ struct FeedView: View {
     
     var entryFilterStrip: some View {
         ZStack(alignment: .leading) {
-            // Background pill
-            RoundedRectangle(cornerRadius: 10)
-                .fill(style.surface.opacity(0.5))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .strokeBorder(style.cardBorder, lineWidth: 0.5)
-                )
+            // Background pill — hidden in scrapbook mode
+            if !isScrapbookMode {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(style.surface.opacity(0.5))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .strokeBorder(style.cardBorder, lineWidth: 0.5)
+                    )
+            }
             
             // Sliding selection indicator
             if let selected = filterType {
@@ -232,6 +283,32 @@ struct FeedView: View {
         .padding(.horizontal, 16)
         .padding(.top, 8)
         .padding(.bottom, 12)
+    }
+    
+    // MARK: - Scrapbook Cards
+    
+    @ViewBuilder
+    func scrapbookCard(for entry: Entry) -> some View {
+        switch entry.type {
+        case .text:
+            ScrapbookNoteCard(entry: entry)
+        case .sticky:
+            ScrapbookStickyCard(entry: entry)
+        case .photo:
+            ScrapbookShotCard(entry: entry)
+        case .link:
+            ScrapbookLinkCard(entry: entry)
+        case .location:
+            ScrapbookPlaceCard(entry: entry)
+        case .music:
+            ScrapbookMusicCard(entry: entry)
+        case .audio:
+            ScrapbookSoundCard(entry: entry)
+        case .media:
+            ScrapbookMediaCard(entry: entry)
+        case .journal:
+            ScrapbookJournalCard(entry: entry)
+        }
     }
     
     // MARK: - Thought Capture Bar
@@ -383,10 +460,10 @@ struct FeedView: View {
                     displayedComponents: .date
                 )
                 .datePickerStyle(.graphical)
-                                .labelsHidden()
-                                .scaleEffect(0.9, anchor: .center)
-                                .frame(height: 320)
-                                .padding(.vertical, 8)
+                .labelsHidden()
+                .scaleEffect(0.9, anchor: .center)
+                .frame(height: 320)
+                .padding(.vertical, 8)
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
@@ -516,11 +593,17 @@ struct FeedView: View {
     }
     
     func updateFilter() {
-        var base = entries
-        if let filterType {
-            base = base.filter { $0.type == filterType }
+        var base = entries.filter { $0.id != deletedEntry?.id }
+        if let type = filterType {
+            base = base.filter { $0.type == type }
         }
-        base = base.filter { $0.id != deletedEntry?.id }
+        if isShuffleMode && shuffleSeed > 0 {
+            base = base.sorted {
+                let h1 = abs(($0.id.uuidString + "\(shuffleSeed)").hashValue)
+                let h2 = abs(($1.id.uuidString + "\(shuffleSeed)").hashValue)
+                return h1 < h2
+            }
+        }
         filteredEntries = Array(base.prefix(visibleCount))
     }
 }
