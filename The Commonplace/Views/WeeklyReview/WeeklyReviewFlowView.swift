@@ -22,7 +22,8 @@ struct WeeklyReviewFlowView: View {
     @EnvironmentObject var themeManager: ThemeManager
     
     let allEntries: [Entry]
-    let allPersons: [Tag]
+        let allPersons: [Tag]
+        let weekStart: Date
     
     @State private var highlight: String = ""
     @State private var carryForward: String = ""
@@ -40,35 +41,26 @@ struct WeeklyReviewFlowView: View {
     
     // MARK: - Week Data
     
-    var weekStart: Date {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        // Find most recent Monday
-        let weekday = calendar.component(.weekday, from: today)
-        // weekday: 1=Sun, 2=Mon, ... 7=Sat
-        let daysFromMonday = weekday == 1 ? 6 : weekday - 2
-        return calendar.date(byAdding: .day, value: -daysFromMonday, to: today) ?? today
-    }
-    
     var weekEnd: Date {
-        Calendar.current.date(byAdding: .day, value: 6, to: weekStart) ?? Date()
-    }
-    
-    var weekRange: String {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "MMM d"
-        let fmtYear = DateFormatter()
-        fmtYear.dateFormat = "MMM d, yyyy"
-        return "\(fmt.string(from: weekStart)) — \(fmtYear.string(from: weekEnd))"
-    }
-    
-    var weekEntries: [Entry] {
-        allEntries.filter {
-            $0.createdAt >= weekStart &&
-            $0.createdAt < Calendar.current.date(byAdding: .day, value: 7, to: weekStart)! &&
-            !$0.tagNames.contains(WeeklyReviewTheme.weeklyReviewTag)
+            Calendar.current.date(byAdding: .day, value: 7, to: weekStart) ?? Date()
         }
-    }
+
+        var weekRange: String {
+            let fmt = DateFormatter()
+            fmt.dateFormat = "MMM d"
+            let fmtYear = DateFormatter()
+            fmtYear.dateFormat = "MMM d, yyyy"
+            let saturday = Calendar.current.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+            return "\(fmt.string(from: weekStart)) — \(fmtYear.string(from: saturday))"
+        }
+
+        var weekEntries: [Entry] {
+            allEntries.filter {
+                $0.createdAt >= weekStart &&
+                $0.createdAt < weekEnd &&
+                !$0.tagNames.contains(WeeklyReviewTheme.weeklyReviewTag)
+            }
+        }
     
     var weekPeople: [String] {
         let personTags = weekEntries.flatMap { $0.tagNames.filter { $0.hasPrefix("@") } }
@@ -404,19 +396,19 @@ struct WeeklyReviewFlowView: View {
     // MARK: - People Section
     
     var peopleSection: some View {
-        HStack(spacing: 12) {
-            ForEach(weekPeople.prefix(6), id: \.self) { name in
-                VStack(spacing: 4) {
-                    personAvatar(name: name)
-                    Text(name)
-                        .font(AppTypeScale.caption)
-                        .foregroundStyle(WeeklyReviewTheme.secondaryText)
-                        .lineLimit(1)
-                        .frame(width: 44)
+            FlowLayout(spacing: 12, maxRows: 10) {
+                ForEach(weekPeople, id: \.self) { name in
+                    VStack(spacing: 4) {
+                        personAvatar(name: name)
+                        Text(name)
+                            .font(AppTypeScale.caption)
+                            .foregroundStyle(WeeklyReviewTheme.secondaryText)
+                            .lineLimit(1)
+                            .frame(width: 44)
+                    }
                 }
             }
         }
-    }
     
     func personAvatar(name: String) -> some View {
         let person = allPersons.first { $0.name == name }

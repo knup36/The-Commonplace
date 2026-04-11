@@ -47,8 +47,8 @@ struct JournalBlockView: View {
         VStack(alignment: .leading, spacing: 16) {
             journalHeader
             Divider().overlay(journalDivider)
-            emojiPickerRow(label: "Weather", icon: "cloud.sun.fill", options: weatherOptions,
-                           selected: todayEntry?.weatherEmoji ?? "", onSelect: { setWeather($0) })
+            emojiPickerRow(options: weatherOptions,
+                                       selected: todayEntry?.weatherEmoji ?? "", onSelect: { setWeather($0) })
             moodPickerRow
             Divider().overlay(journalDivider)
             vibeBlock
@@ -91,11 +91,8 @@ struct JournalBlockView: View {
         }
     }
     var vibeBlock: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label("Vibe", systemImage: "sparkles")
-                .font(style.typeBodySecondary)
-                .foregroundStyle(style.cardSecondaryText)
-            Button {
+            VStack(alignment: .leading, spacing: 6) {
+                Button {
                 showingVibePicker = true
             } label: {
                 HStack(spacing: 8) {
@@ -134,30 +131,8 @@ struct JournalBlockView: View {
         
     }
     var moodPickerRow: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Image(systemName: "face.smiling")
-                    .foregroundStyle(style.secondaryText)
-                if let moodEmoji = todayEntry?.moodEmoji, !moodEmoji.isEmpty,
-                   let label = MoodOption.label(for: moodEmoji) {
-                    Text("Mood: \(label) \(moodEmoji)")
-                        .font(style.typeBodySecondary)
-                        .foregroundStyle(style.cardSecondaryText)
-                    Button {
-                        todayEntry?.moodEmoji = ""
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.caption)
-                            .foregroundStyle(style.tertiaryText)
-                    }
-                    .buttonStyle(.plain)
-                } else {
-                    Text("Mood")
-                        .font(style.typeBodySecondary)
-                        .foregroundStyle(style.cardSecondaryText)
-                }
-            }
-            LazyVGrid(
+            VStack(alignment: .leading, spacing: 6) {
+                LazyVGrid(
                 columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 9),
                 spacing: 4
             ) {
@@ -188,16 +163,17 @@ struct JournalBlockView: View {
     // MARK: - Sub-views
     
     var journalHeader: some View {
-        HStack {
-            Text(dateString)
-                .font(style.typeTitle3)
-                .fontWeight(.bold)
-                .foregroundStyle(style.cardPrimaryText)
-            Spacer()
-            HStack(spacing: 6) {
-                Text("Journal")
-                    .font(style.typeCaption)
-                    .foregroundStyle(journalAccent)
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(Date().formatted(.dateTime.weekday(.wide)))
+                        .font(.custom("NewYorkLarge-Black", size: 34))
+                        .foregroundStyle(style.cardPrimaryText)
+                    Text(Date().formatted(.dateTime.month(.wide).day().year()))
+                        .font(style.typeBodySecondary)
+                        .fontWeight(.light)
+                        .foregroundStyle(style.cardSecondaryText)
+                }
+                Spacer()
                 ZStack {
                     Circle().fill(journalAccent).frame(width: 18, height: 18)
                     Image(systemName: "bookmark.fill")
@@ -206,14 +182,10 @@ struct JournalBlockView: View {
                 }
             }
         }
-    }
     
     var habitsBlock: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label("Habits", systemImage: "checkmark.circle.fill")
-                .font(style.typeBodySecondary)
-                .foregroundStyle(style.cardSecondaryText)
-            if habits.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                if habits.isEmpty {
                 Text("Tap + to add habits to track")
                     .font(style.typeCaption)
                     .foregroundStyle(style.cardMetadataText)
@@ -297,12 +269,9 @@ struct JournalBlockView: View {
     }
     
     @ViewBuilder
-    func emojiPickerRow(label: String, icon: String, options: [String], selected: String, onSelect: @escaping (String) -> Void) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(label, systemImage: icon)
-                .font(style.typeBodySecondary)
-                .foregroundStyle(style.cardSecondaryText)
-            ScrollView(.horizontal, showsIndicators: false) {
+        func emojiPickerRow(options: [String], selected: String, onSelect: @escaping (String) -> Void) -> some View {
+            VStack(alignment: .leading, spacing: 6) {
+                ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(options, id: \.self) { emoji in
                         Text(emoji)

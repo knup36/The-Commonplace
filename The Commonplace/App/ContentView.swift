@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - ContentView
 // Root tab bar for the app.
-// Tab order: Home · Feed · Search · Library · Today
+// Tab order: Home · Feed · Library · Chronicles · Today
 // This is the final tab structure — do not add intermediate tabs.
 
 struct ContentView: View {
@@ -50,15 +50,15 @@ struct ContentView: View {
                 }
                 .tag(1)
             
-            SearchView()
-                .tabItem {
-                    Label("Search", systemImage: "magnifyingglass")
-                }
-                .tag(2)
-            
             LibraryView()
                 .tabItem {
                     Label("Library", systemImage: "books.vertical.fill")
+                }
+                .tag(2)
+            
+            ChroniclesView()
+                .tabItem {
+                    Label("Chronicles", systemImage: ChroniclesTheme.icon)
                 }
                 .tag(3)
             
@@ -70,9 +70,7 @@ struct ContentView: View {
         }
         .onChange(of: selectedTab) { old, new in
             previousTab = old
-            if old == 2 {
-                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-            }
+            // Tab 2 was Search (keyboard dismiss needed) — now Library, no longer needed
         }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
