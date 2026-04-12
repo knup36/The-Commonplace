@@ -23,7 +23,7 @@ struct HomeDashboardView: View {
     @Query(sort: \Entry.createdAt, order: .reverse) var allEntries: [Entry]
     @Query var allTags: [Tag]
     @Query var allTags_persons: [Tag]
-
+    
     var allPersons: [Tag] {
         allTags_persons.filter { $0.isPerson }.sorted { $0.name < $1.name }
     }
@@ -52,15 +52,21 @@ struct HomeDashboardView: View {
         allPersons.filter { $0.isPinned }
     }
     
+    var pinnedFolios: [Tag] {
+        allTags
+            .filter { $0.isPinned && $0.isFolio }
+            .sorted { $0.createdAt < $1.createdAt }
+    }
+    
     var pinnedTags: [Tag] {
         allTags
-            .filter { $0.isPinned }
+            .filter { $0.isPinned && !$0.isFolio && !$0.isPerson }
             .sorted { $0.createdAt < $1.createdAt }
     }
     
     var hasAnything: Bool {
         !pinnedCollections.isEmpty || !pinnedEntries.isEmpty ||
-        !pinnedPersons.isEmpty || !pinnedTags.filter { !$0.isPerson }.isEmpty
+        !pinnedPersons.isEmpty || !pinnedTags.isEmpty || !pinnedFolios.isEmpty
     }
     
     func entryCount(for collection: Collection) -> Int {
@@ -84,8 +90,8 @@ struct HomeDashboardView: View {
                     
                     // Title
                     Text("Home")
-                                            .font(style.typeLargeTitle)
-                                            .foregroundStyle(style.primaryText)
+                        .font(style.typeLargeTitle)
+                        .foregroundStyle(style.primaryText)
                         .padding(.horizontal, 20)
                         .padding(.top, 16)
                     
@@ -96,6 +102,11 @@ struct HomeDashboardView: View {
                     // Collections section
                     if !pinnedCollections.isEmpty {
                         collectionsSection
+                    }
+                    
+                    // Folios section
+                    if !pinnedFolios.isEmpty {
+                        foliosSection
                     }
                     
                     // Entries section
@@ -152,37 +163,37 @@ struct HomeDashboardView: View {
     }
     
     func compactCollectionCard(collection: Collection) -> some View {
-            let accent = Color(hex: collection.colorHex)
-            let count = entryCount(for: collection)
-
-            return ZStack {
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(accent.opacity(0.15))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .strokeBorder(accent.opacity(0.3), lineWidth: 0.5)
-                    )
-
-                VStack(spacing: 6) {
-                    Image(systemName: collection.icon)
-                        .font(.system(size: 22, weight: .medium))
-                        .foregroundStyle(accent)
-
-                    Text(collection.name)
-                        .font(style.typeCaption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(style.primaryText)
-                        .lineLimit(1)
-                        .multilineTextAlignment(.center)
-
-                    Text("\(count)")
-                        .font(style.typeCaption)
-                        .foregroundStyle(accent.opacity(0.7))
-                }
-                .padding(8)
+        let accent = Color(hex: collection.colorHex)
+        let count = entryCount(for: collection)
+        
+        return ZStack {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(accent.opacity(0.15))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(accent.opacity(0.3), lineWidth: 0.5)
+                )
+            
+            VStack(spacing: 6) {
+                Image(systemName: collection.icon)
+                    .font(.system(size: 22, weight: .medium))
+                    .foregroundStyle(accent)
+                
+                Text(collection.name)
+                    .font(style.typeCaption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(style.primaryText)
+                    .lineLimit(1)
+                    .multilineTextAlignment(.center)
+                
+                Text("\(count)")
+                    .font(style.typeCaption)
+                    .foregroundStyle(accent.opacity(0.7))
             }
-            .frame(width: 100, height: 100)
+            .padding(8)
         }
+        .frame(width: 100, height: 100)
+    }
     
     // MARK: - Entries Section
     
@@ -233,20 +244,20 @@ struct HomeDashboardView: View {
             // Avatar with gold angular gradient ring
             ZStack {
                 Circle()
-                                    .strokeBorder(SharedTheme.goldRingGradient, lineWidth: 1.5)
-                                    .frame(width: 58, height: 58)
+                    .strokeBorder(SharedTheme.goldRingGradient, lineWidth: 1.5)
+                    .frame(width: 58, height: 58)
                 
                 personAvatarView(person: person, size: 54)
             }
             
             // Name
             Text(person.name)
-                            .font(style.typeCaption)
-                            .foregroundStyle(style.secondaryText)
-                            .lineLimit(1)
-                            .frame(width: 64)
-                    }
-                    .frame(width: 64, height: 80)
+                .font(style.typeCaption)
+                .foregroundStyle(style.secondaryText)
+                .lineLimit(1)
+                .frame(width: 64)
+        }
+        .frame(width: 64, height: 80)
     }
     
     func personAvatarView(person: Tag, size: CGFloat) -> some View {
@@ -272,6 +283,59 @@ struct HomeDashboardView: View {
         }
     }
     
+    // MARK: - Folios Section
+    
+    var foliosSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader(title: "Folios", icon: "book.pages.fill")
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(pinnedFolios, id: \.name) { folio in
+                        NavigationLink(destination: NavigationRouter.destination(for: folio)) {
+                            folioPill(folio: folio)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 8)
+            }
+            .scrollClipDisabled()
+        }
+    }
+    
+    func folioPill(folio: Tag) -> some View {
+        let count = entryCount(for: folio)
+        return HStack(spacing: 6) {
+            Text(folio.subjectEmoji ?? "◆")
+                .font(.system(size: 20))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(folio.folioDisplayName)
+                    .font(style.typeBodySecondary)
+                    .fontWeight(.medium)
+                    .foregroundStyle(style.primaryText)
+                Text("\(count)")
+                    .font(style.typeCaption)
+                    .foregroundStyle(style.secondaryText)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color(hex: folio.colorHex ?? "#888780").opacity(0.15))
+        .clipShape(Capsule())
+        .overlay(
+            Capsule().strokeBorder(
+                LinearGradient(
+                    colors: [Color(white: 0.85), Color(white: 0.6), Color(white: 0.85), Color(white: 0.5), Color(white: 0.85)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 1.5
+            )
+        )
+        .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+    }
+    
     // MARK: - Tags Section
     
     var tagsSection: some View {
@@ -295,11 +359,11 @@ struct HomeDashboardView: View {
         let count = entryCount(for: tag)
         return HStack(spacing: 4) {
             Text(tag.name)
-                            .font(style.typeCaption)
-                            .foregroundStyle(style.accent)
-                        Text("(\(count))")
-                            .font(style.typeCaption)
-                            .foregroundStyle(style.tertiaryText)
+                .font(style.typeCaption)
+                .foregroundStyle(style.accent)
+            Text("(\(count))")
+                .font(style.typeCaption)
+                .foregroundStyle(style.tertiaryText)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
@@ -320,8 +384,8 @@ struct HomeDashboardView: View {
                 .font(.caption)
                 .foregroundStyle(style.accent)
             Text(title)
-                            .font(style.typeTitle2)
-                            .foregroundStyle(style.primaryText)
+                .font(style.typeTitle2)
+                .foregroundStyle(style.primaryText)
             Spacer()
         }
         .padding(.horizontal, 20)
@@ -335,11 +399,11 @@ struct HomeDashboardView: View {
                 .font(.system(size: 36))
                 .foregroundStyle(style.tertiaryText)
             Text("Nothing bookmarked yet")
-                            .font(style.typeTitle3)
-                            .foregroundStyle(style.secondaryText)
-                        Text("Bookmark entries, collections, tags, and people to see them here.")
-                            .font(style.typeCaption)
-                            .foregroundStyle(style.tertiaryText)
+                .font(style.typeTitle3)
+                .foregroundStyle(style.secondaryText)
+            Text("Bookmark entries, collections, tags, and people to see them here.")
+                .font(style.typeCaption)
+                .foregroundStyle(style.tertiaryText)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)

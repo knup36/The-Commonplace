@@ -42,6 +42,7 @@ struct SearchView: View {
     @State private var mentionedEntries: [Entry] = []
     @State private var matchingPersons: [Tag] = []
     @State private var matchingTags: [Tag] = []
+    @State private var matchingFolios: [Tag] = []
     @State private var matchingCollections: [Collection] = []
     
     private let maxResults = 3
@@ -50,7 +51,7 @@ struct SearchView: View {
     
     var isSearching: Bool { !query.isEmpty }
     var hasResults: Bool {
-        !matchingPersons.isEmpty || !matchingTags.isEmpty ||
+        !matchingPersons.isEmpty || !matchingTags.isEmpty || !matchingFolios.isEmpty ||
         !matchingCollections.isEmpty || !matchingEntries.isEmpty
     }
     
@@ -190,6 +191,10 @@ struct SearchView: View {
                     peopleResultsSection
                     resultDivider
                 }
+                if !matchingFolios.isEmpty {
+                    foliosResultsSection
+                    resultDivider
+                }
                 if !matchingTags.isEmpty {
                     tagsResultsSection
                     resultDivider
@@ -254,6 +259,48 @@ struct SearchView: View {
                 }
                 .padding(.horizontal, 20)
             }
+        }
+        .padding(.bottom, 4)
+    }
+    
+    // MARK: - Folios Results
+    
+    var foliosResultsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionHeader("Folios", icon: "book.pages.fill")
+            FlowLayout(spacing: 8, maxRows: 2) {
+                ForEach(matchingFolios.prefix(maxResults), id: \.name) { folio in
+                    NavigationLink(destination: NavigationRouter.destination(for: folio)) {
+                        HStack(spacing: 4) {
+                            if let emoji = folio.subjectEmoji {
+                                Text(emoji).font(.system(size: 12))
+                            }
+                            Text(folio.folioDisplayName)
+                                .font(style.typeCaption)
+                                .foregroundStyle(style.primaryText)
+                            Text("(\(allEntries.filter { $0.tagNames.contains(folio.name) }.count))")
+                                .font(style.typeCaption)
+                                .foregroundStyle(style.tertiaryText)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color(hex: folio.colorHex ?? "#888780").opacity(0.15))
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule().strokeBorder(
+                                LinearGradient(
+                                    colors: [Color(white: 0.85), Color(white: 0.6), Color(white: 0.85), Color(white: 0.5), Color(white: 0.85)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1.5
+                            )
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 20)
         }
         .padding(.bottom, 4)
     }
@@ -475,9 +522,15 @@ struct SearchView: View {
             $0.name.lowercased().contains(lower)
         }
         
-        // Tags — in memory name match (exclude @ person tags)
+        // Folios — promoted tags
+        matchingFolios = allTags.filter {
+            $0.isFolio &&
+            $0.name.lowercased().contains(lower)
+        }
+        // Tags — in memory name match (exclude @ person tags and folios)
         matchingTags = allTags.filter {
             !$0.isPerson &&
+            !$0.isFolio &&
             $0.name.lowercased().contains(lower)
         }
         

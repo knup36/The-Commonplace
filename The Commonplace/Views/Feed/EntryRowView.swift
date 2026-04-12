@@ -15,7 +15,7 @@ import SwiftData
 
 struct ShimmerView: View {
     @State private var phase: CGFloat = -1
-
+    
     var body: some View {
         GeometryReader { geo in
             let gradient = LinearGradient(
@@ -45,10 +45,10 @@ struct ShimmerView: View {
 
 struct AsyncMediaImage: View {
     let path: String
-
+    
     @State private var imageData: Data? = nil
     @State private var isLoaded = false
-
+    
     var body: some View {
         Group {
             if let data = imageData {
@@ -93,14 +93,15 @@ struct AsyncMediaImage: View {
 struct EntryRowView: View {
     let entry: Entry
     @EnvironmentObject var themeManager: ThemeManager
+    @Query var allTagObjects: [Tag]
     @Query var allPersonTags: [Tag]
-
+    
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { entry.type.accentColor(for: themeManager.current) }
-        var cardColor: Color { entry.type.cardColor(for: themeManager.current) }
+    var cardColor: Color { entry.type.cardColor(for: themeManager.current) }
     var labelColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
-        var dimLabelColor: Color { labelColor.opacity(0.5) }
-
+    var dimLabelColor: Color { labelColor.opacity(0.5) }
+    
     // MARK: - Type Label
     
     @ViewBuilder
@@ -134,7 +135,7 @@ struct EntryRowView: View {
             }
         }
     }
-
+    
     var typeLabelText: String {
         if entry.type == .media {
             switch entry.mediaType {
@@ -151,23 +152,23 @@ struct EntryRowView: View {
         }
         return entry.type.displayName
     }
-
+    
     // MARK: - Metadata Column
-
+    
     var metadataColumn: some View {
         HStack(spacing: 6) {
-                    Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
-                        .font(style.typeCaption)
-                        .foregroundStyle(style.cardMetadataText)
-                    Text(entry.createdAt.formatted(date: .abbreviated, time: .omitted))
-                        .font(style.typeCaption)
-                        .foregroundStyle(style.cardMetadataText)
-                }
-                .fixedSize()
+            Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
+                .font(style.typeCaption)
+                .foregroundStyle(style.cardMetadataText)
+            Text(entry.createdAt.formatted(date: .abbreviated, time: .omitted))
+                .font(style.typeCaption)
+                .foregroundStyle(style.cardMetadataText)
+        }
+        .fixedSize()
     }
-
+    
     // MARK: - Card Content
-
+    
     @ViewBuilder
     var cardContent: some View {
         switch entry.type {
@@ -201,32 +202,32 @@ struct EntryRowView: View {
             let displayText = entry.text.isEmpty ? (entry.transcript ?? "") : entry.text
             if !displayText.isEmpty {
                 Text(displayText)
-                                    .font(style.typeBody)
-                                    .lineLimit(4)
-                                    .foregroundStyle(style.cardPrimaryText)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .font(style.typeBody)
+                    .lineLimit(4)
+                    .foregroundStyle(style.cardPrimaryText)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         case .text:
-                    if !entry.text.isEmpty {
-                        let parts = entry.text.components(separatedBy: "\n")
-                        let titleLine = parts.first ?? entry.text
-                        let bodyLines = parts.dropFirst().joined(separator: " ")
-                        VStack(alignment: .leading, spacing: 4) {
-                                            Text(titleLine)
-                                                .font(style.typeTitle3)
-                                                .fontWeight(.semibold)
-                                                .lineLimit(2)
-                                                .foregroundStyle(style.cardPrimaryText)
-                                                .frame(maxWidth: .infinity, alignment: .leading)
-                                            if !bodyLines.isEmpty {
-                                                Text(bodyLines)
-                                                    .font(style.typeBody)
-                                                    .lineLimit(2)
-                                                    .foregroundStyle(style.cardSecondaryText)
-                                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                            }
-                                        }
+            if !entry.text.isEmpty {
+                let parts = entry.text.components(separatedBy: "\n")
+                let titleLine = parts.first ?? entry.text
+                let bodyLines = parts.dropFirst().joined(separator: " ")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(titleLine)
+                        .font(style.typeTitle3)
+                        .fontWeight(.semibold)
+                        .lineLimit(2)
+                        .foregroundStyle(style.cardPrimaryText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if !bodyLines.isEmpty {
+                        Text(bodyLines)
+                            .font(style.typeBody)
+                            .lineLimit(2)
+                            .foregroundStyle(style.cardSecondaryText)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                }
+            }
         case .music:
             MusicEntryView(entry: entry)
         case .media:
@@ -241,45 +242,45 @@ struct EntryRowView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                 } else {
                     RoundedRectangle(cornerRadius: 6)
-                                            .fill(style.cardDivider)
-                                            .frame(width: 50, height: 75)
-                                            .overlay(
-                                                Image(systemName: "film.fill")
-                                                    .foregroundStyle(style.cardSecondaryText)
-                                            )
+                        .fill(style.cardDivider)
+                        .frame(width: 50, height: 75)
+                        .overlay(
+                            Image(systemName: "film.fill")
+                                .foregroundStyle(style.cardSecondaryText)
+                        )
                 }
                 VStack(alignment: .leading, spacing: 4) {
                     if let title = entry.mediaTitle {
                         Text(title)
-                                                    .font(style.typeTitle3)
-                                                    .fontWeight(.medium)
-                                                    .foregroundStyle(style.cardPrimaryText)
-                                                    .lineLimit(2)
+                            .font(style.typeTitle3)
+                            .fontWeight(.medium)
+                            .foregroundStyle(style.cardPrimaryText)
+                            .lineLimit(2)
                     }
                     HStack(spacing: 6) {
                         if let year = entry.mediaYear, !year.isEmpty {
                             Text(year)
-                                                            .font(style.typeCaption)
-                                                            .foregroundStyle(style.cardSecondaryText)
-                                                    }
-                                                    if let genre = entry.mediaGenre, !genre.isEmpty {
-                                                        Text("· \(genre)")
-                                                            .font(style.typeCaption)
-                                                            .foregroundStyle(style.cardSecondaryText)
-                                                    }
-                                                    if let runtime = entry.mediaRuntime, entry.mediaType == "movie" {
-                                                        let hours = runtime / 60
-                                                        let mins = runtime % 60
-                                                        let label = hours > 0 ? "\(hours)h \(mins)m" : "\(mins)m"
-                                                        Text("· \(label)")
-                                                            .font(style.typeCaption)
-                                                            .foregroundStyle(style.cardSecondaryText)
-                                                    }
-                                                    if let seasons = entry.mediaSeasons, entry.mediaType == "tv" {
-                                                        Text("· \(seasons) \(seasons == 1 ? "Season" : "Seasons")")
-                                                            .font(style.typeCaption)
-                                                            .foregroundStyle(style.cardSecondaryText)
-                                                    }
+                                .font(style.typeCaption)
+                                .foregroundStyle(style.cardSecondaryText)
+                        }
+                        if let genre = entry.mediaGenre, !genre.isEmpty {
+                            Text("· \(genre)")
+                                .font(style.typeCaption)
+                                .foregroundStyle(style.cardSecondaryText)
+                        }
+                        if let runtime = entry.mediaRuntime, entry.mediaType == "movie" {
+                            let hours = runtime / 60
+                            let mins = runtime % 60
+                            let label = hours > 0 ? "\(hours)h \(mins)m" : "\(mins)m"
+                            Text("· \(label)")
+                                .font(style.typeCaption)
+                                .foregroundStyle(style.cardSecondaryText)
+                        }
+                        if let seasons = entry.mediaSeasons, entry.mediaType == "tv" {
+                            Text("· \(seasons) \(seasons == 1 ? "Season" : "Seasons")")
+                                .font(style.typeCaption)
+                                .foregroundStyle(style.cardSecondaryText)
+                        }
                     }
                     if let status = entry.mediaStatus {
                         Text(mediaStatusLabel(for: status).uppercased())
@@ -298,20 +299,20 @@ struct EntryRowView: View {
             StickyEntryView(entry: entry, isPreview: true)
         }
     }
-
+    
     // MARK: - Note Text
-
+    
     func noteText(italic: Bool) -> some View {
-            Text(entry.text)
-                .font(style.typeBody)
-                .italic(italic)
-                .lineLimit(4)
-                .foregroundStyle(style.cardSecondaryText)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-
+        Text(entry.text)
+            .font(style.typeBody)
+            .italic(italic)
+            .lineLimit(4)
+            .foregroundStyle(style.cardSecondaryText)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
     // MARK: - Tags Row
-
+    
     @ViewBuilder
     var tagsRow: some View {
         HStack(alignment: .bottom, spacing: 8) {
@@ -337,21 +338,21 @@ struct EntryRowView: View {
                                         .clipShape(Circle())
                                 } else {
                                     Circle()
-                                                                            .fill(style.personAvatarBackground)
-                                                                            .frame(width: 20, height: 20)
-                                                                            .overlay(
-                                                                                Text(String(name.prefix(1)).uppercased())
-                                                                                    .font(.system(size: 9, weight: .medium))
-                                                                                    .foregroundStyle(style.personAvatarForeground)
-                                                                            )
+                                        .fill(style.personAvatarBackground)
+                                        .frame(width: 20, height: 20)
+                                        .overlay(
+                                            Text(String(name.prefix(1)).uppercased())
+                                                .font(.system(size: 9, weight: .medium))
+                                                .foregroundStyle(style.personAvatarForeground)
+                                        )
                                 }
                             }
                         }
                         if personTags.count > 3 {
-                                                    Text("+\(personTags.count - 3)")
-                                                        .font(style.typeCaption)
-                                                        .foregroundStyle(style.cardMetadataText)
-                                                }
+                            Text("+\(personTags.count - 3)")
+                                .font(style.typeCaption)
+                                .foregroundStyle(style.cardMetadataText)
+                        }
                     }
                 }
                 // Tag pills
@@ -359,13 +360,39 @@ struct EntryRowView: View {
                 if !visibleTags.isEmpty {
                     HStack(spacing: 4) {
                         ForEach(visibleTags.prefix(3), id: \.self) { tag in
-                            Text(tag)
-                                .font(style.typeCaption)
+                            let folioTag = allTagObjects.first { $0.name == tag && $0.isFolio }
+                            if let folio = folioTag {
+                                HStack(spacing: 3) {
+                                    if let emoji = folio.subjectEmoji {
+                                        Text(emoji).font(.system(size: 10))
+                                    }
+                                    Text(folio.folioDisplayName)
+                                        .font(style.typeCaption)
+                                }
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(labelColor.opacity(0.2))
-                                .foregroundStyle(labelColor)
+                                .background(Color(hex: folio.colorHex ?? "#888780").opacity(0.2))
+                                .foregroundStyle(style.cardPrimaryText)
                                 .clipShape(Capsule())
+                                .overlay(
+                                    Capsule().strokeBorder(
+                                        LinearGradient(
+                                            colors: [Color(white: 0.85), Color(white: 0.6), Color(white: 0.85), Color(white: 0.5), Color(white: 0.85)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1.5
+                                    )
+                                )
+                            } else {
+                                Text(tag)
+                                    .font(style.typeCaption)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(labelColor.opacity(0.2))
+                                    .foregroundStyle(labelColor)
+                                    .clipShape(Capsule())
+                            }
                         }
                         if visibleTags.count > 3 {
                             Text("+\(visibleTags.count - 3)")
@@ -379,9 +406,9 @@ struct EntryRowView: View {
             metadataColumn
         }
     }
-
+    
     // MARK: - Body
-
+    
     var body: some View {
         if entry.tagNames.contains(WeeklyReviewTheme.weeklyReviewTag) {
             WeeklyReviewRowView(entry: entry)
@@ -393,34 +420,34 @@ struct EntryRowView: View {
             regularBody
         }
     }
-
+    
     var regularBody: some View {
-            VStack(alignment: .leading, spacing: 8) {
-                ZStack(alignment: .topTrailing) {
+        VStack(alignment: .leading, spacing: 8) {
+            ZStack(alignment: .topTrailing) {
                 ZStack(alignment: .topLeading) {
                     cardContent
                         .padding(.top, entry.type == .journal ? 0 : 18)
                     if entry.isPinned {
-                                            Image(systemName: "bookmark.fill")
-                                                .font(.system(size: 10, weight: .semibold))
-                                                .foregroundStyle(style.cardSecondaryText)
-                                                .padding(.top, -13)
-                                        }
+                        Image(systemName: "bookmark.fill")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(style.cardSecondaryText)
+                            .padding(.top, -13)
+                    }
                 }
                 typeLabel
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
-                Divider()
-                                .overlay(style.cardDivider)
-                            tagsRow
-                        }
-                        .padding(12)
-                        .background(cardColor)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .strokeBorder(style.cardBorder, lineWidth: 0.5)
-                        )
+            Divider()
+                .overlay(style.cardDivider)
+            tagsRow
+        }
+        .padding(12)
+        .background(cardColor)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(style.cardBorder, lineWidth: 0.5)
+        )
     }
 }
 
