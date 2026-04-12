@@ -27,6 +27,8 @@ struct MediaDetailView: View {
     @EnvironmentObject var themeManager: ThemeManager
     var style: any AppThemeStyle { themeManager.style }
     
+    @StateObject private var editMode = EditModeManager()
+    
     // MARK: - Search State
     @State private var selectedMediaType: TMDBMediaType = .movie
     @State private var searchQuery: String = ""
@@ -60,28 +62,45 @@ struct MediaDetailView: View {
                 }
             }
         }
+        .environmentObject(editMode)
         .background(entry.type.cardColor(for: themeManager.current).ignoresSafeArea())
         .keyboardAvoiding()
         .navigationTitle(isPopulated ? "" : "New Media Entry")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 20) {
-                    Menu {
-                        Button(role: .destructive) {
-                            showingDeleteConfirmation = true
-                        } label: {
-                            Label("Delete", systemImage: "trash")
+                HStack(spacing: 16) {
+                    if editMode.isEditing {
+                        Button("Done") {
+                            editMode.exit()
                         }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
-                    }
-                    Button {
-                        withAnimation { entry.isPinned.toggle() }
-                    } label: {
-                        Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
-                            .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
+                        .bold()
+                        .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
+                    } else {
+                        Button {
+                            editMode.enter()
+                        } label: {
+                            Image(systemName: "pencil")
+                                .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
+                                .offset(y: -2)
+                        }
+                        Menu {
+                            Button {
+                                withAnimation { entry.isPinned.toggle() }
+                            } label: {
+                                Label(entry.isPinned ? "Remove Bookmark" : "Bookmark",
+                                      systemImage: entry.isPinned ? "bookmark.fill" : "bookmark")
+                            }
+                            Divider()
+                            Button(role: .destructive) {
+                                showingDeleteConfirmation = true
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                                .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
+                        }
                     }
                 }
             }
@@ -652,14 +671,14 @@ struct MediaDetailView: View {
     }
     
     func selectResult(_ result: TMDBSearchResult) {
-            Task {
-                // Fetch full detail for genres
-                var detail: TMDBDetail? = nil
-                do {
-                    detail = try await TMDBService.fetchDetail(id: result.id, type: result.mediaType)
-                } catch {
-                    AppLogger.error("TMDB detail fetch failed for \(result.title)", domain: .api, error: error)
-                }
+        Task {
+            // Fetch full detail for genres
+            var detail: TMDBDetail? = nil
+            do {
+                detail = try await TMDBService.fetchDetail(id: result.id, type: result.mediaType)
+            } catch {
+                AppLogger.error("TMDB detail fetch failed for \(result.title)", domain: .api, error: error)
+            }
             
             // Download poster
             var posterData: Data? = nil
@@ -697,18 +716,18 @@ struct MediaDetailView: View {
         }
     }
     func scheduleSave() {
-            saveTask?.cancel()
-            saveTask = Task {
-                try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
-                guard !Task.isCancelled else { return }
-                await MainActor.run {
-                    entry.mediaRating = localRating == 0 ? nil : localRating
-                    entry.mediaStatus = localStatus
-                    entry.touch()
-                    try? modelContext.save()
-                }
+        saveTask?.cancel()
+        saveTask = Task {
+            try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                entry.mediaRating = localRating == 0 ? nil : localRating
+                entry.mediaStatus = localStatus
+                entry.touch()
+                try? modelContext.save()
             }
         }
+    }
     func appendLogEntry() {
         let trimmed = newLogText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }

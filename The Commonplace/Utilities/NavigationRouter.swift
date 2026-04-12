@@ -39,9 +39,24 @@ enum NavigationRouter {
             switch entry.type {
             case .location: LocationDetailView(entry: entry)
             case .sticky:   StickyDetailView(entry: entry)
+                    .environmentObject(EditModeManager())
             case .media:    MediaDetailView(entry: entry)
             default:        EntryDetailView(entry: entry)
             }
         }
     }
-}
+    /// Returns the appropriate detail view for a given Tag.
+        /// Folios route to FolioDetailView, Persons route to PersonDetailView,
+        /// plain tags route to TagFeedView.
+        @ViewBuilder
+        static func destination(for tag: Tag) -> some View {
+            if tag.isFolio {
+                FolioDetailView(tag: tag)
+                    .environmentObject(EditModeManager())
+            } else if tag.isPerson {
+                PersonDetailView(tag: tag)
+            } else {
+                TagFeedView(tag: tag.name)
+            }
+        }
+    }

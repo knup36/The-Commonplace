@@ -14,10 +14,10 @@ struct LocationDetailView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var themeManager: ThemeManager
     
-    @State private var showingDeleteConfirmation = false
-    @State private var editText = ""
-    @State private var isEditing = false
-    @FocusState private var textFieldFocused: Bool
+    @StateObject private var editMode = EditModeManager()
+        @State private var showingDeleteConfirmation = false
+        @State private var editText = ""
+        @FocusState private var textFieldFocused: Bool
     
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
@@ -127,24 +127,24 @@ struct LocationDetailView: View {
                         .overlay(style.surface)
                     
                     // Note
-                    if isEditing {
-                        TextField("Add a note...", text: $editText, axis: .vertical)
-                            .font(style.typeBody)
-                            .foregroundStyle(style.cardPrimaryText)
-                            .focused($textFieldFocused)
-                    } else {
-                        Text(entry.text.isEmpty ? "Tap to add a note..." : entry.text)
-                            .font(style.typeBody)
-                            .italic(entry.text.isEmpty ? false : true)
-                            .foregroundStyle(entry.text.isEmpty ? style.cardMetadataText : style.cardSecondaryText)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                editText = entry.text
-                                isEditing = true
-                                textFieldFocused = true
-                            }
-                    }
+                                        if editMode.isEditing {
+                                            TextField("Add a note...", text: $editText, axis: .vertical)
+                                                .font(style.typeBody)
+                                                .foregroundStyle(style.cardPrimaryText)
+                                                .focused($textFieldFocused)
+                                        } else {
+                                            Text(entry.text.isEmpty ? "Tap to add a note..." : entry.text)
+                                                .font(style.typeBody)
+                                                .italic(entry.text.isEmpty ? false : true)
+                                                .foregroundStyle(entry.text.isEmpty ? style.cardMetadataText : style.cardSecondaryText)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                                .contentShape(Rectangle())
+                                                .onTapGesture {
+                                                    editText = entry.text
+                                                    editMode.enter()
+                                                    textFieldFocused = true
+                                                }
+                                        }
                     
                     TagInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
                     PersonInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
@@ -156,43 +156,58 @@ struct LocationDetailView: View {
                 .padding()
             }
         }
-        .background(bgColor.ignoresSafeArea())
+        .environmentObject(editMode)
+                .background(bgColor.ignoresSafeArea())
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom) {
             Color.clear.frame(height: 50)
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 20) {
-                    if isEditing {
-                        Button("Done") {
-                            entry.text = editText
-                            isEditing = false
-                            textFieldFocused = false
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        HStack(spacing: 16) {
+                            if editMode.isEditing {
+                                Button("Done") {
+                                    entry.text = editText
+                                    textFieldFocused = false
+                                    entry.touch()
+                                    editMode.exit()
+                                }
+                                .bold()
+                                .foregroundStyle(accentColor)
+                            } else {
+                                Button {
+                                    editMode.enter()
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                        editText = entry.text
+                                        textFieldFocused = true
+                                    }
+                                } label: {
+                                    Image(systemName: "pencil")
+                                        .foregroundStyle(accentColor)
+                                        .offset(y: -2)
+                                }
+                                Menu {
+                                    Button {
+                                        withAnimation { entry.isPinned.toggle() }
+                                    } label: {
+                                        Label(entry.isPinned ? "Remove Bookmark" : "Bookmark",
+                                              systemImage: entry.isPinned ? "bookmark.fill" : "bookmark")
+                                    }
+                                    Divider()
+                                    Button(role: .destructive) {
+                                        showingDeleteConfirmation = true
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                } label: {
+                                    Image(systemName: "ellipsis.circle")
+                                        .foregroundStyle(accentColor)
+                                }
+                            }
                         }
-                        .bold()
-                        .foregroundStyle(accentColor)
-                    }
-                    Menu {
-                        Button(role: .destructive) {
-                            showingDeleteConfirmation = true
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .foregroundStyle(accentColor)
-                    }
-                    Button {
-                        withAnimation { entry.isPinned.toggle() }
-                    } label: {
-                        Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
-                            .foregroundStyle(accentColor)
                     }
                 }
-            }
-        }
         .onDisappear {
             SearchIndex.shared.index(entry: entry)
         }

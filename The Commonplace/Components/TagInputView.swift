@@ -11,8 +11,10 @@ import SwiftData
 struct TagInputView: View {
     @Binding var tags: [String]
     @Query var entries: [Entry]
+    @Query var allTagObjects: [Tag]
     var accentColor: Color = .accentColor
     var style: (any AppThemeStyle)?
+    @EnvironmentObject var editMode: EditModeManager
     
     @State private var inputText = ""
     @State private var isExpanded = false
@@ -47,8 +49,8 @@ struct TagInputView: View {
                             ForEach(visibleTags, id: \.self) { tag in
                                 tagPill(tag)
                             }
-                            // + button inline with pills
-                            if !isExpanded {
+                            // + button — only in edit mode
+                            if !isExpanded && editMode.isEditing {
                                 Button {
                                     isExpanded = true
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
@@ -70,8 +72,8 @@ struct TagInputView: View {
                 }
             }
             
-            // Input field — shown when empty (no tags yet) or expanded
-            if visibleTags.isEmpty || isExpanded {
+            // Input field — only in edit mode
+            if editMode.isEditing && (visibleTags.isEmpty || isExpanded) {
                 HStack(spacing: 6) {
                     Image(systemName: "tag")
                         .font(.caption)
@@ -119,13 +121,20 @@ struct TagInputView: View {
                                 addTag(suggestion)
                                 inputText = ""
                             } label: {
-                                Text(suggestion)
-                                    .font(.caption)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 5)
-                                    .background(style?.pillBackground ?? Color(uiColor: .systemGray5))
-                                    .foregroundStyle(style?.pillForeground ?? .primary)
-                                    .clipShape(Capsule())
+                                let folioTag = allTagObjects.first { $0.name == suggestion && $0.isFolio }
+                                HStack(spacing: 4) {
+                                    if let folio = folioTag, let emoji = folio.subjectEmoji {
+                                        Text(emoji).font(.caption)
+                                        Text(folio.folioDisplayName).font(.caption)
+                                    } else {
+                                        Text(suggestion).font(.caption)
+                                    }
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 5)
+                                .background(style?.pillBackground ?? Color(uiColor: .systemGray5))
+                                .foregroundStyle(style?.pillForeground ?? .primary)
+                                .clipShape(Capsule())
                             }
                         }
                     }
@@ -139,21 +148,43 @@ struct TagInputView: View {
     }
     
     func tagPill(_ tag: String) -> some View {
-        HStack(spacing: 4) {
-            Text(tag)
-                .font(.caption)
-            Button {
-                tags.removeAll { $0 == tag }
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
+        let folioTag = allTagObjects.first { $0.name == tag && $0.isFolio }
+        return HStack(spacing: 4) {
+            if let folio = folioTag, let emoji = folio.subjectEmoji {
+                Text(emoji)
+                    .font(.caption)
+                Text(folio.folioDisplayName)
+                    .font(.caption)
+                    .foregroundStyle(style?.primaryText ?? .primary)
+            } else {
+                Text(tag)
+                    .font(.caption)
+            }
+            if editMode.isEditing {
+                Button {
+                    tags.removeAll { $0 == tag }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                }
             }
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 5)
-        .background(accentColor.opacity(0.2))
+        .background(folioTag != nil ? Color(hex: folioTag?.colorHex ?? "#888780").opacity(0.2) : accentColor.opacity(0.2))
         .foregroundStyle(accentColor)
         .clipShape(Capsule())
+        .overlay(
+            folioTag != nil ?
+            Capsule().strokeBorder(
+                LinearGradient(
+                    colors: [Color(white: 0.85), Color(white: 0.6), Color(white: 0.85), Color(white: 0.5), Color(white: 0.85)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 1.5
+            ) : nil
+        )
     }
     
     func addTag(_ text: String) {

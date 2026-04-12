@@ -14,7 +14,7 @@ struct EntryDetailView: View {
     @Bindable var entry: Entry
     @EnvironmentObject var themeManager: ThemeManager
     
-    @State private var isEditing = false
+    @StateObject private var editMode = EditModeManager()
     @State private var editText = ""
     @State private var noteTitle = ""
     @State private var noteBody = ""
@@ -60,43 +60,55 @@ struct EntryDetailView: View {
             }
             .padding()
         }
+        .environmentObject(editMode)
         .background(entry.type.cardColor(for: themeManager.current).ignoresSafeArea())
         .scrollDismissesKeyboard(.interactively)
         .keyboardAvoiding()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack (spacing: 12){
-                    if isEditing || noteTitleFocused || noteBodyFocused {
+                HStack(spacing: 16) {
+                    if editMode.isEditing {
                         Button("Done") {
-                            if entry.type == .text {
-                                noteTitleFocused = false
-                                noteBodyFocused = false
-                            } else {
-                                entry.text = editText
-                                isEditing = false
-                                textFieldFocused = false
-                                entry.touch()
-                            }
+                            noteTitleFocused = false
+                            noteBodyFocused = false
+                            textFieldFocused = false
+                            entry.touch()
+                            editMode.exit()
                         }
                         .bold()
                         .foregroundStyle(entryAccent)
-                    }
-                    Menu {
-                        Button(role: .destructive) {
-                            showingDeleteConfirmation = true
+                    } else {
+                        Button {
+                            editMode.enter()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                if entry.type == .text {
+                                    noteTitleFocused = true
+                                } else {
+                                    textFieldFocused = true
+                                }
+                            }
                         } label: {
-                            Label("Delete", systemImage: "trash")
+                            Image(systemName: "pencil")
+                                .foregroundStyle(entryAccent)
+                                .offset(y: -2)
                         }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .foregroundStyle(entryAccent)
-                    }
-                    Button {
-                        withAnimation { entry.isPinned.toggle() }
-                    } label: {
-                        Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
-                            .foregroundStyle(entryAccent)
+                        Menu {
+                            Button {
+                                withAnimation { entry.isPinned.toggle() }
+                            } label: {
+                                Label(entry.isPinned ? "Remove Bookmark" : "Bookmark", systemImage: entry.isPinned ? "bookmark.fill" : "bookmark")
+                            }
+                            Divider()
+                            Button(role: .destructive) {
+                                showingDeleteConfirmation = true
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                                .foregroundStyle(entryAccent)
+                        }
                     }
                 }
             }
@@ -104,14 +116,17 @@ struct EntryDetailView: View {
         .onAppear {
             if entry.type == .text {
                 loadNoteParts()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    if entry.text.isEmpty {
+                if entry.text.isEmpty {
+                    editMode.enter()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         noteTitleFocused = true
                     }
                 }
-            } else {
-                // Don't auto-focus for any other entry type
-                // User should tap the text area to start editing
+            } else if entry.text.isEmpty {
+                editMode.enter()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    textFieldFocused = true
+                }
             }
         }
         .onDisappear {
@@ -175,7 +190,7 @@ struct EntryDetailView: View {
     
     @ViewBuilder
     var genericContentSection: some View {
-        if isEditing {
+        if editMode.isEditing {
             CommonplaceTextEditor(
                 text: $editText,
                 placeholder: "Start writing...",
@@ -193,7 +208,7 @@ struct EntryDetailView: View {
                 .contentShape(Rectangle())
                 .onTapGesture {
                     editText = entry.text
-                    isEditing = true
+                    editMode.enter()
                     textFieldFocused = true
                 }
         }
