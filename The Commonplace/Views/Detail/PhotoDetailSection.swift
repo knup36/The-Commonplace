@@ -23,6 +23,8 @@ struct PhotoDetailSection: View {
     var style: any AppThemeStyle
     var accentColor: Color
     
+    @EnvironmentObject var editMode: EditModeManager
+
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @State private var isAnalyzing = false
     @State private var isProcessingVideo = false
@@ -128,7 +130,9 @@ struct PhotoDetailSection: View {
                     }
                 }
             }
-            mediaPicker(label: "Change Shot", icon: "photo")
+            if editMode.isEditing {
+                mediaPicker(label: "Change Shot", icon: "photo")
+            }
         }
     }
     
@@ -173,49 +177,54 @@ struct PhotoDetailSection: View {
                     }
                 }
             }
-            
+
             if let duration = entry.videoDuration {
                 Label(formatDuration(duration), systemImage: "video.fill")
                     .font(.caption)
                     .foregroundStyle(style.secondaryText)
             }
-            
-            mediaPicker(label: "Change Video", icon: "video")
+
+            if editMode.isEditing {
+                mediaPicker(label: "Change Video", icon: "video")
+            }
         }
     }
-    
+
     // MARK: - Empty State
-    
+
+    @ViewBuilder
     var emptyState: some View {
-        VStack(spacing: 12) {
-            PhotosPicker(
-                selection: $selectedPhotoItem,
-                matching: .images
-            ) {
-                Label("Choose Photo", systemImage: "photo")
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(style.cardDivider)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .foregroundStyle(style.cardPrimaryText)
-            }
-            .onChange(of: selectedPhotoItem) { _, newItem in
-                Task { await savePhoto(from: newItem) }
-            }
-            
-            PhotosPicker(
-                selection: $selectedPhotoItem,
-                matching: .videos
-            ) {
-                Label("Choose Video", systemImage: "video")
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(style.cardDivider)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .foregroundStyle(style.cardPrimaryText)
-            }
-            .onChange(of: selectedPhotoItem) { _, newItem in
-                Task { await saveVideo(from: newItem) }
+        if editMode.isEditing {
+            VStack(spacing: 12) {
+                PhotosPicker(
+                    selection: $selectedPhotoItem,
+                    matching: .images
+                ) {
+                    Label("Choose Photo", systemImage: "photo")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(style.cardDivider)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .foregroundStyle(style.cardPrimaryText)
+                }
+                .onChange(of: selectedPhotoItem) { _, newItem in
+                    Task { await savePhoto(from: newItem) }
+                }
+
+                PhotosPicker(
+                    selection: $selectedPhotoItem,
+                    matching: .videos
+                ) {
+                    Label("Choose Video", systemImage: "video")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(style.cardDivider)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .foregroundStyle(style.cardPrimaryText)
+                }
+                .onChange(of: selectedPhotoItem) { _, newItem in
+                    Task { await saveVideo(from: newItem) }
+                }
             }
         }
     }

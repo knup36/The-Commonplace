@@ -80,7 +80,7 @@ struct MediaDetailView: View {
                         Button {
                             editMode.enter()
                         } label: {
-                            Image(systemName: "pencil")
+                            Image(systemName: "rectangle.and.pencil.and.ellipsis")
                                 .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
                                 .offset(y: -2)
                         }
@@ -539,22 +539,30 @@ struct MediaDetailView: View {
     // MARK: - Notes Section
     
     var notesSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("NOTES")
-                .font(style.typeSectionHeader)
-                .foregroundStyle(style.cardSecondaryText)
-                .padding(.horizontal, 20)
-            
-            CommonplaceTextEditor(
-                text: Binding(
-                    get: { entry.text },
-                    set: { entry.text = $0; try? modelContext.save() }
-                ),
-                placeholder: "Add notes about this title...",
-                usesSerifFont: false
-            )
-            .padding(.horizontal, 20)        }
-    }
+            VStack(alignment: .leading, spacing: 10) {
+                Text("NOTES")
+                    .font(style.typeSectionHeader)
+                    .foregroundStyle(style.cardSecondaryText)
+                    .padding(.horizontal, 20)
+                
+                if editMode.isEditing {
+                    CommonplaceTextEditor(
+                        text: Binding(
+                            get: { entry.text },
+                            set: { entry.text = $0; try? modelContext.save() }
+                        ),
+                        placeholder: "Add notes about this title...",
+                        usesSerifFont: false
+                    )
+                    .padding(.horizontal, 20)
+                } else if !entry.text.isEmpty {
+                    Text(entry.text)
+                        .font(style.typeBody)
+                        .foregroundStyle(style.cardPrimaryText)
+                        .padding(.horizontal, 20)
+                }
+            }
+        }
     
     // MARK: - Log Section
     

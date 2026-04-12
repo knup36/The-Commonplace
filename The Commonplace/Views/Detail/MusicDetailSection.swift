@@ -25,6 +25,7 @@ struct MusicDetailSection: View {
     var style: any AppThemeStyle
     var accentColor: Color
     
+    @EnvironmentObject var editMode: EditModeManager
     @State private var linkURLText = ""
     @State private var isExtracting = false
     @FocusState private var linkFieldFocused: Bool
@@ -33,21 +34,23 @@ struct MusicDetailSection: View {
         Group {
             if entry.type == .music {
                 if entry.url == nil || entry.url?.isEmpty == true {
-                    TextField("Paste Apple Music link...", text: $linkURLText)
-                        .keyboardType(.URL)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
-                        .focused($linkFieldFocused)
-                        .padding(12)
-                        .background(style.cardDivider)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .onChange(of: linkURLText) { _, newValue in
-                            if newValue.contains("music.apple.com") {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                                    if linkURLText == newValue { saveMusicURL() }
+                    if editMode.isEditing {
+                        TextField("Paste Apple Music link...", text: $linkURLText)
+                            .keyboardType(.URL)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                            .focused($linkFieldFocused)
+                            .padding(12)
+                            .background(style.cardDivider)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .onChange(of: linkURLText) { _, newValue in
+                                if newValue.contains("music.apple.com") {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                        if linkURLText == newValue { saveMusicURL() }
+                                    }
                                 }
                             }
-                        }
+                    }
                 } else {
                     MusicEntryView(entry: entry)
                     if let urlString = entry.url, let url = URL(string: urlString) {

@@ -183,7 +183,7 @@ struct LocationDetailView: View {
                                         textFieldFocused = true
                                     }
                                 } label: {
-                                    Image(systemName: "pencil")
+                                    Image(systemName: "rectangle.and.pencil.and.ellipsis")
                                         .foregroundStyle(accentColor)
                                         .offset(y: -2)
                                 }

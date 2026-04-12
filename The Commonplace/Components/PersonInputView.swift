@@ -17,6 +17,8 @@ struct PersonInputView: View {
     var accentColor: Color = .accentColor
     var style: (any AppThemeStyle)?
 
+    @EnvironmentObject var editMode: EditModeManager
+
     @State private var inputText = ""
     @State private var isExpanded = false
     @FocusState private var isFocused: Bool
@@ -57,8 +59,8 @@ struct PersonInputView: View {
                         ForEach(taggedPersonNames, id: \.self) { name in
                             personChip(name: name)
                         }
-                        // + button inline with chips
-                        if !isExpanded {
+                        // + button inline with chips — only in edit mode
+                        if !isExpanded && editMode.isEditing {
                             Button {
                                 isExpanded = true
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
@@ -79,8 +81,8 @@ struct PersonInputView: View {
                 }
             }
             
-            // Input field — shown when empty or expanded
-            if taggedPersonNames.isEmpty || isExpanded {
+            // Input field — only in edit mode, shown when empty or expanded
+            if editMode.isEditing && (taggedPersonNames.isEmpty || isExpanded) {
                 HStack(spacing: 6) {
                     Image(systemName: "person")
                         .font(.caption)
@@ -177,7 +179,9 @@ struct PersonInputView: View {
                 personAvatar(name: name, photoPath: person?.profilePhotoPath, size: 26)
             }
             .onLongPressGesture {
-                tags.removeAll { $0 == "@\(name)" }
+                if editMode.isEditing {
+                    tags.removeAll { $0 == "@\(name)" }
+                }
             }
         }
 

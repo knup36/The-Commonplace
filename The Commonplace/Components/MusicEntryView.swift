@@ -25,23 +25,23 @@ struct MusicEntryView: View {
     let entry: Entry
     @EnvironmentObject var themeManager: ThemeManager
     @StateObject private var musicService = MusicPlayerService.shared
-
+    
     // Preview-specific state (only used when falling back to AVPlayer)
     @State private var progress: Double = 1.0
     @State private var previewTimer: Timer? = nil
     private let previewDuration: Double = 30.0
-
+    
     var style: any AppThemeStyle { themeManager.style }
-        var accentColor: Color { EntryType.music.detailAccentColor(for: themeManager.current) }
-
+    var accentColor: Color { EntryType.music.detailAccentColor(for: themeManager.current) }
+    
     var isCurrentlyPlaying: Bool {
         musicService.isPlaying && musicService.currentEntryID == entry.id
     }
-
+    
     var hasFullPlayback: Bool {
         entry.musicTrackID != nil && musicService.authorizationStatus == .authorized
     }
-
+    
     var body: some View {
         HStack(spacing: 12) {
             artworkThumbnail
@@ -60,9 +60,9 @@ struct MusicEntryView: View {
             }
         }
     }
-
+    
     // MARK: - Artwork
-
+    
     var artworkThumbnail: some View {
         Group {
             if let path = entry.musicArtworkPath,
@@ -74,9 +74,9 @@ struct MusicEntryView: View {
                     .frame(width: 64, height: 64)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .overlay(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .strokeBorder(style.cardBorder, lineWidth: 0.5)
-                                        )
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(style.cardBorder, lineWidth: 0.5)
+                    )
             } else {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(accentColor.opacity(0.15))
@@ -89,42 +89,35 @@ struct MusicEntryView: View {
             }
         }
     }
-
+    
     // MARK: - Info
-
+    
     var infoStack: some View {
         VStack(alignment: .leading, spacing: 4) {
             if let title = entry.linkTitle, !title.isEmpty {
-                            Text(title)
-                                .font(style.typeBodySecondary)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(style.cardPrimaryText)
-                                .lineLimit(2)
-                        }
-                        if let artist = entry.musicArtist, !artist.isEmpty {
-                            Text(artist)
-                                .font(style.typeCaption)
-                                .foregroundStyle(style.cardSecondaryText)
-                                .lineLimit(1)
-                        }
-                        if let album = entry.musicAlbum, !album.isEmpty {
-                            Text(album)
-                                .font(style.typeCaption)
-                                .foregroundStyle(style.cardMetadataText)
-                                .lineLimit(1)
-                        }
-                        if !entry.text.isEmpty {
-                            Text(entry.text)
-                                .font(style.typeCaption)
-                                .italic()
-                                .lineLimit(2)
-                                .foregroundStyle(style.cardMetadataText)
-                        }
+                Text(title)
+                    .font(style.typeBodySecondary)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(style.cardPrimaryText)
+                    .lineLimit(2)
+            }
+            if let artist = entry.musicArtist, !artist.isEmpty {
+                Text(artist)
+                    .font(style.typeCaption)
+                    .foregroundStyle(style.cardSecondaryText)
+                    .lineLimit(1)
+            }
+            if let album = entry.musicAlbum, !album.isEmpty {
+                Text(album)
+                    .font(style.typeCaption)
+                    .foregroundStyle(style.cardMetadataText)
+                    .lineLimit(1)
+            }
         }
     }
-
+    
     // MARK: - Play Button
-
+    
     var playButton: some View {
         Button {
             Task {
@@ -141,7 +134,7 @@ struct MusicEntryView: View {
                 Circle()
                     .fill(accentColor.opacity(0.15))
                     .frame(width: 40, height: 40)
-
+                
                 // Only show countdown ring for preview playback
                 if isCurrentlyPlaying && !hasFullPlayback {
                     Circle()
@@ -151,7 +144,7 @@ struct MusicEntryView: View {
                         .rotationEffect(.degrees(-90))
                         .animation(.linear(duration: 0.1), value: progress)
                 }
-
+                
                 Image(systemName: isCurrentlyPlaying ? "pause.fill" : "play.fill")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(accentColor)
@@ -160,9 +153,9 @@ struct MusicEntryView: View {
         }
         .buttonStyle(.plain)
     }
-
+    
     // MARK: - Preview Countdown (fallback only)
-
+    
     func startPreviewCountdown() {
         previewTimer?.invalidate()
         let interval = 0.1

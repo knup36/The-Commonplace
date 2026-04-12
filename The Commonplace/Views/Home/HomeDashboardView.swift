@@ -183,7 +183,7 @@ struct HomeDashboardView: View {
                     .font(style.typeCaption)
                     .fontWeight(.semibold)
                     .foregroundStyle(style.primaryText)
-                    .lineLimit(1)
+                    .lineLimit(2)
                     .multilineTextAlignment(.center)
                 
                 Text("\(count)")
@@ -192,7 +192,7 @@ struct HomeDashboardView: View {
             }
             .padding(8)
         }
-        .frame(width: 100, height: 100)
+        .frame(width: 95, height: 95)
     }
     
     // MARK: - Entries Section

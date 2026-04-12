@@ -52,8 +52,17 @@ struct EntryDetailView: View {
                 MusicDetailSection(entry: entry, style: style, accentColor: entryAccent)
                 JournalMetadataSection(entry: entry, style: style, accentColor: entryAccent)
                 textContentSection
-                PersonInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
-                TagInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
+                if editMode.isEditing {
+                    PersonInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
+                    TagInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
+                } else {
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: 6) {
+                                            PersonInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
+                                            TagInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
+                                        }
+                                    }
+                                }
                 Divider()
                     .overlay(style.cardDivider)
                 EntryMetadataFooter(entry: entry, style: style, accentColor: entryAccent)
@@ -89,7 +98,7 @@ struct EntryDetailView: View {
                                 }
                             }
                         } label: {
-                            Image(systemName: "pencil")
+                            Image(systemName: "rectangle.and.pencil.and.ellipsis")
                                 .foregroundStyle(entryAccent)
                                 .offset(y: -2)
                         }
@@ -156,33 +165,55 @@ struct EntryDetailView: View {
     
     var noteContentSection: some View {
         VStack(alignment: .leading, spacing: 24) {
-            // Title field — 34pt NY Black
-            CommonplaceTextEditor(
-                text: $noteTitle,
-                placeholder: "",
-                usesSerifFont: true,
-                fontSize: 34,
-                fontWeight: .black,
-                minHeight: 44,
-                onSubmit: {
-                    noteTitleFocused = false
-                    noteBodyFocused = true
+            if editMode.isEditing {
+                // Title field — 34pt NY Black
+                CommonplaceTextEditor(
+                    text: $noteTitle,
+                    placeholder: "",
+                    usesSerifFont: true,
+                    fontSize: 34,
+                    fontWeight: .black,
+                    minHeight: 44,
+                    onSubmit: {
+                        noteTitleFocused = false
+                        noteBodyFocused = true
+                    }
+                )
+                .focused($noteTitleFocused)
+                .foregroundStyle(style.primaryText)
+                .onChange(of: noteTitle) { _, _ in saveNoteParts() }
+                
+                // Body field — 17pt SF Rounded
+                CommonplaceTextEditor(
+                    text: $noteBody,
+                    placeholder: noteTitle.isEmpty ? "Start writing..." : "Continue writing...",
+                    usesSerifFont: false,
+                    minHeight: 32
+                )
+                .focused($noteBodyFocused)
+                .foregroundStyle(style.primaryText)
+                .onChange(of: noteBody) { _, _ in saveNoteParts() }
+            } else {
+                // View mode — read-only
+                if !noteTitle.isEmpty {
+                    Text(noteTitle)
+                        .font(.custom("NewYorkLarge-Black", size: 34))
+                        .foregroundStyle(style.primaryText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-            )
-            .focused($noteTitleFocused)
-            .foregroundStyle(style.primaryText)
-            .onChange(of: noteTitle) { _, _ in saveNoteParts() }
-            
-            // Body field — 17pt SF Rounded
-            CommonplaceTextEditor(
-                text: $noteBody,
-                placeholder: noteTitle.isEmpty ? "Start writing..." : "Continue writing...",
-                usesSerifFont: false,
-                minHeight: 32
-            )
-            .focused($noteBodyFocused)
-            .foregroundStyle(style.primaryText)
-            .onChange(of: noteBody) { _, _ in saveNoteParts() }
+                if !noteBody.isEmpty {
+                    Text(noteBody)
+                        .font(style.typeBody)
+                        .foregroundStyle(style.cardPrimaryText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                if noteTitle.isEmpty && noteBody.isEmpty {
+                    Text("Tap pencil to add a note...")
+                        .font(style.typeBody)
+                        .foregroundStyle(style.cardMetadataText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
         }
     }
     
@@ -199,18 +230,15 @@ struct EntryDetailView: View {
             )
             .focused($textFieldFocused)
             .foregroundStyle(style.primaryText)
+            .onAppear { editText = entry.text }
             .onChange(of: editText) { _, newValue in entry.text = newValue }
         } else {
-            Text(entry.text.isEmpty ? "Tap to add a note..." : entry.text)
-                .font(style.typeBody)
-                .foregroundStyle(entry.text.isEmpty ? style.cardMetadataText : style.cardPrimaryText)
-                .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    editText = entry.text
-                    editMode.enter()
-                    textFieldFocused = true
-                }
+            if !entry.text.isEmpty {
+                Text(entry.text)
+                    .font(style.typeBody)
+                    .foregroundStyle(style.cardPrimaryText)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
     }
 }
