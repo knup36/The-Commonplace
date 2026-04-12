@@ -314,9 +314,6 @@ struct HomeDashboardView: View {
                     .font(style.typeBodySecondary)
                     .fontWeight(.medium)
                     .foregroundStyle(style.primaryText)
-                Text("\(count)")
-                    .font(style.typeCaption)
-                    .foregroundStyle(style.secondaryText)
             }
         }
         .padding(.horizontal, 14)
