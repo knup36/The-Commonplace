@@ -56,13 +56,30 @@ struct EntryDetailView: View {
                     PersonInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
                     TagInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
                 } else {
-                                    ScrollView(.horizontal, showsIndicators: false) {
-                                        HStack(spacing: 6) {
-                                            PersonInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
-                                            TagInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
-                                        }
-                                    }
+                    let hasPeople = entry.tagNames.contains { $0.hasPrefix("@") }
+                    let hasTags = entry.tagNames.contains { !$0.hasPrefix("@") }
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 6) {
+                            if entry.isPinned {
+                                Image(systemName: "bookmark.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundStyle(entryAccent)
+                                if hasPeople || hasTags {
+                                    pipe
                                 }
+                            }
+                            if hasPeople {
+                                PersonInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
+                                if hasTags {
+                                    pipe
+                                }
+                            }
+                            if hasTags {
+                                TagInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
+                            }
+                        }
+                    }
+                }
                 Divider()
                     .overlay(style.cardDivider)
                 EntryMetadataFooter(entry: entry, style: style, accentColor: entryAccent)
@@ -75,19 +92,21 @@ struct EntryDetailView: View {
         .keyboardAvoiding()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 16) {
-                    if editMode.isEditing {
-                        Button("Done") {
-                            noteTitleFocused = false
-                            noteBodyFocused = false
-                            textFieldFocused = false
-                            entry.touch()
-                            editMode.exit()
-                        }
-                        .bold()
-                        .foregroundStyle(entryAccent)
-                    } else {
+            if editMode.isEditing {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        noteTitleFocused = false
+                        noteBodyFocused = false
+                        textFieldFocused = false
+                        entry.touch()
+                        editMode.exit()
+                    }
+                    .bold()
+                    .foregroundStyle(entryAccent)
+                }
+            } else {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
                         Button {
                             editMode.enter()
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -98,26 +117,23 @@ struct EntryDetailView: View {
                                 }
                             }
                         } label: {
-                            Image(systemName: "rectangle.and.pencil.and.ellipsis")
-                                .foregroundStyle(entryAccent)
-                                .offset(y: -2)
+                            Label("Edit", systemImage: "rectangle.and.pencil.and.ellipsis")
                         }
-                        Menu {
-                            Button {
-                                withAnimation { entry.isPinned.toggle() }
-                            } label: {
-                                Label(entry.isPinned ? "Remove Bookmark" : "Bookmark", systemImage: entry.isPinned ? "bookmark.fill" : "bookmark")
-                            }
-                            Divider()
-                            Button(role: .destructive) {
-                                showingDeleteConfirmation = true
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
+                        Divider()
+                        Button {
+                            withAnimation { entry.isPinned.toggle() }
                         } label: {
-                            Image(systemName: "ellipsis.circle")
-                                .foregroundStyle(entryAccent)
+                            Label(entry.isPinned ? "Remove Bookmark" : "Bookmark", systemImage: entry.isPinned ? "bookmark.fill" : "bookmark")
                         }
+                        Divider()
+                        Button(role: .destructive) {
+                            showingDeleteConfirmation = true
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .foregroundStyle(entryAccent)
                     }
                 }
             }
@@ -241,4 +257,13 @@ struct EntryDetailView: View {
             }
         }
     }
+    // MARK: - Pipe Separator
+
+    var pipe: some View {
+        Text("|")
+            .font(.system(size: 18))
+            .foregroundStyle(entryAccent.opacity(0.3))
+    }
 }
+
+

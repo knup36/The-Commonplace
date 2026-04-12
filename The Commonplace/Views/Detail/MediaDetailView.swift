@@ -68,43 +68,42 @@ struct MediaDetailView: View {
         .navigationTitle(isPopulated ? "" : "New Media Entry")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 16) {
                     if editMode.isEditing {
-                        Button("Done") {
-                            editMode.exit()
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") {
+                                editMode.exit()
+                            }
+                            .bold()
+                            .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
                         }
-                        .bold()
-                        .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
                     } else {
-                        Button {
-                            editMode.enter()
-                        } label: {
-                            Image(systemName: "rectangle.and.pencil.and.ellipsis")
-                                .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
-                                .offset(y: -2)
-                        }
-                        Menu {
-                            Button {
-                                withAnimation { entry.isPinned.toggle() }
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Menu {
+                                Button {
+                                    editMode.enter()
+                                } label: {
+                                    Label("Edit", systemImage: "rectangle.and.pencil.and.ellipsis")
+                                }
+                                Divider()
+                                Button {
+                                    withAnimation { entry.isPinned.toggle() }
+                                } label: {
+                                    Label(entry.isPinned ? "Remove Bookmark" : "Bookmark",
+                                          systemImage: entry.isPinned ? "bookmark.fill" : "bookmark")
+                                }
+                                Divider()
+                                Button(role: .destructive) {
+                                    showingDeleteConfirmation = true
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
                             } label: {
-                                Label(entry.isPinned ? "Remove Bookmark" : "Bookmark",
-                                      systemImage: entry.isPinned ? "bookmark.fill" : "bookmark")
+                                Image(systemName: "ellipsis.circle")
+                                    .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
                             }
-                            Divider()
-                            Button(role: .destructive) {
-                                showingDeleteConfirmation = true
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        } label: {
-                            Image(systemName: "ellipsis.circle")
-                                .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
                         }
                     }
                 }
-            }
-        }
         
         .onAppear {
             loadCoverImage()
@@ -310,14 +309,40 @@ struct MediaDetailView: View {
                 // Media log
                 logSection
                 
-                // Tags
-                TagInputView(tags: $entry.tagNames, accentColor: entry.type.detailAccentColor(for: themeManager.current), style: style)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 4)
-                
-                // People
-                PersonInputView(tags: $entry.tagNames, accentColor: entry.type.detailAccentColor(for: themeManager.current), style: style)
-                    .padding(.horizontal, 20)
+                // Tags + People
+                                let mediaAccent = entry.type.detailAccentColor(for: themeManager.current)
+                                if editMode.isEditing {
+                                    PersonInputView(tags: $entry.tagNames, accentColor: mediaAccent, style: style)
+                                        .padding(.horizontal, 20)
+                                    TagInputView(tags: $entry.tagNames, accentColor: mediaAccent, style: style)
+                                        .padding(.horizontal, 20)
+                                        .padding(.top, 4)
+                                } else {
+                                    let hasPeople = entry.tagNames.contains { $0.hasPrefix("@") }
+                                    let hasTags = entry.tagNames.contains { !$0.hasPrefix("@") }
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: 6) {
+                                            if entry.isPinned {
+                                                Image(systemName: "bookmark.fill")
+                                                    .font(.system(size: 20))
+                                                    .foregroundStyle(mediaAccent)
+                                                if hasPeople || hasTags {
+                                                    pipe
+                                                }
+                                            }
+                                            if hasPeople {
+                                                PersonInputView(tags: $entry.tagNames, accentColor: mediaAccent, style: style)
+                                                if hasTags {
+                                                    pipe
+                                                }
+                                            }
+                                            if hasTags {
+                                                TagInputView(tags: $entry.tagNames, accentColor: mediaAccent, style: style)
+                                            }
+                                        }
+                                        .padding(.horizontal, 20)
+                                    }
+                                }
                 
                 Divider()
                     .padding(.horizontal, 20)
@@ -752,5 +777,11 @@ struct MediaDetailView: View {
               let data = MediaFileManager.load(path: path) else { return }
         coverImage = UIImage(data: data)
     }
-    
+    // MARK: - Pipe Separator
+
+    var pipe: some View {
+        Text("|")
+            .font(.system(size: 12))
+            .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current).opacity(0.3))
+    }
 }

@@ -15,9 +15,9 @@ struct LocationDetailView: View {
     @EnvironmentObject var themeManager: ThemeManager
     
     @StateObject private var editMode = EditModeManager()
-        @State private var showingDeleteConfirmation = false
-        @State private var editText = ""
-        @FocusState private var textFieldFocused: Bool
+    @State private var showingDeleteConfirmation = false
+    @State private var editText = ""
+    @FocusState private var textFieldFocused: Bool
     
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
@@ -33,8 +33,8 @@ struct LocationDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 
-                // Location picker — shown when no location set yet
-                if entry.locationLatitude == nil {
+                // Location picker — shown when no location set yet, edit mode only
+                if entry.locationLatitude == nil && editMode.isEditing {
                     VStack(alignment: .leading, spacing: 8) {
                         LocationSearchView(
                             selectedName: Binding(get: { entry.locationName }, set: { entry.locationName = $0 }),
@@ -81,6 +81,7 @@ struct LocationDetailView: View {
                                             .font(.system(size: 16))
                                             .foregroundStyle((entry.locationRating ?? 0) >= star ? .yellow : style.cardMetadataText)
                                             .onTapGesture {
+                                                guard editMode.isEditing else { return }
                                                 entry.locationRating = (entry.locationRating == star) ? nil : star
                                                 entry.touch()
                                             }
@@ -89,6 +90,7 @@ struct LocationDetailView: View {
                                 .transaction { $0.animation = nil }
                                 Spacer()
                                 Button {
+                                    guard editMode.isEditing else { return }
                                     withAnimation(.spring(duration: 0.2)) {
                                         entry.locationVisited.toggle()
                                         entry.touch()
@@ -127,27 +129,53 @@ struct LocationDetailView: View {
                         .overlay(style.surface)
                     
                     // Note
-                                        if editMode.isEditing {
-                                            TextField("Add a note...", text: $editText, axis: .vertical)
-                                                .font(style.typeBody)
-                                                .foregroundStyle(style.cardPrimaryText)
-                                                .focused($textFieldFocused)
-                                        } else {
-                                            Text(entry.text.isEmpty ? "Tap to add a note..." : entry.text)
-                                                .font(style.typeBody)
-                                                .italic(entry.text.isEmpty ? false : true)
-                                                .foregroundStyle(entry.text.isEmpty ? style.cardMetadataText : style.cardSecondaryText)
-                                                .frame(maxWidth: .infinity, alignment: .leading)
-                                                .contentShape(Rectangle())
-                                                .onTapGesture {
-                                                    editText = entry.text
-                                                    editMode.enter()
-                                                    textFieldFocused = true
-                                                }
-                                        }
+                    if editMode.isEditing {
+                        CommonplaceTextEditor(
+                            text: $editText,
+                            placeholder: "Start writing...",
+                            usesSerifFont: false,
+                            minHeight: 32
+                        )
+                        .focused($textFieldFocused)
+                        .foregroundStyle(style.cardPrimaryText)
+                        .onAppear { editText = entry.text }
+                        .onChange(of: editText) { _, newValue in entry.text = newValue }
+                    } else if !entry.text.isEmpty {
+                        Text(entry.text)
+                            .font(style.typeBody)
+                            .italic()
+                            .foregroundStyle(style.cardSecondaryText)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                     
-                    TagInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
-                    PersonInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
+                    if editMode.isEditing {
+                        PersonInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
+                        TagInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
+                    } else {
+                        let hasPeople = entry.tagNames.contains { $0.hasPrefix("@") }
+                        let hasTags = entry.tagNames.contains { !$0.hasPrefix("@") }
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 6) {
+                                if entry.isPinned {
+                                    Image(systemName: "bookmark.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundStyle(accentColor)
+                                    if hasPeople || hasTags {
+                                        pipe
+                                    }
+                                }
+                                if hasPeople {
+                                    PersonInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
+                                    if hasTags {
+                                        pipe
+                                    }
+                                }
+                                if hasTags {
+                                    TagInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
+                                }
+                            }
+                        }
+                    }
                     
                     Divider()
                         .overlay(style.cardDivider)
@@ -157,57 +185,55 @@ struct LocationDetailView: View {
             }
         }
         .environmentObject(editMode)
-                .background(bgColor.ignoresSafeArea())
+        .background(bgColor.ignoresSafeArea())
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom) {
             Color.clear.frame(height: 50)
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        HStack(spacing: 16) {
-                            if editMode.isEditing {
-                                Button("Done") {
-                                    entry.text = editText
-                                    textFieldFocused = false
-                                    entry.touch()
-                                    editMode.exit()
-                                }
-                                .bold()
-                                .foregroundStyle(accentColor)
-                            } else {
-                                Button {
-                                    editMode.enter()
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                        editText = entry.text
-                                        textFieldFocused = true
-                                    }
-                                } label: {
-                                    Image(systemName: "rectangle.and.pencil.and.ellipsis")
-                                        .foregroundStyle(accentColor)
-                                        .offset(y: -2)
-                                }
-                                Menu {
-                                    Button {
-                                        withAnimation { entry.isPinned.toggle() }
-                                    } label: {
-                                        Label(entry.isPinned ? "Remove Bookmark" : "Bookmark",
-                                              systemImage: entry.isPinned ? "bookmark.fill" : "bookmark")
-                                    }
-                                    Divider()
-                                    Button(role: .destructive) {
-                                        showingDeleteConfirmation = true
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                } label: {
-                                    Image(systemName: "ellipsis.circle")
-                                        .foregroundStyle(accentColor)
-                                }
+            if editMode.isEditing {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        entry.text = editText
+                        textFieldFocused = false
+                        entry.touch()
+                        editMode.exit()
+                    }
+                    .bold()
+                    .foregroundStyle(accentColor)
+                }
+            } else {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        Button {
+                            editMode.enter()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                textFieldFocused = true
                             }
+                        } label: {
+                            Label("Edit", systemImage: "rectangle.and.pencil.and.ellipsis")
                         }
+                        Divider()
+                        Button {
+                            withAnimation { entry.isPinned.toggle() }
+                        } label: {
+                            Label(entry.isPinned ? "Remove Bookmark" : "Bookmark",
+                                  systemImage: entry.isPinned ? "bookmark.fill" : "bookmark")
+                        }
+                        Divider()
+                        Button(role: .destructive) {
+                            showingDeleteConfirmation = true
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .foregroundStyle(accentColor)
                     }
                 }
+            }
+        }
         .onDisappear {
             SearchIndex.shared.index(entry: entry)
         }
@@ -245,5 +271,11 @@ struct LocationDetailView: View {
             }
         }
     }
+    // MARK: - Pipe Separator
     
+    var pipe: some View {
+        Text("|")
+            .font(.system(size: 18))
+            .foregroundStyle(accentColor.opacity(0.3))
+    }
 }

@@ -576,7 +576,6 @@ struct WeeklyReviewFlowView: View {
                 TextEditor(text: text)
                     .font(AppTypeScale.bodySecondary)
                     .foregroundStyle(WeeklyReviewTheme.primaryText)
-                    .foregroundStyle(WeeklyReviewTheme.primaryText)
                     .scrollContentBackground(.hidden)
                     .background(Color.clear)
                     .frame(minHeight: 80)
