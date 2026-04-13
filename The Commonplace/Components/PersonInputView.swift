@@ -12,35 +12,45 @@ import SwiftData
 struct PersonInputView: View {
     @Binding var tags: [String]
     @Query(sort: \Tag.name) var allPersonTags: [Tag]
-
+    @Query var allEntries: [Entry]
+    
     var allPersons: [Tag] { allPersonTags.filter { $0.isPerson } }
     var accentColor: Color = .accentColor
     var style: (any AppThemeStyle)?
-
+    
     @EnvironmentObject var editMode: EditModeManager
-
+    
     @State private var inputText = ""
     @State private var isExpanded = false
     @FocusState private var isFocused: Bool
-
+    
     @Environment(\.modelContext) var modelContext
-
+    
     var taggedPersonNames: [String] {
         tags.filter { $0.hasPrefix("@") }
             .map { String($0.dropFirst()) }
     }
-
+    
     var suggestions: [Tag] {
-        let tagged = Set(taggedPersonNames)
-        if inputText.isEmpty {
-            return allPersons.filter { !tagged.contains($0.name) }
+            let tagged = Set(taggedPersonNames)
+            let counts = Dictionary(
+                allEntries.flatMap { $0.tagNames.filter { $0.hasPrefix("@") } }
+                    .map { (String($0.dropFirst()), 1) },
+                uniquingKeysWith: +
+            )
+            if inputText.isEmpty {
+                return allPersons
+                    .filter { !tagged.contains($0.name) }
+                    .sorted { (counts[$0.name] ?? 0) > (counts[$1.name] ?? 0) }
+            }
+            return allPersons
+                .filter {
+                    !tagged.contains($0.name) &&
+                    $0.name.localizedCaseInsensitiveContains(inputText)
+                }
+                .sorted { (counts[$0.name] ?? 0) > (counts[$1.name] ?? 0) }
         }
-        return allPersons.filter {
-            !tagged.contains($0.name) &&
-            $0.name.localizedCaseInsensitiveContains(inputText)
-        }
-    }
-
+    
     var showCreateOption: Bool {
         let trimmed = inputText.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return false }
@@ -48,10 +58,10 @@ struct PersonInputView: View {
         let alreadyExists = allPersons.contains { $0.name.lowercased() == trimmed.lowercased() }
         return !alreadyTagged && !alreadyExists
     }
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-
+            
             // Chips row — always visible when people are tagged
             if !taggedPersonNames.isEmpty || isExpanded {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -117,7 +127,7 @@ struct PersonInputView: View {
                     }
                 }
             }
-
+            
             // Suggestions
             if isFocused && (!suggestions.isEmpty || showCreateOption) {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -167,26 +177,26 @@ struct PersonInputView: View {
         .animation(.easeInOut(duration: 0.15), value: isExpanded)
         .animation(.easeInOut(duration: 0.15), value: suggestions.count)
     }
-
+    
     // MARK: - Person Chip
-
+    
     func personChip(name: String) -> some View {
-            let person = allPersons.first { $0.name == name }
-            return ZStack {
-                Circle()
-                    .strokeBorder(SharedTheme.goldRingGradient, lineWidth: 1.5)
-                    .frame(width: 28, height: 28)
-                personAvatar(name: name, photoPath: person?.profilePhotoPath, size: 26)
-            }
-            .onLongPressGesture {
-                if editMode.isEditing {
-                    tags.removeAll { $0 == "@\(name)" }
-                }
+        let person = allPersons.first { $0.name == name }
+        return ZStack {
+            Circle()
+                .strokeBorder(SharedTheme.goldRingGradient, lineWidth: 1.5)
+                .frame(width: 28, height: 28)
+            personAvatar(name: name, photoPath: person?.profilePhotoPath, size: 26)
+        }
+        .onLongPressGesture {
+            if editMode.isEditing {
+                tags.removeAll { $0 == "@\(name)" }
             }
         }
-
+    }
+    
     // MARK: - Person Avatar
-
+    
     func personAvatar(name: String, photoPath: String?, size: CGFloat) -> some View {
         Group {
             if let path = photoPath,
@@ -209,9 +219,9 @@ struct PersonInputView: View {
             }
         }
     }
-
+    
     // MARK: - Add Person
-
+    
     func addPerson(_ name: String) {
         let cleaned = name.trimmingCharacters(in: .whitespaces)
         guard !cleaned.isEmpty else { return }

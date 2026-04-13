@@ -39,7 +39,6 @@ enum NavigationRouter {
             switch entry.type {
             case .location: LocationDetailView(entry: entry)
             case .sticky:   StickyDetailView(entry: entry)
-                    .environmentObject(EditModeManager())
             case .media:    MediaDetailView(entry: entry)
             default:        EntryDetailView(entry: entry)
             }

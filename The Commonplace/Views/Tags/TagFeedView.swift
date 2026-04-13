@@ -15,6 +15,7 @@ struct TagFeedView: View {
     @State private var searchText = ""
     @State private var showingEmojiPicker = false
     @State private var promotedFolio: Tag? = nil
+    @State private var showingDeleteConfirmation = false
     
     var tagObject: Tag? {
         allTags.first { $0.name == tag }
@@ -62,21 +63,44 @@ struct TagFeedView: View {
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                if !isAlreadyFolio {
-                    Button {
-                        showingEmojiPicker = true
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "square.stack.badge.plus")
-                                .font(.system(size: 14))
-                            Text("Promote")
-                                .font(style.typeCaption)
-                                .fontWeight(.medium)
+                Menu {
+                    if !isAlreadyFolio {
+                        Button {
+                            showingEmojiPicker = true
+                        } label: {
+                            Label("Promote to Folio", systemImage: "book.pages.fill")
                         }
-                        .foregroundStyle(style.accent)
+                        Divider()
                     }
+                    Button {
+                        withAnimation { tagObject?.isPinned.toggle() }
+                        try? modelContext.save()
+                    } label: {
+                        Label(tagObject?.isPinned == true ? "Remove Bookmark" : "Bookmark",
+                              systemImage: tagObject?.isPinned == true ? "bookmark.fill" : "bookmark")
+                    }
+                    Divider()
+                    Button(role: .destructive) {
+                        showingDeleteConfirmation = true
+                    } label: {
+                        Label("Delete Tag", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .foregroundStyle(style.accent)
                 }
             }
+        }
+        .confirmationDialog("Delete \"\(tag)\"?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+            Button("Delete Tag", role: .destructive) {
+                if let tagObj = tagObject {
+                    modelContext.delete(tagObj)
+                    try? modelContext.save()
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will delete the tag but won't remove it from entries that use it.")
         }
         .searchable(text: $searchText, prompt: "Search entries...")
         .sheet(isPresented: $showingEmojiPicker) {

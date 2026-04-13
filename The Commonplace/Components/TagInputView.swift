@@ -27,17 +27,20 @@ struct TagInputView: View {
     }
     
     var allExistingTags: [String] {
-        Array(Set(entries.flatMap { $0.tagNames }))
-            .sorted()
-            .filter { !tags.contains($0) && !$0.hasPrefix("@") }
-    }
-    
-    var suggestions: [String] {
-        if inputText.isEmpty { return allExistingTags }
-        return allExistingTags.filter {
-            $0.localizedCaseInsensitiveContains(inputText)
+            let allNames = entries.flatMap { $0.tagNames }.filter { !$0.hasPrefix("@") }
+            let counts = Dictionary(allNames.map { ($0, 1) }, uniquingKeysWith: +)
+            return counts
+                .filter { !tags.contains($0.key) }
+                .sorted { $0.value > $1.value }
+                .map { $0.key }
         }
-    }
+        
+        var suggestions: [String] {
+            if inputText.isEmpty { return allExistingTags }
+            return allExistingTags.filter {
+                $0.localizedCaseInsensitiveContains(inputText)
+            }
+        }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -125,16 +128,29 @@ struct TagInputView: View {
                                 HStack(spacing: 4) {
                                     if let folio = folioTag, let emoji = folio.subjectEmoji {
                                         Text(emoji).font(.caption)
-                                        Text(folio.folioDisplayName).font(.caption)
+                                        Text(folio.folioDisplayName)
+                                            .font(.caption)
+                                            .foregroundStyle(style?.primaryText ?? .primary)
                                     } else {
                                         Text(suggestion).font(.caption)
                                     }
                                 }
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 5)
-                                .background(style?.pillBackground ?? Color(uiColor: .systemGray5))
-                                .foregroundStyle(style?.pillForeground ?? .primary)
+                                .background(folioTag != nil ? Color(hex: folioTag?.colorHex ?? "#888780").opacity(0.2) : style?.pillBackground ?? Color(uiColor: .systemGray5))
+                                .foregroundStyle(accentColor)
                                 .clipShape(Capsule())
+                                .overlay(
+                                    folioTag != nil ?
+                                    Capsule().strokeBorder(
+                                        LinearGradient(
+                                            colors: [Color(white: 0.85), Color(white: 0.6), Color(white: 0.85), Color(white: 0.5), Color(white: 0.85)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1.5
+                                    ) : nil
+                                )
                             }
                         }
                     }

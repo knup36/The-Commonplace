@@ -433,9 +433,10 @@ struct MediaDetailView: View {
                             .font(.system(size: 16))
                             .foregroundStyle(localRating >= star ? .yellow : style.cardMetadataText)
                             .onTapGesture {
-                                localRating = localRating == star ? 0 : star
-                                scheduleSave()
-                            }
+                                                            guard editMode.isEditing else { return }
+                                                            localRating = localRating == star ? 0 : star
+                                                            scheduleSave()
+                                                        }
                     }
                 }
                 .transaction { $0.animation = nil }
@@ -457,14 +458,15 @@ struct MediaDetailView: View {
             ("Finished", "finished", "checkmark.circle")
         ]
         return HStack(spacing: 0) {
-            ForEach(statuses, id: \.value) { item in
-                let isSelected = localStatus == item.value
-                let color = statusColor(for: item.value)
-                let inactiveColor = entry.type.detailAccentColor(for: themeManager.current)
-                Button {
-                    localStatus = item.value
-                    scheduleSave()
-                } label: {
+                    ForEach(statuses, id: \.value) { item in
+                        let isSelected = localStatus == item.value
+                        let color = statusColor(for: item.value)
+                        let inactiveColor = entry.type.detailAccentColor(for: themeManager.current)
+                        Button {
+                            guard editMode.isEditing else { return }
+                            localStatus = item.value
+                            scheduleSave()
+                        } label: {
                     HStack(spacing: 5) {
                         Image(systemName: isSelected ? "\(item.icon).fill" : item.icon)
                             .font(style.typeCaption)
@@ -594,18 +596,20 @@ struct MediaDetailView: View {
     var logSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("LOG")
-                    .font(style.typeSectionHeader)
-                    .foregroundStyle(style.cardSecondaryText)
-                Spacer()
-                Button {
-                    showingLogInput.toggle()
-                } label: {
-                    Image(systemName: "plus.circle")
-                        .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
-                }
-            }
-            .padding(.horizontal, 20)
+                            Text("LOG")
+                                .font(style.typeSectionHeader)
+                                .foregroundStyle(style.cardSecondaryText)
+                            Spacer()
+                            if editMode.isEditing {
+                                Button {
+                                    showingLogInput.toggle()
+                                } label: {
+                                    Image(systemName: "plus.circle")
+                                        .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
             
             // New log entry input
             if showingLogInput {
@@ -642,11 +646,11 @@ struct MediaDetailView: View {
             }
             
             // Existing log entries
-            if entry.mediaLog.isEmpty && !showingLogInput {
-                Text("No log entries yet. Tap + to add one.")
-                    .font(style.typeBodySecondary)
-                    .foregroundStyle(style.cardMetadataText)
-                    .padding(.horizontal, 20)
+            if entry.mediaLog.isEmpty && !showingLogInput && editMode.isEditing {
+                            Text("No log entries yet. Tap + to add one.")
+                                .font(style.typeBodySecondary)
+                                .foregroundStyle(style.cardMetadataText)
+                                .padding(.horizontal, 20)
             } else {
                 VStack(spacing: 0) {
                     ForEach(entry.mediaLog.reversed(), id: \.self) { logEntry in
@@ -781,7 +785,7 @@ struct MediaDetailView: View {
 
     var pipe: some View {
         Text("|")
-            .font(.system(size: 12))
+            .font(.system(size: 18))
             .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current).opacity(0.3))
     }
 }

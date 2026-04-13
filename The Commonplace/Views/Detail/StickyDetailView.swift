@@ -21,6 +21,7 @@ struct StickyDetailView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var themeManager: ThemeManager
     
+    @StateObject private var editMode = EditModeManager()
     @State private var showingDeleteConfirmation = false
     @State private var inputText: String = ""
     @State private var editingItemID: String? = nil  // nil = adding new
@@ -110,14 +111,48 @@ struct StickyDetailView: View {
             
             // Tags + footer
             Section {
-                TagInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
-                    .listRowBackground(bgColor)
-                    .listRowSeparator(.hidden)
+                if editMode.isEditing {
+                    PersonInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
+                        .listRowBackground(bgColor)
+                        .listRowSeparator(.hidden)
+                    TagInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
+                        .listRowBackground(bgColor)
+                        .listRowSeparator(.hidden)
+                } else {
+                    let hasPeople = entry.tagNames.contains { $0.hasPrefix("@") }
+                    let hasTags = entry.tagNames.contains { !$0.hasPrefix("@") }
+                    if entry.isPinned || hasPeople || hasTags {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 6) {
+                                if entry.isPinned {
+                                    Image(systemName: "bookmark.fill")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(accentColor)
+                                    if hasPeople || hasTags {
+                                        Text("|").font(.system(size: 12)).foregroundStyle(accentColor.opacity(0.3))
+                                    }
+                                }
+                                if hasPeople {
+                                    PersonInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
+                                    if hasTags {
+                                        Text("|").font(.system(size: 12)).foregroundStyle(accentColor.opacity(0.3))
+                                    }
+                                }
+                                if hasTags {
+                                    TagInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
+                                }
+                            }
+                        }
+                        .listRowBackground(bgColor)
+                        .listRowSeparator(.hidden)
+                    }
+                }
                 EntryMetadataFooter(entry: entry, style: style, accentColor: accentColor)
                     .listRowBackground(bgColor)
                     .listRowSeparator(.hidden)
             }
         }
+        .environmentObject(editMode)
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(bgColor.ignoresSafeArea())
@@ -129,9 +164,30 @@ struct StickyDetailView: View {
             SearchIndex.shared.index(entry: entry)
         }
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 16) {
+            if editMode.isEditing {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        editMode.exit()
+                    }
+                    .bold()
+                    .foregroundStyle(accentColor)
+                }
+            } else {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
+                        Button {
+                            editMode.enter()
+                        } label: {
+                            Label("Edit Tags", systemImage: "rectangle.and.pencil.and.ellipsis")
+                        }
+                        Divider()
+                        Button {
+                            withAnimation { entry.isPinned.toggle() }
+                        } label: {
+                            Label(entry.isPinned ? "Remove Bookmark" : "Bookmark",
+                                  systemImage: entry.isPinned ? "bookmark.fill" : "bookmark")
+                        }
+                        Divider()
                         Button(role: .destructive) {
                             showingDeleteConfirmation = true
                         } label: {
@@ -139,12 +195,6 @@ struct StickyDetailView: View {
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
-                            .foregroundStyle(accentColor)
-                    }
-                    Button {
-                        withAnimation { entry.isPinned.toggle() }
-                    } label: {
-                        Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
                             .foregroundStyle(accentColor)
                     }
                 }

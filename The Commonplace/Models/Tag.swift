@@ -32,8 +32,8 @@
 //   "folioBand"     — Band/Artist Folio (v3.0)
 
 // ============================================================
-// SCHEMA VERSION: 2
-// Last updated: v1.10.1
+// SCHEMA VERSION: 3
+// Last updated: v2.0
 //
 // Schema change policy: same as Entry.swift — optional fields safe to add
 // at any time. Never remove fields without deprecating first.
@@ -43,6 +43,7 @@
 //   v1.3  — colorHex
 //   v1.7  — isProject, isCompleted, completedAt (stored now, activated v3.0)
 //   v1.10.1 — subjectType, profilePhotoPath, bio, birthdate, subjectEmoji
+//   v2.0    — folioHeaderImagePath
 //
 // Architecture rules:
 //   - NEVER use SwiftData relationships between Tag and Entry —
@@ -84,7 +85,10 @@ class Tag {
     var birthdate: Date? = nil
 
     // Subject emoji — shown in pill for all subject types
-    var subjectEmoji: String? = nil
+        var subjectEmoji: String? = nil
+
+        // Folio header image — optional full-width header photo (v2.0)
+        var folioHeaderImagePath: String? = nil
 
     init(name: String) {
         self.name = name

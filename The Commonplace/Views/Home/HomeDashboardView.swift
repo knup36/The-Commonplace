@@ -144,7 +144,7 @@ struct HomeDashboardView: View {
     
     var collectionsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader(title: "Collections", icon: "magazine.fill")
+            sectionHeader(title: "Collections", icon: "mail.stack.fill")
             
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHGrid(rows: twoRows, spacing: 10) {

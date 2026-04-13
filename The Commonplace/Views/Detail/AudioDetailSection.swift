@@ -13,9 +13,12 @@ struct AudioDetailSection: View {
     var style: any AppThemeStyle
     var accentColor: Color
     
+    @EnvironmentObject var editMode: EditModeManager
+    
     var body: some View {
-            if entry.type == .audio {
-                if entry.audioPath == nil {
+        if entry.type == .audio {
+            if entry.audioPath == nil {
+                if editMode.isEditing {
                     AudioEntryView(
                         audioPath: Binding(get: { entry.audioPath }, set: { entry.audioPath = $0 }),
                         transcript: Binding(get: { entry.transcript ?? "" }, set: { entry.transcript = $0.isEmpty ? nil : $0 })
@@ -26,6 +29,7 @@ struct AudioDetailSection: View {
                         }
                     }
                 }
+            }
             if let path = entry.audioPath,
                let audioData = MediaFileManager.load(path: path) {
                 AudioPlayerView(audioData: audioData)
@@ -42,7 +46,7 @@ struct AudioDetailSection: View {
                     .padding(12)
                     .background(style.cardDivider)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-                } else {
+                } else if editMode.isEditing {
                     Label("No transcript available", systemImage: "text.bubble")
                         .font(style.typeCaption)
                         .foregroundStyle(style.cardSecondaryText)

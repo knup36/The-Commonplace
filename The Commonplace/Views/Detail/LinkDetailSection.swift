@@ -15,6 +15,7 @@ struct LinkDetailSection: View {
     var style: any AppThemeStyle
     var accentColor: Color
     
+    @EnvironmentObject var editMode: EditModeManager
     @State private var linkURLText = ""
     @State private var isExtracting = false
     @State private var showingArticleReader = false
@@ -49,14 +50,18 @@ struct LinkDetailSection: View {
                             }
                         }
                 } else {
-                    // Content type selector
-                    if entry.url != nil {
+                    // Content type selector — edit mode only
+                    if entry.url != nil && editMode.isEditing {
                         contentTypeSelector
                     }
                     
                     // Always show the rich link preview card regardless of content type
-                                        // Content type selector affects labelling only, not preview rendering
-                                        LinkPreviewView(entry: entry)
+                    LinkPreviewView(entry: entry)
+                    if let contentType = entry.linkContentType {
+                        Label(contentType.capitalized, systemImage: iconFor(contentType))
+                            .font(style.typeCaption)
+                            .foregroundStyle(accentColor.opacity(0.7))
+                    }
                     
                     if let urlString = entry.url, let url = URL(string: urlString) {
                         HStack(spacing: 10) {

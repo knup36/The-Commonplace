@@ -21,6 +21,7 @@
 
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 struct FolioDetailView: View {
     var tag: Tag
@@ -28,62 +29,66 @@ struct FolioDetailView: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var themeManager: ThemeManager
-    @StateObject private var editMode = EditModeManager()
-
+    
     @State private var showingDeleteConfirmation = false
-
+    @State private var showingHeaderImagePicker = false
+    @State private var selectedPhotoItem: PhotosPickerItem? = nil
+    @State private var headerImage: UIImage? = nil
+    @State private var imageToCrop: UIImage? = nil
+    
     var style: any AppThemeStyle { themeManager.style }
-
+    var folioColor: Color { Color(hex: tag.colorHex ?? "#888780") }
+    
     // MARK: - Entry Grouping
-
+    
     var taggedEntries: [Entry] {
         allEntries.filter { $0.tagNames.contains(tag.name) }
     }
-
+    
     var stickyEntries: [Entry] {
         taggedEntries.filter { $0.type == .sticky }
     }
-
+    
     var photoEntries: [Entry] {
         taggedEntries.filter { $0.type == .photo }
     }
-
+    
     var slimEntries: [Entry] {
         taggedEntries.filter { $0.type != .sticky && $0.type != .photo }
     }
-
+    
     // MARK: - Count per type (all 9, in display order)
-
+    
     let typeOrder: [EntryType] = [.text, .photo, .audio, .link, .journal, .location, .sticky, .music, .media]
-
+    
     func count(for type: EntryType) -> Int {
         taggedEntries.filter { $0.type == type }.count
     }
-
+    
     // MARK: - Body
-
+    
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
                 folioHeader
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
-
+                
                 if !stickyEntries.isEmpty {
                     stickySection
                         .padding(.horizontal, 16)
                 }
-
+                
                 if !photoEntries.isEmpty {
                     photoGrid
                         .padding(.horizontal, 16)
                 }
-
+                
                 if !slimEntries.isEmpty {
                     slimFeed
                         .padding(.horizontal, 16)
                 }
-
+                
                 Spacer().frame(height: 80)
             }
         }
@@ -94,11 +99,17 @@ struct FolioDetailView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
                     Button {
+                        showingHeaderImagePicker = true
+                    } label: {
+                        Label("Change Header Image", systemImage: "photo")
+                    }
+                    Divider()
+                    Button {
                         withAnimation { tag.isPinned.toggle() }
                         try? modelContext.save()
                     } label: {
                         Label(tag.isPinned ? "Remove Bookmark" : "Bookmark",
-                                                      systemImage: tag.isPinned ? "bookmark.slash" : "bookmark")
+                              systemImage: tag.isPinned ? "bookmark.fill" : "bookmark")
                     }
                     Divider()
                     Button(role: .destructive) {
@@ -126,51 +137,112 @@ struct FolioDetailView: View {
         } message: {
             Text("The tag and its emoji will be removed. Your entries will not be deleted.")
         }
+        .photosPicker(isPresented: $showingHeaderImagePicker, selection: $selectedPhotoItem, matching: .images)
+        .onChange(of: selectedPhotoItem) { _, newItem in
+            Task {
+                guard let newItem,
+                      let rawData = try? await newItem.loadTransferable(type: Data.self),
+                      let uiImage = UIImage(data: rawData) else { return }
+                await MainActor.run { imageToCrop = uiImage }
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { imageToCrop != nil },
+            set: { if !$0 { imageToCrop = nil } }
+        )) {
+            if let image = imageToCrop {
+                FolioHeaderCropView(image: image) { cropped in
+                    imageToCrop = nil
+                    Task { await saveHeaderImage(cropped) }
+                } onCancel: {
+                    imageToCrop = nil
+                }
+            }
+        }
+        .onAppear {
+            loadHeaderImage()
+        }
         .onDisappear {
             try? modelContext.save()
         }
     }
-
+    
     // MARK: - Header
-
+    
     var folioHeader: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                Text(tag.subjectEmoji ?? "◆")
-                    .font(.system(size: 44))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(tag.folioDisplayName)
-                        .font(style.typeLargeTitle)
-                        .foregroundStyle(style.primaryText)
-                    Text("\(taggedEntries.count) \(taggedEntries.count == 1 ? "entry" : "entries")")
-                        .font(style.typeCaption)
-                        .foregroundStyle(style.secondaryText)
+        VStack {
+            Spacer()
+            // Overlaid content
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 12) {
+                    Text(tag.subjectEmoji ?? "◆")
+                        .font(.system(size: 44))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(tag.folioDisplayName)
+                            .font(style.typeLargeTitle)
+                            .foregroundStyle(headerImage != nil ? .white : style.primaryText)
+                        HStack(spacing: 6) {
+                            if tag.isPinned {
+                                Image(systemName: "bookmark.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundStyle(headerImage != nil ? .white : style.accent)
+                            }
+                            Text("\(taggedEntries.count) \(taggedEntries.count == 1 ? "entry" : "entries")")
+                                .font(style.typeCaption)
+                                .foregroundStyle(headerImage != nil ? .white.opacity(0.8) : style.secondaryText)
+                        }
+                    }
                 }
-            }
-
-            // Colored entry type counts
-            HStack(spacing: 0) {
-                ForEach(typeOrder, id: \.self) { type in
-                    let c = count(for: type)
-                    Text("\(c)")
-                        .font(.system(size: 15, weight: c > 0 ? .semibold : .regular))
-                        .foregroundStyle(
-                            c > 0
+                
+                // Entry type counts strip
+                HStack(spacing: 0) {
+                    ForEach(typeOrder, id: \.self) { type in
+                        let c = count(for: type)
+                        Text("\(c)")
+                            .font(.system(size: 15, weight: c > 0 ? .semibold : .regular))
+                            .foregroundStyle(
+                                c > 0
                                 ? type.detailAccentColor(for: themeManager.current)
-                                : style.tertiaryText.opacity(0.3)
-                        )
-                        .frame(maxWidth: .infinity)
+                                : (headerImage != nil ? Color.white.opacity(0.2) : style.tertiaryText.opacity(0.3))
+                            )
+                            .frame(maxWidth: .infinity)
+                    }
                 }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 4)
+                .background(headerImage != nil ? Color.black.opacity(0.55) : style.surface.opacity(0.5))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
             }
-            .padding(.vertical, 8)
-            .padding(.horizontal, 4)
-            .background(style.surface.opacity(0.5))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
         }
+        .frame(maxWidth: .infinity)
+        .frame(height: 220)
+        .background {
+            if let image = headerImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .overlay(
+                        LinearGradient(
+                            colors: [Color.black.opacity(0.0), Color.black.opacity(0.65)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+            } else {
+                LinearGradient(
+                    colors: [folioColor.opacity(0.6), folioColor.opacity(0.2)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
-
+    
     // MARK: - Sticky Section
-
+    
     var stickySection: some View {
         LazyVGrid(
             columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2),
@@ -184,9 +256,9 @@ struct FolioDetailView: View {
             }
         }
     }
-
+    
     // MARK: - Photo Grid (4 columns)
-
+    
     var photoGrid: some View {
         LazyVGrid(
             columns: Array(repeating: GridItem(.flexible(), spacing: 3), count: 4),
@@ -201,7 +273,7 @@ struct FolioDetailView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
-
+    
     func photoThumb(entry: Entry) -> some View {
         GeometryReader { geo in
             Group {
@@ -226,10 +298,29 @@ struct FolioDetailView: View {
         }
         .aspectRatio(1, contentMode: .fit)
     }
-
+    
     // MARK: - Slim Feed
-
-        var slimFeed: some View {
-            SlimEntryFeed(entries: slimEntries, style: style)
+    
+    var slimFeed: some View {
+        SlimEntryFeed(entries: slimEntries, style: style)
+    }
+    
+    // MARK: - Header Image Helpers
+    
+    func loadHeaderImage() {
+        guard let path = tag.folioHeaderImagePath,
+              let data = MediaFileManager.load(path: path),
+              let uiImage = UIImage(data: data) else { return }
+        headerImage = uiImage
+    }
+    
+    func saveHeaderImage(_ uiImage: UIImage) async {
+        guard let processedData = ImageProcessor.resizeAndCompress(image: uiImage) else { return }
+        let path = try? MediaFileManager.save(processedData, type: .image, id: "\(tag.name)_folio_header")
+        await MainActor.run {
+            tag.folioHeaderImagePath = path
+            headerImage = UIImage(data: processedData)
+            try? modelContext.save()
         }
+    }
 }
