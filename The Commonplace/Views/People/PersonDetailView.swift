@@ -78,32 +78,42 @@ struct PersonDetailView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 16) {
-                    Button {
-                        withAnimation { tag.isPinned.toggle() }
-                    } label: {
-                        Image(systemName: tag.isPinned ? "bookmark.fill" : "bookmark")
-                            .foregroundStyle(accent)
-                    }
-                    Menu {
-                        Button("Edit") {
-                            showingEditView = true
-                        }
-                        Button(role: .destructive) {
-                            modelContext.delete(tag)
-                            try? modelContext.save()
-                            dismiss()
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Menu {
+                            Button {
+                                showingEditView = true
+                            } label: {
+                                Label("Edit", systemImage: "rectangle.and.pencil.and.ellipsis")
+                            }
+                            Divider()
+                            Button {
+                                withAnimation { tag.isPinned.toggle() }
+                                try? modelContext.save()
+                            } label: {
+                                Label(tag.isPinned ? "Remove Bookmark" : "Bookmark",
+                                      systemImage: tag.isPinned ? "bookmark.fill" : "bookmark")
+                            }
+                            Divider()
+                            Button(role: .destructive) {
+                                modelContext.delete(tag)
+                                try? modelContext.save()
+                                dismiss()
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         } label: {
-                            Label("Delete", systemImage: "trash")
+                            Image(systemName: "ellipsis.circle")
+                                .foregroundStyle(accent)
                         }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .foregroundStyle(accent)
+                    }
+                    if tag.isPinned {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Image(systemName: "bookmark.fill")
+                                .font(.system(size: 20))
+                                .foregroundStyle(accent)
+                        }
                     }
                 }
-            }
-        }
         .sheet(isPresented: $showingEditView) {
             PersonEditView(tag: tag)
         }

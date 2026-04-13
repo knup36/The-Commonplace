@@ -139,21 +139,22 @@ struct EntryDetailView: View {
             }
         }
         .onAppear {
-            if entry.type == .text {
-                loadNoteParts()
-                if entry.text.isEmpty {
-                    editMode.enter()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        noteTitleFocused = true
+                    let isNewEntry = Date().timeIntervalSince(entry.createdAt) < 10
+                    if entry.type == .text {
+                        loadNoteParts()
+                        if isNewEntry {
+                            editMode.enter()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                noteTitleFocused = true
+                            }
+                        }
+                    } else if isNewEntry {
+                        editMode.enter()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            textFieldFocused = true
+                        }
                     }
                 }
-            } else if entry.text.isEmpty {
-                editMode.enter()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    textFieldFocused = true
-                }
-            }
-        }
         .onDisappear {
             SearchIndex.shared.index(entry: entry)
         }
@@ -221,12 +222,6 @@ struct EntryDetailView: View {
                     Text(noteBody)
                         .font(style.typeBody)
                         .foregroundStyle(style.cardPrimaryText)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                if noteTitle.isEmpty && noteBody.isEmpty {
-                    Text("Tap pencil to add a note...")
-                        .font(style.typeBody)
-                        .foregroundStyle(style.cardMetadataText)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }

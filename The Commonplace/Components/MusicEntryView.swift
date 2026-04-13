@@ -26,11 +26,6 @@ struct MusicEntryView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @StateObject private var musicService = MusicPlayerService.shared
     
-    // Preview-specific state (only used when falling back to AVPlayer)
-    @State private var progress: Double = 1.0
-    @State private var previewTimer: Timer? = nil
-    private let previewDuration: Double = 30.0
-    
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { EntryType.music.detailAccentColor(for: themeManager.current) }
     
@@ -48,15 +43,7 @@ struct MusicEntryView: View {
             infoStack
             Spacer()
             if entry.previewURL != nil || entry.musicTrackID != nil {
-                playButton
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .musicPlaybackStarted)) { notification in
-            if let id = notification.object as? UUID, id != entry.id {
-                // Another entry started playing — reset our progress ring
-                progress = 1.0
-                previewTimer?.invalidate()
-                previewTimer = nil
+                MusicPlayButton(entry: entry, accentColor: accentColor, size: 40)
             }
         }
     }
@@ -116,9 +103,30 @@ struct MusicEntryView: View {
         }
     }
     
-    // MARK: - Play Button
+}
+
+// MARK: - Reusable Music Play Button
+
+// MARK: - Reusable Music Play Button
+
+struct MusicPlayButton: View {
+    let entry: Entry
+    let accentColor: Color
+    let size: CGFloat
+    @StateObject private var musicService = MusicPlayerService.shared
+    @State private var progress: Double = 1.0
+    @State private var previewTimer: Timer? = nil
+    private let previewDuration: Double = 30.0
     
-    var playButton: some View {
+    var isCurrentlyPlaying: Bool {
+        musicService.isPlaying && musicService.currentEntryID == entry.id
+    }
+    
+    var hasFullPlayback: Bool {
+        entry.musicTrackID != nil && musicService.authorizationStatus == .authorized
+    }
+    
+    var body: some View {
         Button {
             Task {
                 await musicService.toggle(entry: entry)
@@ -133,28 +141,30 @@ struct MusicEntryView: View {
             ZStack {
                 Circle()
                     .fill(accentColor.opacity(0.15))
-                    .frame(width: 40, height: 40)
-                
-                // Only show countdown ring for preview playback
+                    .frame(width: size, height: size)
                 if isCurrentlyPlaying && !hasFullPlayback {
                     Circle()
                         .trim(from: 0, to: progress)
                         .stroke(accentColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                        .frame(width: 40, height: 40)
+                        .frame(width: size, height: size)
                         .rotationEffect(.degrees(-90))
                         .animation(.linear(duration: 0.1), value: progress)
                 }
-                
                 Image(systemName: isCurrentlyPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: size * 0.35, weight: .medium))
                     .foregroundStyle(accentColor)
-                    .offset(x: isCurrentlyPlaying ? 0 : 1)
+                    .offset(x: isCurrentlyPlaying ? 0 : size * 0.03)
             }
         }
         .buttonStyle(.plain)
+        .onReceive(NotificationCenter.default.publisher(for: .musicPlaybackStarted)) { notification in
+            if let id = notification.object as? UUID, id != entry.id {
+                progress = 1.0
+                previewTimer?.invalidate()
+                previewTimer = nil
+            }
+        }
     }
-    
-    // MARK: - Preview Countdown (fallback only)
     
     func startPreviewCountdown() {
         previewTimer?.invalidate()

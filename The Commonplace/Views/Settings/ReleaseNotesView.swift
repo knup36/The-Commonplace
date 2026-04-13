@@ -21,6 +21,50 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.0",
+            title: "Twin Peaks",
+            notes: [
+                "Scrapbook Feed — toggle from the Feed header to transform your entries into handcrafted cards. Notes float as Georgia serif, shots become Polaroids with tape strips, stickies go yellow, links clip into newspaper columns, places go full-bleed map, music becomes a DIY gig flyer, journal entries open like notebook pages",
+                "Shuffle button in Scrapbook mode randomizes your archive with a stable seeded sort — same order until you shuffle again",
+                "Folios — promote any tag to a named entity with its own emoji, color, and header image. Folios have a type-aware detail view with entry type counts, a photo grid, sticky cards, and a slim feed",
+                "Folio header images support pan-and-pinch crop to get exactly the right framing",
+                "Folios appear as silver-bordered pills in the feed, on the Home dashboard, and in a dedicated Library segment",
+                "Chronicles — a new fourth tab dedicated to your past. On This Day, Mood Timeline, Your Archive stats, Watch Timeline, and Habit Patterns cards surface patterns from everything you've captured",
+                "Tab bar restructured — Chronicles takes the fourth position, Search moves to the Feed capture bar",
+                "Every detail view now has a clean view mode and an intentional edit mode — tap ··· to edit, no more accidental changes",
+                "Bookmark indicator, person avatars, and tag pills sit inline in a single row in view mode across all detail views",
+                "Music detail view redesigned — large centered artwork, track title and artist beneath, circular play and Apple Music buttons side by side",
+                "Weekly Review now stacks cards for up to 8 unfinished weeks — the card persists until you complete it. Week runs Sunday through Saturday",
+                "Tag and people suggestions now sort by frequency — your most-used tags surface first",
+                "People can now be tagged on sticky entries",
+                "HealthKit backfill no longer re-runs on every launch"
+            ]
+        ),
+        Release(
+            version: "1.16",
+            title: "Jekyll and Hyde",
+            notes: [
+                "Detail views now default to read-only view mode — tap ··· to enter edit mode, Done to exit",
+                "EditModeManager coordinates view and edit state across all detail views and shared input components",
+                "Tags and people hide all editing affordances in view mode and display inline as a single horizontal row",
+                "New entries automatically open in edit mode — existing entries always open in view mode",
+                "Persistent thought capture bar in the Feed — a glass capsule field with rotating prompts, filter button, and add button",
+                "48 curated thought prompts across six categories: Observational, Reflective, Opinionated, Curious, Creative, and Connective",
+                "Weekly Review card now persists until completed — no more accidental dismissals"
+            ]
+        ),
+        Release(
+            version: "1.15",
+            title: "Tight! tighttighttight",
+            notes: [
+                "MigrationCoordinator — a single versioned coordinator replaces five individual migration service calls at launch; migrations are tracked by version number, crash-safe, and impossible to double-run",
+                "NavigationRouter — central routing replaces the global destinationView() free function; all 13 call sites now use NavigationRouter.destination(for:), pre-wired for v3.0 Folio upgrade",
+                "AppLogger — structured console logging with domain prefixes across API, SwiftData, Media, and Migration paths; info logs stripped from release builds",
+                "All five SwiftData models now have full schema documentation — version history, field inventory, deprecation policy, and hard rules",
+                "Person model formally marked dormant with a documented safe removal process"
+            ]
+        ),
+        Release(
             version: "1.14.1",
             title: "Been There, Done That",
             notes: [

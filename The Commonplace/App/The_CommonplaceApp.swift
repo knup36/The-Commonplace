@@ -94,8 +94,6 @@ struct CommonplaceApp: App {
             }
             MigrationCoordinator.shared.runIfNeeded(context: context, entries: entries)
             ShareExtensionIngestor.ingestPendingEntries(context: context)
-            entries.forEach { $0.healthDataFetched = false }
-            try? context.save()
             Task.detached {
                 await HealthKitBackfillService.shared.backfillIfNeeded(
                     entries: entries,

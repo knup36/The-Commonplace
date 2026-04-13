@@ -143,23 +143,22 @@ struct WeeklyReviewDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 12) {
-                    Menu {
-                        Button(role: .destructive) {
-                            showingDeleteConfirmation = true
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .foregroundStyle(WeeklyReviewTheme.accentPurple)
-                    }
+                Menu {
                     Button {
                         withAnimation { entry.isPinned.toggle() }
                     } label: {
-                        Image(systemName: entry.isPinned ? "bookmark.fill" : "bookmark")
-                            .foregroundStyle(WeeklyReviewTheme.accentPurple)
+                        Label(entry.isPinned ? "Remove Bookmark" : "Bookmark",
+                              systemImage: entry.isPinned ? "bookmark.fill" : "bookmark")
                     }
+                    Divider()
+                    Button(role: .destructive) {
+                        showingDeleteConfirmation = true
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .foregroundStyle(WeeklyReviewTheme.accentPurple)
                 }
             }
         }
@@ -184,10 +183,17 @@ struct WeeklyReviewDetailView: View {
                     .font(AppTypeScale.title2)
                     .foregroundStyle(WeeklyReviewTheme.primaryText)
             }
-            Text(weekRange)
-                .font(AppTypeScale.bodySecondary)
-                .foregroundStyle(WeeklyReviewTheme.secondaryText)
-                .padding(.bottom, 8)
+            HStack(spacing: 8) {
+                Text(weekRange)
+                    .font(AppTypeScale.bodySecondary)
+                    .foregroundStyle(WeeklyReviewTheme.secondaryText)
+                if entry.isPinned {
+                    Image(systemName: "bookmark.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(WeeklyReviewTheme.accentGold)
+                }
+            }
+            .padding(.bottom, 8)
             
             HStack(spacing: 10) {
                 if !entryCount.isEmpty {

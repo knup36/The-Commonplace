@@ -52,30 +52,93 @@ struct MusicDetailSection: View {
                             }
                     }
                 } else {
-                    MusicEntryView(entry: entry)
-                    if let urlString = entry.url, let url = URL(string: urlString) {
-                        if isExtracting {
-                            HStack(spacing: 6) {
-                                ProgressView()
-                                Text("Fetching music info...")
-                                    .font(style.typeCaption)
-                                    .foregroundStyle(style.cardSecondaryText)
-                            }
-                        } else if entry.linkTitle != nil {
-                            Label("Music info saved", systemImage: "checkmark.circle.fill")
-                                .font(style.typeCaption)
-                                .foregroundStyle(style.cardSecondaryText)
-                        }
-                        Button {
-                            UIApplication.shared.open(url)
-                        } label: {
-                            Label("Open in Apple Music", systemImage: "music.note")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(accentColor)
-                    }
-                }
+                                    VStack(spacing: 16) {
+                                        // Large centered artwork
+                                        Group {
+                                            if let path = entry.musicArtworkPath,
+                                               let data = MediaFileManager.load(path: path),
+                                               let uiImage = UIImage(data: data) {
+                                                Image(uiImage: uiImage)
+                                                    .resizable()
+                                                    .scaledToFill()
+                                                    .frame(width: 192, height: 192)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                                    .shadow(color: accentColor.opacity(0.3), radius: 16, x: 0, y: 8)
+                                            } else {
+                                                RoundedRectangle(cornerRadius: 16)
+                                                    .fill(accentColor.opacity(0.15))
+                                                    .frame(width: 192, height: 192)
+                                                    .overlay(
+                                                        Image(systemName: "music.note")
+                                                            .font(.system(size: 48))
+                                                            .foregroundStyle(accentColor.opacity(0.5))
+                                                    )
+                                            }
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .center)
+
+                                        // Track info — centered
+                                        VStack(spacing: 6) {
+                                            if let title = entry.linkTitle, !title.isEmpty {
+                                                Text(title)
+                                                    .font(style.typeTitle2)
+                                                    .fontWeight(.semibold)
+                                                    .foregroundStyle(style.cardPrimaryText)
+                                                    .multilineTextAlignment(.center)
+                                                    .lineLimit(2)
+                                            }
+                                            if let artist = entry.musicArtist, !artist.isEmpty {
+                                                Text(artist)
+                                                    .font(style.typeBodySecondary)
+                                                    .foregroundStyle(style.cardSecondaryText)
+                                                    .multilineTextAlignment(.center)
+                                            }
+                                            if let album = entry.musicAlbum, !album.isEmpty {
+                                                Text(album)
+                                                    .font(style.typeCaption)
+                                                    .foregroundStyle(style.cardMetadataText)
+                                                    .multilineTextAlignment(.center)
+                                            }
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .center)
+
+                                        // Buttons row — play + Apple Music
+                                        if let urlString = entry.url, let url = URL(string: urlString) {
+                                            HStack(spacing: 24) {
+                                                // Play button
+                                                if entry.previewURL != nil || entry.musicTrackID != nil {
+                                                    MusicPlayButton(entry: entry, accentColor: accentColor, size: 52)
+                                                }
+
+                                                // Apple Music button
+                                                Button {
+                                                    UIApplication.shared.open(url)
+                                                } label: {
+                                                    ZStack {
+                                                        Circle()
+                                                            .fill(accentColor.opacity(0.15))
+                                                            .frame(width: 52, height: 52)
+                                                        Image(systemName: "apple.logo")
+                                                            .font(.system(size: 22, weight: .medium))
+                                                            .foregroundStyle(accentColor)
+                                                    }
+                                                }
+                                                .buttonStyle(.plain)
+                                            }
+                                            .frame(maxWidth: .infinity, alignment: .center)
+                                        }
+
+                                        // Fetch status
+                                        if isExtracting {
+                                            HStack(spacing: 6) {
+                                                ProgressView()
+                                                Text("Fetching music info...")
+                                                    .font(style.typeCaption)
+                                                    .foregroundStyle(style.cardSecondaryText)
+                                            }
+                                        }
+                                    }
+                                }
             }
         }
         .onAppear {

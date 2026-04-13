@@ -27,7 +27,7 @@ struct SlimEntryFeed: View {
     let entries: [Entry]
     var style: any AppThemeStyle
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     var body: some View {
         VStack(spacing: 8) {
             ForEach(entries) { entry in
@@ -38,46 +38,46 @@ struct SlimEntryFeed: View {
             }
         }
     }
-
+    
     // MARK: - Row
-
+    
     func slimRow(entry: Entry) -> some View {
         let accent = entry.type.detailAccentColor(for: themeManager.current)
         let cardColor = entry.type.cardColor(for: themeManager.current)
         return HStack(spacing: 10) {
-
+            
             // Thumbnail
             if hasThumbnail(entry: entry) {
                 slimThumbnail(entry: entry)
                     .padding(.leading, 10)
             }
-
+            
             // Text content
             VStack(alignment: .leading, spacing: 3) {
                 if entry.type == .link, let title = entry.linkTitle, !title.isEmpty {
                     Text(title)
-                        .font(style.typeTitle3)
+                        .font(style.typeBody)
                         .fontWeight(.semibold)
                         .foregroundStyle(style.cardPrimaryText)
                         .lineLimit(3)
                         .lineSpacing(4)
                 } else {
                     Text(slimTitle(for: entry))
-                        .font(style.typeTitle3)
+                        .font(style.typeBody)
                         .fontWeight(.semibold)
                         .foregroundStyle(style.cardPrimaryText)
                         .lineLimit(3)
                     let subtitle = slimSubtitle(for: entry)
                     if !subtitle.isEmpty {
                         Text(subtitle)
-                            .font(style.typeBody)
+                            .font(entry.type == .media ? style.typeCaption : style.typeBodySecondary)
                             .foregroundStyle(style.cardSecondaryText)
                             .lineLimit(2)
                     }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-
+            
             Text(entry.createdAt.formatted(.dateTime.month(.abbreviated).day()))
                 .font(style.typeCaption)
                 .foregroundStyle(accent)
@@ -94,21 +94,21 @@ struct SlimEntryFeed: View {
         .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
         .contentShape(RoundedRectangle(cornerRadius: 14))
     }
-
+    
     // MARK: - Thumbnail
-
+    
     func hasThumbnail(entry: Entry) -> Bool {
         switch entry.type {
         case .location, .media, .link, .music, .audio: return true
         default: return false
         }
     }
-
+    
     @ViewBuilder
     func slimThumbnail(entry: Entry) -> some View {
         let accent = entry.type.detailAccentColor(for: themeManager.current)
         let size: CGFloat = 48
-
+        
         switch entry.type {
         case .location:
             if let lat = entry.captureLatitude, let lon = entry.captureLongitude {
@@ -166,7 +166,7 @@ struct SlimEntryFeed: View {
             EmptyView()
         }
     }
-
+    
     func slimIconThumb(icon: String, accent: Color, size: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: 8)
             .fill(accent.opacity(0.15))
@@ -177,9 +177,9 @@ struct SlimEntryFeed: View {
                     .foregroundStyle(accent)
             )
     }
-
+    
     // MARK: - Subtitle
-
+    
     func slimSubtitle(for entry: Entry) -> String {
         switch entry.type {
         case .text:
@@ -187,13 +187,20 @@ struct SlimEntryFeed: View {
             return parts.dropFirst().joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
         case .link:
             return entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        case .media:
+            let parts: [String] = [
+                entry.mediaYear ?? "",
+                entry.mediaType == "tv" ? "Television" : entry.mediaType == "movie" ? "Movie" : "",
+                entry.mediaGenre ?? ""
+            ].filter { !$0.isEmpty }
+            return parts.joined(separator: " · ")
         default:
             return ""
         }
     }
-
+    
     // MARK: - Title Derivation
-
+    
     func slimTitle(for entry: Entry) -> String {
         switch entry.type {
         case .text:
@@ -231,7 +238,7 @@ struct SlimMapThumbnail: View {
     let longitude: Double
     let size: CGFloat
     @State private var region: MKCoordinateRegion
-
+    
     init(latitude: Double, longitude: Double, size: CGFloat) {
         self.latitude = latitude
         self.longitude = longitude
@@ -241,7 +248,7 @@ struct SlimMapThumbnail: View {
             span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
         ))
     }
-
+    
     var body: some View {
         Map(position: .constant(.region(region))) {
             Marker("", coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude))
@@ -260,9 +267,9 @@ struct SlimWaveformThumbnail: View {
     let entry: Entry
     let accent: Color
     let size: CGFloat
-
+    
     private let barCount = 12
-
+    
     var barHeights: [CGFloat] {
         var result: [CGFloat] = []
         var hash = abs(entry.id.uuidString.hashValue)
@@ -275,7 +282,7 @@ struct SlimWaveformThumbnail: View {
         }
         return result
     }
-
+    
     var body: some View {
         HStack(alignment: .center, spacing: 2) {
             ForEach(0..<barCount, id: \.self) { i in
