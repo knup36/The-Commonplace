@@ -13,7 +13,6 @@ struct TodayView: View {
     @EnvironmentObject var themeManager: ThemeManager
     
     // Settings is now a NavigationLink destination — no sheet state needed
-    @State private var selectedTab = 0
     @State private var keyboardVisible = false
     
     var style: any AppThemeStyle { themeManager.style }
@@ -25,35 +24,13 @@ struct TodayView: View {
             .sorted { $0.createdAt > $1.createdAt }
     }
     
-    var onThisDayEntries: [(yearsAgo: Int, entries: [Entry])] {
-        let calendar = Calendar.current
-        let today = Date()
-        let thisYear = calendar.component(.year, from: today)
-        let thisMonth = calendar.component(.month, from: today)
-        let thisDay = calendar.component(.day, from: today)
-        let pastEntries = entries.filter {
-            let year = calendar.component(.year, from: $0.createdAt)
-            let month = calendar.component(.month, from: $0.createdAt)
-            let day = calendar.component(.day, from: $0.createdAt)
-            return month == thisMonth && day == thisDay && year != thisYear
-        }
-        let grouped = Dictionary(grouping: pastEntries) {
-            thisYear - calendar.component(.year, from: $0.createdAt)
-        }
-        return grouped.keys.sorted().map { yearsAgo in
-            (yearsAgo: yearsAgo, entries: grouped[yearsAgo]!.sorted { $0.createdAt > $1.createdAt })
-        }
-    }
-    
     // MARK: - Body
     
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    titleHeader
-                    segmentPicker
-                    if selectedTab == 0 {
+            NavigationStack {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        titleHeader
                         WeeklyReviewCard()
                         if let entry = entries.first(where: {
                             Calendar.current.isDateInToday($0.createdAt) && $0.type == .journal
@@ -68,21 +45,11 @@ struct TodayView: View {
                             )
                         }
                         JournalBlockView()
-                        MoodTimelineView(entries: entries)
-                            .padding(.horizontal)
                         capturedTodayBlock
                         emptyTodayBlock
                     }
-                    if selectedTab == 1 {
-                        onThisDayBlock
-                    }
-                    if selectedTab == 2 {
-                        FeedStatsView(entries: entries)
-                            .padding(.horizontal)
-                    }
+                    .padding(.vertical)
                 }
-                .padding(.vertical)
-            }
             .scrollDismissesKeyboard(.interactively)
             .keyboardAvoiding()
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
@@ -109,25 +76,15 @@ struct TodayView: View {
     // MARK: - Sub-views
     
     var titleHeader: some View {
-        HStack {
-            Text(selectedTab == 0 ? "Today" : selectedTab == 1 ? "On This Day" : "Stats")
-                            .font(style.typeLargeTitle)
-                            .foregroundStyle(style.primaryText)
-            Spacer()
+            HStack {
+                Text("Today")
+                    .font(style.typeLargeTitle)
+                    .foregroundStyle(style.primaryText)
+                Spacer()
+            }
+            .padding(.horizontal)
+            .padding(.top, 4)
         }
-        .padding(.horizontal)
-        .padding(.top, 4)
-    }
-    
-    var segmentPicker: some View {
-        Picker("", selection: $selectedTab) {
-            Text("Today").tag(0)
-            Text("On This Day").tag(1)
-            Text("Stats").tag(2)
-        }
-        .pickerStyle(.segmented)
-        .padding(.horizontal)
-    }
     
     @ViewBuilder
     var capturedTodayBlock: some View {
@@ -161,41 +118,6 @@ struct TodayView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.top, 20)
-        }
-    }
-    
-    var onThisDayBlock: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if onThisDayEntries.isEmpty {
-                VStack(spacing: 8) {
-                    Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
-                        .font(.system(size: 32))
-                        .foregroundStyle(style.tertiaryText)
-                    Text("Nothing on this day in previous years")
-                                                .font(style.typeBodySecondary)
-                                                .foregroundStyle(style.tertiaryText)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.top, 40)
-            } else {
-                ForEach(onThisDayEntries, id: \.yearsAgo) { group in
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(group.yearsAgo == 1 ? "1 year ago" : "\(group.yearsAgo) years ago")
-                                                    .font(style.typeSectionHeader)
-                                                    .foregroundStyle(style.accent)
-                            .padding(.horizontal)
-                        ForEach(group.entries) { entry in
-                            ZStack {
-                                NavigationLink(destination: NavigationRouter.destination(for: entry)) { EmptyView() }
-                                    .opacity(0)
-                                EntryRowView(entry: entry)
-                            }
-                            .padding(.horizontal)
-                        }
-                    }
-                }
-            }
         }
     }
 }

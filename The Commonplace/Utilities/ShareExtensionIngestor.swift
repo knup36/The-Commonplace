@@ -172,10 +172,13 @@ struct ShareExtensionIngestor {
                    let uiImage = UIImage(data: imageData),
                    let compressed = ImageProcessor.resizeAndCompress(image: uiImage) {
                     entry.imagePath = try? MediaFileManager.save(
-                        compressed,
-                        type: .image,
-                        id: entry.id.uuidString
-                    )
+                                            compressed,
+                                            type: .image,
+                                            id: entry.id.uuidString
+                                        )
+                                        // Screenshot detection — use original imageData before compression
+                                        entry.isScreenshot = ImageProcessor.isScreenshot(data: imageData)
+                                        entry.isScreenshotDetected = true
                     // Run OCR on the saved image
                     Task {
                         let result = await VisionService.analyze(imageData: compressed)

@@ -44,7 +44,26 @@ struct ImageProcessor {
         return compressed
     }
 
-    // MARK: - Private Helpers
+    // MARK: - Screenshot Detection
+
+        /// Detects whether image data is a screenshot by checking for camera EXIF metadata.
+        /// Real photos taken with a camera always contain FNumber and ExposureTime in EXIF.
+        /// Screenshots — regardless of source, device, or crop — have no camera metadata.
+        ///
+        /// - Parameter data: Raw image data (JPEG or PNG)
+        /// - Returns: true if the image appears to be a screenshot, false if it's a real photo
+        static func isScreenshot(data: Data) -> Bool {
+            guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+                  let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any],
+                  let exif = properties["{Exif}"] as? [String: Any] else {
+                // No EXIF at all — screenshot
+                return true
+            }
+            // Has EXIF but no camera-specific fields — screenshot
+            return exif["FNumber"] == nil && exif["ExposureTime"] == nil
+        }
+
+        // MARK: - Private Helpers
 
     /// Returns a new UIImage scaled so its longest side is at most `maxDimension`.
     /// If the image is already smaller than the limit, it is returned unchanged.

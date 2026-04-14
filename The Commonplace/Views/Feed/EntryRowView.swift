@@ -148,8 +148,9 @@ struct EntryRowView: View {
             return "Link · \(contentType.capitalized)"
         }
         if entry.type == .photo {
-            return entry.videoPath != nil ? "Shot · Video" : "Shot · Photo"
-        }
+                    if entry.videoPath != nil { return "Shot · Video" }
+                    return entry.isScreenshot ? "Shot · Screenshot" : "Shot · Photo"
+                }
         return entry.type.displayName
     }
     

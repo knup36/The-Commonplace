@@ -271,13 +271,17 @@ struct PhotoDetailSection: View {
             id: entry.id.uuidString
         )
         
-        isAnalyzing = true
-        let result = await VisionService.analyze(imageData: processedData)
-        entry.extractedText = result.extractedText.isEmpty ? nil : result.extractedText
-        entry.visionTags = result.tags
-        isAnalyzing = false
-        entry.touch()
-    }
+        // Screenshot detection — use raw data before compression for accurate EXIF reading
+                entry.isScreenshot = ImageProcessor.isScreenshot(data: rawData)
+                entry.isScreenshotDetected = true
+
+                isAnalyzing = true
+                let result = await VisionService.analyze(imageData: processedData)
+                entry.extractedText = result.extractedText.isEmpty ? nil : result.extractedText
+                entry.visionTags = result.tags
+                isAnalyzing = false
+                entry.touch()
+            }
     
     // MARK: - Save Video
     
