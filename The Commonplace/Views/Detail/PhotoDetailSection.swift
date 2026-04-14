@@ -24,7 +24,7 @@ struct PhotoDetailSection: View {
     var accentColor: Color
     
     @EnvironmentObject var editMode: EditModeManager
-
+    
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @State private var isAnalyzing = false
     @State private var isProcessingVideo = false
@@ -132,6 +132,14 @@ struct PhotoDetailSection: View {
             }
             if editMode.isEditing {
                 mediaPicker(label: "Change Shot", icon: "photo")
+                // Photo / Screenshot manual override
+                // Allows correcting auto-detection and handling edge cases
+                Picker("", selection: $entry.isScreenshot) {
+                    Text("Photo").tag(false)
+                    Text("Screenshot").tag(true)
+                }
+                .pickerStyle(.segmented)
+                .padding(.top, 4)
             }
         }
     }
@@ -177,21 +185,21 @@ struct PhotoDetailSection: View {
                     }
                 }
             }
-
+            
             if let duration = entry.videoDuration {
                 Label(formatDuration(duration), systemImage: "video.fill")
                     .font(.caption)
                     .foregroundStyle(style.secondaryText)
             }
-
+            
             if editMode.isEditing {
                 mediaPicker(label: "Change Video", icon: "video")
             }
         }
     }
-
+    
     // MARK: - Empty State
-
+    
     @ViewBuilder
     var emptyState: some View {
         if editMode.isEditing {
@@ -210,7 +218,7 @@ struct PhotoDetailSection: View {
                 .onChange(of: selectedPhotoItem) { _, newItem in
                     Task { await savePhoto(from: newItem) }
                 }
-
+                
                 PhotosPicker(
                     selection: $selectedPhotoItem,
                     matching: .videos
@@ -271,17 +279,16 @@ struct PhotoDetailSection: View {
             id: entry.id.uuidString
         )
         
-        // Screenshot detection — use raw data before compression for accurate EXIF reading
-                entry.isScreenshot = ImageProcessor.isScreenshot(data: rawData)
-                entry.isScreenshotDetected = true
-
-                isAnalyzing = true
-                let result = await VisionService.analyze(imageData: processedData)
-                entry.extractedText = result.extractedText.isEmpty ? nil : result.extractedText
-                entry.visionTags = result.tags
-                isAnalyzing = false
-                entry.touch()
-            }
+        // Screenshot detection — use original imageData before compression for accurate EXIF reading
+        entry.isScreenshot = ImageProcessor.isScreenshot(data: rawData)
+        
+        isAnalyzing = true
+        let result = await VisionService.analyze(imageData: processedData)
+        entry.extractedText = result.extractedText.isEmpty ? nil : result.extractedText
+        entry.visionTags = result.tags
+        isAnalyzing = false
+        entry.touch()
+    }
     
     // MARK: - Save Video
     
@@ -343,12 +350,12 @@ struct PhotoDetailSection: View {
         entry.videoDuration = duration.map { CMTimeGetSeconds($0) }
         
         // Clear photo fields if switching from photo to video
-                entry.extractedText = nil
-                entry.visionTags = []
-                
-                entry.touch()
-                isProcessingVideo = false
-            }
+        entry.extractedText = nil
+        entry.visionTags = []
+        
+        entry.touch()
+        isProcessingVideo = false
+    }
     
     // MARK: - Helpers
     

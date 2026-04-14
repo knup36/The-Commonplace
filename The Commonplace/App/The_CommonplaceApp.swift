@@ -95,20 +95,14 @@ struct CommonplaceApp: App {
             MigrationCoordinator.shared.runIfNeeded(context: context, entries: entries)
             ShareExtensionIngestor.ingestPendingEntries(context: context)
             Task.detached {
-                            await HealthKitBackfillService.shared.backfillIfNeeded(
-                                entries: entries,
-                                context: context
-                            )
-                        }
-                        Task.detached {
-                            await ScreenshotBackfillService.shared.backfillIfNeeded(
-                                entries: entries,
-                                context: context
-                            )
-                        }
+                await HealthKitBackfillService.shared.backfillIfNeeded(
+                    entries: entries,
+                    context: context
+                )
+            }
         } catch {
-                    AppLogger.error("Startup fetch failed", domain: .swiftData, error: error)
-                }
+            AppLogger.error("Startup fetch failed", domain: .swiftData, error: error)
+        }
     }
     
 }

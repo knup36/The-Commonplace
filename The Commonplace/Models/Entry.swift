@@ -47,7 +47,7 @@
 //   v1.14 — readwiseSourceID, readwiseImportedHighlightIDs
 //   v1.14.1 — locationVisited
 //   v2.0    — linkedEntryIDs
-//   v2.0.1  — isScreenshot, isScreenshotDetected
+//   v2.0.1  — isScreenshot
 //
 // Deprecated fields (do not remove yet):
 //   journalImageData — deprecated v1.9.1, replaced by journalImagePath
@@ -195,18 +195,17 @@ class Entry {
     var locationVisited: Bool = false
     
     // Entry links (v2.0)
-        // Explicit connections between entries — stored as UUID strings to avoid SwiftData
-        // many-to-many relationship crashes. Same pattern as tagNames.
-        // UI for creating and managing links is deferred — field added now for future-proofing.
-        // Powers the Knowledge Graph in v3.0.
-        var linkedEntryIDs: [String] = []
-
-        // Screenshot detection (v2.0.1)
-        // isScreenshot: true if the image was detected as a screenshot via EXIF analysis
-        // isScreenshotDetected: true once detection has run — prevents re-processing on every launch
-        // Detection: absence of camera EXIF fields (FNumber, ExposureTime) indicates screenshot
-        var isScreenshot: Bool = false
-        var isScreenshotDetected: Bool = false
+    // Explicit connections between entries — stored as UUID strings to avoid SwiftData
+    // many-to-many relationship crashes. Same pattern as tagNames.
+    // UI for creating and managing links is deferred — field added now for future-proofing.
+    // Powers the Knowledge Graph in v3.0.
+    var linkedEntryIDs: [String] = []
+    
+    // Screenshot detection (v2.0.1)
+    // isScreenshot: true if the image was detected as a screenshot via EXIF analysis
+    // isScreenshotDetected: true once detection has run — prevents re-processing on every launch
+    // Detection: absence of camera EXIF fields (FNumber, ExposureTime) indicates screenshot
+    var isScreenshot: Bool = false
     
     init(type: EntryType = .text, text: String = "", tags: [String] = []) {
         self.id = UUID()

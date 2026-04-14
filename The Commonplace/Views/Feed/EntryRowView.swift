@@ -120,14 +120,14 @@ struct EntryRowView: View {
                         .fixedSize()
                     }
                 } else if entry.type == .photo {
-                    let subtype = entry.videoPath != nil ? "VIDEO" : "PHOTO"
-                    HStack(spacing: 0) {
-                        NYLabel("SHOT", color: UIColor(dimLabelColor))
-                            .fixedSize()
-                        NYLabel(" · \(subtype)",
-                                color: UIColor(dimLabelColor).withAlphaComponent(0.5))
-                        .fixedSize()
-                    }
+                                    let subtype = entry.videoPath != nil ? "VIDEO" : (entry.isScreenshot ? "SCREENSHOT" : "PHOTO")
+                                    HStack(spacing: 0) {
+                                        NYLabel("SHOT", color: UIColor(dimLabelColor))
+                                            .fixedSize()
+                                        NYLabel(" · \(subtype)",
+                                                color: UIColor(dimLabelColor).withAlphaComponent(0.5))
+                                        .fixedSize()
+                                    }
                 } else {
                     NYLabel(typeLabelText.uppercased(), color: UIColor(dimLabelColor))
                         .fixedSize()

@@ -123,7 +123,7 @@ struct ShareExtensionIngestor {
                            let itemID = urlComponents.queryItems?.first(where: { $0.name == "i" })?.value {
                             trackID = itemID
                         }
-
+                        
                         // Use direct ID lookup if available, fall back to title search
                         let searchQuery: String
                         if let id = trackID {
@@ -131,7 +131,7 @@ struct ShareExtensionIngestor {
                         } else if let term = entry.linkTitle?.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
                             searchQuery = "https://itunes.apple.com/search?term=\(term)&limit=1&entity=song"
                         } else { return }
-
+                        
                         guard let apiURL = URL(string: searchQuery),
                               let (apiData, _) = try? await URLSession.shared.data(from: apiURL),
                               let json = try? JSONSerialization.jsonObject(with: apiData) as? [String: Any],
@@ -172,13 +172,12 @@ struct ShareExtensionIngestor {
                    let uiImage = UIImage(data: imageData),
                    let compressed = ImageProcessor.resizeAndCompress(image: uiImage) {
                     entry.imagePath = try? MediaFileManager.save(
-                                            compressed,
-                                            type: .image,
-                                            id: entry.id.uuidString
-                                        )
-                                        // Screenshot detection — use original imageData before compression
-                                        entry.isScreenshot = ImageProcessor.isScreenshot(data: imageData)
-                                        entry.isScreenshotDetected = true
+                        compressed,
+                        type: .image,
+                        id: entry.id.uuidString
+                    )
+                    // Screenshot detection — use original imageData before compression
+                    entry.isScreenshot = ImageProcessor.isScreenshot(data: imageData)
                     // Run OCR on the saved image
                     Task {
                         let result = await VisionService.analyze(imageData: compressed)
@@ -207,7 +206,7 @@ struct ShareExtensionIngestor {
                             let name = queryItems.first(where: { $0.name == "name" })?.value
                             let address = queryItems.first(where: { $0.name == "address" })?.value
                             let category = queryItems.first(where: { $0.name == "category" })?.value
-
+                            
                             entry.locationLatitude = lat
                             entry.locationLongitude = lon
                             entry.locationName = name
@@ -221,7 +220,7 @@ struct ShareExtensionIngestor {
                         }
                     }
                 }
-
+                
             case .text, .audio, .journal, .sticky, .media:
                 break
             }
@@ -236,11 +235,11 @@ struct ShareExtensionIngestor {
                     context.insert(tag)
                 }
             }
-
+            
             // Save BEFORE indexing — ensures SwiftData has committed the entry
             // so the index reflects the actual persisted state
             try? context.save()
-
+            
             // Initial index — captures all synchronously available fields
             SearchIndex.shared.index(entry: entry)
             
@@ -305,12 +304,12 @@ struct ShareExtensionIngestor {
                 lon = Double(parts[1])
             }
         }
-
+        
         // Try ?address=
         if name == nil, let address = queryItems.first(where: { $0.name == "address" })?.value {
             name = address
         }
-
+        
         // Update entry with resolved data
         if let lat, let lon {
             entry.locationLatitude = lat
@@ -342,10 +341,10 @@ struct ShareExtensionIngestor {
         SearchIndex.shared.index(entry: entry)
     }
     // MARK: - Link Content Type Detection
-
+    
     static func detectLinkContentType(urlString: String) -> String? {
         let lower = urlString.lowercased()
-
+        
         // Video platforms
         let videoDomains = [
             "youtube.com", "youtu.be",
@@ -357,7 +356,7 @@ struct ShareExtensionIngestor {
         for domain in videoDomains {
             if lower.contains(domain) { return "video" }
         }
-
+        
         // Everything else gets detected after article extraction
         // returns nil here — upgraded to "article" if extraction succeeds
         return nil
