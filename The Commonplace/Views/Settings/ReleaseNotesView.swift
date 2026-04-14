@@ -21,6 +21,18 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.0.1",
+            title: "Shot. Chaser.",
+            notes: [
+                "Shot entries now distinguish between photos and screenshots — the feed card shows SHOT · SCREENSHOT or SHOT · PHOTO based on automatic EXIF detection",
+                "Manual override in Shot detail view — tap the Photo / Screenshot toggle in edit mode to correct the detection if needed",
+                "Today tab streamlined — On This Day and Stats moved exclusively to Chronicles where they belong",
+                "MediaDetailView dead code removed — duplicate rating and status button implementations cleaned up",
+                "Weekly Review skips weeks with no entries — no more empty review cards for weeks before you started using the app",
+                "People tab now sortable by name or entry count"
+            ]
+        ),
+        Release(
             version: "2.0",
             title: "Twin Peaks",
             notes: [
