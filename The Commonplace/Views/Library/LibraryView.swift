@@ -15,7 +15,13 @@ struct LibraryView: View {
     @Query var allPersonTags: [Tag]
     
     var allPersons: [Tag] {
-        allPersonTags.filter { $0.isPerson }.sorted { $0.name < $1.name }
+        let persons = allPersonTags.filter { $0.isPerson }
+        switch currentPersonSort {
+        case .name:
+            return persons.sorted { $0.name < $1.name }
+        case .entryCount:
+            return persons.sorted { entryCount(for: $0) > entryCount(for: $1) }
+        }
     }
     @Environment(\.modelContext) var modelContext
     @Environment(\.editMode) var editMode
@@ -26,10 +32,18 @@ struct LibraryView: View {
     @State private var showingAddCollection = false
     @State private var currentSort: CollectionSort = .custom
     @State private var currentTagSort: TagSort = .name
+    @State private var currentPersonSort: TagSort = .name
     @State private var collectionToEdit: Collection? = nil
     @State private var reorderedCollections: [Collection] = []
     
     var style: any AppThemeStyle { themeManager.style }
+    
+    var isNonDefaultSort: Bool {
+        if selectedTab == 0 { return currentSort != .custom }
+        if selectedTab == 1 { return currentTagSort != .name }
+        if selectedTab == 2 { return currentPersonSort != .name }
+        return false
+    }
     
     // MARK: - Collections logic
     
@@ -84,13 +98,13 @@ struct LibraryView: View {
     // MARK: - Tags logic
     
     var allTags: [(tag: String, count: Int)] {
-            let folioNames = Set(allTagObjects.filter { $0.isFolio }.map { $0.name })
-            var tagCounts: [String: Int] = [:]
-            for entry in allEntries {
-                for tag in entry.tagNames where !tag.hasPrefix("@") && !folioNames.contains(tag) {
-                    tagCounts[tag, default: 0] += 1
-                }
+        let folioNames = Set(allTagObjects.filter { $0.isFolio }.map { $0.name })
+        var tagCounts: [String: Int] = [:]
+        for entry in allEntries {
+            for tag in entry.tagNames where !tag.hasPrefix("@") && !folioNames.contains(tag) {
+                tagCounts[tag, default: 0] += 1
             }
+        }
         let mapped = tagCounts.map { (tag: $0.key, count: $0.value) }
         switch currentTagSort {
         case .name:
@@ -121,12 +135,12 @@ struct LibraryView: View {
                             .padding(.leading, 8)
                         
                         Picker("", selection: $selectedTab) {
-                                                    Text("Collections").tag(0)
-                                                    Text("Tags").tag(1)
-                                                    Text("People").tag(2)
-                                                    Text("Folios").tag(3)
-                                                }
-                                                .pickerStyle(.segmented)
+                            Text("Collections").tag(0)
+                            Text("Tags").tag(1)
+                            Text("People").tag(2)
+                            Text("Folios").tag(3)
+                        }
+                        .pickerStyle(.segmented)
                     }
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                     .listRowSeparator(.hidden)
@@ -268,14 +282,14 @@ struct LibraryView: View {
                     }
                     
                     // People content
-                                        if selectedTab == 2 {
-                                            peopleContent
-                                        }
-
-                                        // Folios content
-                                        if selectedTab == 3 {
-                                            foliosContent
-                                        }
+                    if selectedTab == 2 {
+                        peopleContent
+                    }
+                    
+                    // Folios content
+                    if selectedTab == 3 {
+                        foliosContent
+                    }
                     
                 }
             }
@@ -318,14 +332,16 @@ struct LibraryView: View {
                                     Label("Entry Count", systemImage: "number").tag(TagSort.entryCount)
                                 }
                             } else if selectedTab == 2 {
+                                Picker("Sort", selection: $currentPersonSort) {
+                                    Label("Name", systemImage: "textformat.abc").tag(TagSort.name)
+                                    Label("Entry Count", systemImage: "number").tag(TagSort.entryCount)
+                                }
+                            } else {
                                                             Text("Sorted by Name")
-                                                                .foregroundStyle(.secondary)
-                                                        } else {
-                                                            Text("Sorted by Name")
-                                                                .foregroundStyle(.secondary)
+                                                                .foregroundStyle(style.accent)
                                                         }
-                        } label: {
-                            Image(systemName: (selectedTab == 0 ? currentSort != .custom : currentTagSort != .name) ? "arrow.up.arrow.down.circle.fill" : "arrow.up.arrow.down")
+                                                    } label: {
+                            Image(systemName: isNonDefaultSort ? "arrow.up.arrow.down.circle.fill" : "arrow.up.arrow.down")
                                 .foregroundStyle(style.accent)
                         }
                         if selectedTab == 0 {
@@ -340,19 +356,19 @@ struct LibraryView: View {
                 }
             }
             .navigationDestination(for: Collection.self) { collection in
-                            CollectionDetailView(collection: collection)
-                        }
-                        .navigationDestination(for: Entry.self) { entry in
-                            NavigationRouter.destination(for: entry)
-                        }
-                        .navigationDestination(for: Tag.self) { tag in
-                                                    if tag.isFolio {
-                                                        FolioDetailView(tag: tag)
-                                                            .environmentObject(EditModeManager())
-                                                    } else {
-                                                        PersonDetailView(tag: tag)
-                                                    }
-                                                }
+                CollectionDetailView(collection: collection)
+            }
+            .navigationDestination(for: Entry.self) { entry in
+                NavigationRouter.destination(for: entry)
+            }
+            .navigationDestination(for: Tag.self) { tag in
+                if tag.isFolio {
+                    FolioDetailView(tag: tag)
+                        .environmentObject(EditModeManager())
+                } else {
+                    PersonDetailView(tag: tag)
+                }
+            }
             .sheet(isPresented: $showingAddCollection) {
                 CollectionFormView()
             }
@@ -365,130 +381,130 @@ struct LibraryView: View {
     
     
     // MARK: - Folios Content
-
-        var allFolios: [Tag] {
-            allTagObjects
-                .filter { $0.isFolio }
-                .sorted { $0.folioDisplayName < $1.folioDisplayName }
-        }
-
-        @ViewBuilder
-        var foliosContent: some View {
-            if allFolios.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "book.pages.fill")
-                        .font(.system(size: 48))
-                        .foregroundStyle(style.tertiaryText)
-                    Text("No Folios Yet")
-                        .font(style.typeTitle3)
-                        .foregroundStyle(style.secondaryText)
-                    Text("Promote a tag to a Folio to see it here")
-                        .font(style.typeCaption)
-                        .foregroundStyle(style.tertiaryText)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.top, 80)
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-            } else {
-                LazyVGrid(
-                    columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3),
-                    spacing: 16
-                ) {
-                    ForEach(allFolios) { folio in
-                        Button {
-                            navigationPath.append(folio)
-                        } label: {
-                            folioGridCell(folio: folio)
-                        }
-                        .buttonStyle(.plain)
+    
+    var allFolios: [Tag] {
+        allTagObjects
+            .filter { $0.isFolio }
+            .sorted { $0.folioDisplayName < $1.folioDisplayName }
+    }
+    
+    @ViewBuilder
+    var foliosContent: some View {
+        if allFolios.isEmpty {
+            VStack(spacing: 12) {
+                Image(systemName: "book.pages.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(style.tertiaryText)
+                Text("No Folios Yet")
+                    .font(style.typeTitle3)
+                    .foregroundStyle(style.secondaryText)
+                Text("Promote a tag to a Folio to see it here")
+                    .font(style.typeCaption)
+                    .foregroundStyle(style.tertiaryText)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 80)
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+        } else {
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3),
+                spacing: 16
+            ) {
+                ForEach(allFolios) { folio in
+                    Button {
+                        navigationPath.append(folio)
+                    } label: {
+                        folioGridCell(folio: folio)
                     }
+                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
         }
-
-        func folioGridCell(folio: Tag) -> some View {
-            ZStack {
-                Capsule()
-                    .strokeBorder(
-                        LinearGradient(
-                            colors: [
-                                Color(white: 0.85),
-                                Color(white: 0.6),
-                                Color(white: 0.85),
-                                Color(white: 0.5),
-                                Color(white: 0.85)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1.5
-                    )
-                    .background(Color(hex: folio.colorHex ?? "#888780").opacity(0.2))
-                    .clipShape(Capsule())
-                    .frame(height: 64)
-                VStack(spacing: 3) {
-                    Text(folio.subjectEmoji ?? "◆")
-                        .font(.system(size: 24))
-                    Text(folio.folioDisplayName)
-                        .font(style.typeCaption)
-                        .fontWeight(.medium)
-                        .foregroundStyle(style.primaryText)
-                        .lineLimit(1)
+    }
+    
+    func folioGridCell(folio: Tag) -> some View {
+        ZStack {
+            Capsule()
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [
+                            Color(white: 0.85),
+                            Color(white: 0.6),
+                            Color(white: 0.85),
+                            Color(white: 0.5),
+                            Color(white: 0.85)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                )
+                .background(Color(hex: folio.colorHex ?? "#888780").opacity(0.2))
+                .clipShape(Capsule())
+                .frame(height: 64)
+            VStack(spacing: 3) {
+                Text(folio.subjectEmoji ?? "◆")
+                    .font(.system(size: 24))
+                Text(folio.folioDisplayName)
+                    .font(style.typeCaption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(style.primaryText)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 12)
+        }
+    }
+    
+    // MARK: - People Content
+    
+    @ViewBuilder
+    var peopleContent: some View {
+        if allPersons.isEmpty {
+            VStack(spacing: 12) {
+                Image(systemName: "person.slash")
+                    .font(.system(size: 48))
+                    .foregroundStyle(style.tertiaryText)
+                Text("No People Yet")
+                    .font(style.typeTitle3)
+                    .foregroundStyle(style.secondaryText)
+                Text("Tag people on your entries to see them here")
+                    .font(style.typeCaption)
+                    .foregroundStyle(style.tertiaryText)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 80)
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+        } else {
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4),
+                spacing: 20
+            ) {
+                ForEach(allPersons) { person in
+                    Button {
+                        navigationPath.append(person)
+                    } label: {
+                        personGridCell(person: person)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 12)
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
         }
-
-        // MARK: - People Content
-
-        @ViewBuilder
-        var peopleContent: some View {
-            if allPersons.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "person.slash")
-                        .font(.system(size: 48))
-                        .foregroundStyle(style.tertiaryText)
-                    Text("No People Yet")
-                        .font(style.typeTitle3)
-                        .foregroundStyle(style.secondaryText)
-                    Text("Tag people on your entries to see them here")
-                        .font(style.typeCaption)
-                        .foregroundStyle(style.tertiaryText)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.top, 80)
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-            } else {
-                LazyVGrid(
-                                columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4),
-                                spacing: 20
-                            ) {
-                                ForEach(allPersons) { person in
-                                    Button {
-                                        navigationPath.append(person)
-                                    } label: {
-                                        personGridCell(person: person)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-            }
-        }
-
+    }
+    
     func personGridCell(person: Tag) -> some View {
         let count = entryCount(for: person)
         return VStack(spacing: 6) {
@@ -508,53 +524,53 @@ struct LibraryView: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 2)
-                            .background(style.accent)
-                            .clipShape(Capsule())
-                            .offset(x: 4, y: 4)
-                    }
+                        .background(style.accent)
+                        .clipShape(Capsule())
+                        .offset(x: 4, y: 4)
                 }
-
+            }
+            
             Text(abbreviatedName(person.name))
-                            .font(style.typeCaption)
-                            .foregroundStyle(style.primaryText)
-                            .lineLimit(1)
-                            .multilineTextAlignment(.center)
-                    }
-                }
-
-        // MARK: - Person Avatar
-
-        func personAvatar(person: Tag, size: CGFloat) -> some View {
-            Group {
-                if let path = person.profilePhotoPath,
-                   let data = MediaFileManager.load(path: path),
-                   let uiImage = UIImage(data: data) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: size, height: size)
-                        .clipShape(Circle())
-                } else {
-                    Circle()
-                        .fill(style.accent.opacity(0.2))
-                        .frame(width: size, height: size)
-                        .overlay(
-                            Text(String(person.name.prefix(1)).uppercased())
-                                .font(.system(size: size * 0.4, weight: .semibold))
-                                .foregroundStyle(style.accent)
-                        )
-                }
+                .font(style.typeCaption)
+                .foregroundStyle(style.primaryText)
+                .lineLimit(1)
+                .multilineTextAlignment(.center)
+        }
+    }
+    
+    // MARK: - Person Avatar
+    
+    func personAvatar(person: Tag, size: CGFloat) -> some View {
+        Group {
+            if let path = person.profilePhotoPath,
+               let data = MediaFileManager.load(path: path),
+               let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size, height: size)
+                    .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(style.accent.opacity(0.2))
+                    .frame(width: size, height: size)
+                    .overlay(
+                        Text(String(person.name.prefix(1)).uppercased())
+                            .font(.system(size: size * 0.4, weight: .semibold))
+                            .foregroundStyle(style.accent)
+                    )
             }
         }
     }
+}
 //MARK: HELPERS
 
 func abbreviatedName(_ name: String) -> String {
-        guard name.count > 12 else { return name }
-        let parts = name.components(separatedBy: " ")
-        guard parts.count >= 2,
-              let lastName = parts.last,
-              let lastInitial = lastName.first else { return name }
-        let firstName = parts.dropLast().joined(separator: " ")
-        return "\(firstName) \(lastInitial)."
-    }
+    guard name.count > 12 else { return name }
+    let parts = name.components(separatedBy: " ")
+    guard parts.count >= 2,
+          let lastName = parts.last,
+          let lastInitial = lastName.first else { return name }
+    let firstName = parts.dropLast().joined(separator: " ")
+    return "\(firstName) \(lastInitial)."
+}
