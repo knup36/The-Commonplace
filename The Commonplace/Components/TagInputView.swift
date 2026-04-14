@@ -27,20 +27,20 @@ struct TagInputView: View {
     }
     
     var allExistingTags: [String] {
-            let allNames = entries.flatMap { $0.tagNames }.filter { !$0.hasPrefix("@") }
-            let counts = Dictionary(allNames.map { ($0, 1) }, uniquingKeysWith: +)
-            return counts
-                .filter { !tags.contains($0.key) }
-                .sorted { $0.value > $1.value }
-                .map { $0.key }
+        let allNames = entries.flatMap { $0.tagNames }.filter { !$0.hasPrefix("@") }
+        let counts = Dictionary(allNames.map { ($0, 1) }, uniquingKeysWith: +)
+        return counts
+            .filter { !tags.contains($0.key) }
+            .sorted { $0.value > $1.value }
+            .map { $0.key }
+    }
+    
+    var suggestions: [String] {
+        if inputText.isEmpty { return allExistingTags }
+        return allExistingTags.filter {
+            $0.localizedCaseInsensitiveContains(inputText)
         }
-        
-        var suggestions: [String] {
-            if inputText.isEmpty { return allExistingTags }
-            return allExistingTags.filter {
-                $0.localizedCaseInsensitiveContains(inputText)
-            }
-        }
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -214,6 +214,7 @@ struct TagInputView: View {
         }
         tags.append(cleaned)
         inputText = ""
+        isExpanded = true
         let existingTags = (try? modelContext.fetch(FetchDescriptor<Tag>())) ?? []
         if !existingTags.contains(where: { $0.name == cleaned }) {
             let tag = Tag(name: cleaned)

@@ -21,10 +21,10 @@ struct ScrapbookPlaceCard: View {
     private let cardWidth: CGFloat = 340
 
     var coordinate: CLLocationCoordinate2D? {
-        guard let lat = entry.captureLatitude,
-              let lon = entry.captureLongitude else { return nil }
-        return CLLocationCoordinate2D(latitude: lat, longitude: lon)
-    }
+            guard let lat = entry.locationLatitude,
+                  let lon = entry.locationLongitude else { return nil }
+            return CLLocationCoordinate2D(latitude: lat, longitude: lon)
+        }
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {

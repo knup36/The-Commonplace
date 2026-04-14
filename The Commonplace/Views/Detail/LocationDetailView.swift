@@ -234,6 +234,12 @@ struct LocationDetailView: View {
                 }
             }
         }
+        .onAppear {
+            let isNewEntry = Date().timeIntervalSince(entry.createdAt) < 10
+            if isNewEntry {
+                editMode.enter()
+            }
+        }
         .onDisappear {
             SearchIndex.shared.index(entry: entry)
         }

@@ -5,8 +5,8 @@
 // All entry types share this one model, differentiated by the `type` field.
 //
 // ============================================================
-// SCHEMA VERSION: 7
-// Last updated: v1.14.1
+// SCHEMA VERSION: 8
+// Last updated: v2.0
 //
 // Schema change policy:
 //   - Adding optional fields: safe, no migration needed
@@ -46,6 +46,7 @@
 //   v1.13.1 — modifiedAt, wordCount, readingTime, locationRating
 //   v1.14 — readwiseSourceID, readwiseImportedHighlightIDs
 //   v1.14.1 — locationVisited
+//   v2.0    — linkedEntryIDs
 //
 // Deprecated fields (do not remove yet):
 //   journalImageData — deprecated v1.9.1, replaced by journalImagePath
@@ -84,12 +85,12 @@ class Entry {
     var text: String = ""
     var wordCount: Int? = nil
     var readingTime: Int? = nil
-
+    
     var tagNames: [String] = []
     
     var isFavorited: Bool = false
     var isPinned: Bool = false
-
+    
     // Photo / Shot (v1.12 — extended to support video clips)
     var imagePath: String? = nil
     var extractedText: String? = nil
@@ -97,12 +98,12 @@ class Entry {
     var videoPath: String? = nil
     var videoDuration: Double? = nil
     var videoThumbnailPath: String? = nil
-
+    
     // Audio
     var audioPath: String? = nil
     var transcript: String? = nil
     var duration: Double? = nil
-
+    
     // Link
     var url: String? = nil
     var linkTitle: String? = nil
@@ -110,7 +111,7 @@ class Entry {
     var markdownContent: String? = nil
     var faviconPath: String? = nil
     var linkContentType: String? = nil  // "article", "video", nil = generic
-
+    
     // Music (renamed from media* prefix in v1.5 to avoid collision with .media entry type)
     var musicArtist: String? = nil
     var musicAlbum: String? = nil
@@ -130,12 +131,12 @@ class Entry {
     var captureLatitude: Double? = nil
     var captureLongitude: Double? = nil
     var captureLocationName: String? = nil
-
+    
     // Sticky / checklist
     var stickyTitle: String? = nil
     var stickyItems: [String] = []
     var stickyChecked: [String] = []
-
+    
     // Journal
     var weatherEmoji: String = ""
     var moodEmoji: String = ""
@@ -145,7 +146,7 @@ class Entry {
     var totalHabitsAtTime: Int = 0
     var journalImageData: Data? = nil
     var journalImagePath: String? = nil
-
+    
     // Health data (fetched once for past days, live for today)
     var healthActiveCalories: Double? = nil
     var healthExerciseMinutes: Double? = nil
@@ -154,7 +155,7 @@ class Entry {
     var healthWorkoutDuration: Int? = nil
     var healthWorkoutCalories: Double? = nil
     var healthDataFetched: Bool = false
-
+    
     // Media (movies & TV — v1.5)
     // mediaType: "movie" or "tv"
     // mediaStatus: "wantTo", "inProgress", or "finished"
@@ -178,40 +179,47 @@ class Entry {
     var weeklyReviewCarryForward: String? = nil
     var weeklyReviewGratitude: String? = nil
     var weeklyReviewStats: Data? = nil  // JSON encoded stats (entry count, habits, mood, calories, people, tags, music, media)
-
+    
     // Readwise (v1.14)
-        // readwiseSourceID: permanent ID from Readwise/Reader — used as deduplication key
-        // If this field is present on an entry, that entry is "owned" by Readwise sync
-        // readwiseImportedHighlightIDs: tracks which individual highlights have already been
-        // imported — prevents duplicates when syncing a partially-read article over multiple sessions
-        var readwiseSourceID: String? = nil
-        var readwiseImportedHighlightIDs: [String] = []
-
-        // Location status (v1.14.1)
+    // readwiseSourceID: permanent ID from Readwise/Reader — used as deduplication key
+    // If this field is present on an entry, that entry is "owned" by Readwise sync
+    // readwiseImportedHighlightIDs: tracks which individual highlights have already been
+    // imported — prevents duplicates when syncing a partially-read article over multiple sessions
+    var readwiseSourceID: String? = nil
+    var readwiseImportedHighlightIDs: [String] = []
+    
+    // Location status (v1.14.1)
         // locationVisited: false = Want to Visit (default), true = Been Here
         // Displayed as checkmark.seal (outline) / checkmark.seal.fill (green) in feed and detail
         var locationVisited: Bool = false
+
+        // Entry links (v2.0)
+        // Explicit connections between entries — stored as UUID strings to avoid SwiftData
+        // many-to-many relationship crashes. Same pattern as tagNames.
+        // UI for creating and managing links is deferred — field added now for future-proofing.
+        // Powers the Knowledge Graph in v3.0.
+        var linkedEntryIDs: [String] = []
     
     init(type: EntryType = .text, text: String = "", tags: [String] = []) {
-            self.id = UUID()
-            self.createdAt = Date()
-            self.modifiedAt = Date()
-            self.type = type
-            self.text = text
-            self.tagNames = tags
-            self.isFavorited = false
-            self.visionTags = []
-        }
-
-        /// Call whenever meaningful content on the entry changes.
-        /// Updates modifiedAt and recalculates wordCount for text-heavy entries.
+        self.id = UUID()
+        self.createdAt = Date()
+        self.modifiedAt = Date()
+        self.type = type
+        self.text = text
+        self.tagNames = tags
+        self.isFavorited = false
+        self.visionTags = []
+    }
+    
+    /// Call whenever meaningful content on the entry changes.
+    /// Updates modifiedAt and recalculates wordCount for text-heavy entries.
     func touch() {
-            modifiedAt = Date()
-            if !text.isEmpty {
-                wordCount = text.split(whereSeparator: \.isWhitespace).count
-            }
+        modifiedAt = Date()
+        if !text.isEmpty {
+            wordCount = text.split(whereSeparator: \.isWhitespace).count
         }
     }
+}
 
 enum EntryType: String, Codable, CaseIterable {
     case text
@@ -223,7 +231,7 @@ enum EntryType: String, Codable, CaseIterable {
     case sticky
     case music
     case media
-
+    
     var icon: String {
         switch self {
         case .text:     return "text.alignleft"
@@ -237,7 +245,7 @@ enum EntryType: String, Codable, CaseIterable {
         case .media:    return "film.fill"
         }
     }
-
+    
     var displayName: String {
         switch self {
         case .text:     return "Note"
@@ -251,47 +259,47 @@ enum EntryType: String, Codable, CaseIterable {
         case .media:    return "Media"
         }
     }
-
+    
     var accentColor: Color {
-            switch self {
-            case .text:     return InkwellTheme.inkSecondary
-            case .photo:    return InkwellTheme.collectionAccentColor(for: "#FF375F")
-            case .audio:    return InkwellTheme.collectionAccentColor(for: "#FF9F0A")
-            case .link:     return InkwellTheme.collectionAccentColor(for: "#0A84FF")
-            case .journal:  return InkwellTheme.journalAccent
-            case .location: return InkwellTheme.collectionAccentColor(for: "#30D158")
-            case .sticky:   return InkwellTheme.amber
-            case .music:    return InkwellTheme.accentColor(for: .music)
-            case .media:    return InkwellTheme.collectionAccentColor(for: "#FF3B30")
-            }
+        switch self {
+        case .text:     return InkwellTheme.textAccent
+        case .photo:    return InkwellTheme.photoAccent
+        case .audio:    return InkwellTheme.audioAccent
+        case .link:     return InkwellTheme.linkAccent
+        case .journal:  return InkwellTheme.journalAccent
+        case .location: return InkwellTheme.locationAccent
+        case .sticky:   return InkwellTheme.stickyAccent
+        case .music:    return InkwellTheme.musicAccent
+        case .media:    return InkwellTheme.mediaAccent
         }
-
-        var cardColor: Color {
-            InkwellTheme.cardBackground(for: self)
+    }
+    
+    var cardColor: Color {
+        InkwellTheme.cardBackground(for: self)
+    }
+    
+    // Theme-aware versions — use these in all new and updated views
+    func accentColor(for theme: AppTheme) -> Color {
+        switch theme {
+        case .dusk:    return DuskTheme.accentColor(for: self)
+        case .inkwell: return accentColor
+        case .system:  return accentColor
         }
-
-        // Theme-aware versions — use these in all new and updated views
-        func accentColor(for theme: AppTheme) -> Color {
-            switch theme {
-            case .dusk:    return DuskTheme.accentColor(for: self)
-            case .inkwell: return accentColor
-            case .system:  return accentColor
-            }
-        }
-
+    }
+    
     func cardColor(for theme: AppTheme) -> Color {
-            switch theme {
-            case .dusk:    return DuskTheme.cardBackground(for: self)
-            case .inkwell: return cardColor
-            case .system:  return cardColor
-            }
+        switch theme {
+        case .dusk:    return DuskTheme.cardBackground(for: self)
+        case .inkwell: return cardColor
+        case .system:  return cardColor
         }
-
-        func detailAccentColor(for theme: AppTheme) -> Color {
-            switch theme {
-            case .dusk:    return DuskTheme.detailAccentColor(for: self)
-            case .inkwell: return accentColor
-            case .system:  return accentColor
-            }
+    }
+    
+    func detailAccentColor(for theme: AppTheme) -> Color {
+        switch theme {
+        case .dusk:    return DuskTheme.detailAccentColor(for: self)
+        case .inkwell: return accentColor
+        case .system:  return accentColor
         }
+    }
 }

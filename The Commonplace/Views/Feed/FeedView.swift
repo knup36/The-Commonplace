@@ -28,6 +28,7 @@ struct FeedView: View {
     @FocusState private var thoughtFieldFocused: Bool
     @State private var currentPrompt: String = ""
     @AppStorage("feedScrapbookMode") private var isScrapbookMode: Bool = false
+    @AppStorage("feedSlimMode") private var isSlimMode: Bool = false
     @AppStorage("feedShuffleSeed") private var shuffleSeed: Int = 0
     @State private var isShuffleMode: Bool = false
     
@@ -70,30 +71,60 @@ struct FeedView: View {
                 .buttonStyle(.plain)
             }
             Spacer()
-            Button {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    isScrapbookMode.toggle()
-                    if !isScrapbookMode {
-                        isShuffleMode = false
-                        shuffleSeed = 0
-                        updateFilter()
-                    }
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "list.bullet.rectangle.fill")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(!isScrapbookMode ? style.accent : style.secondaryText.opacity(0.4))
-                    Image(systemName: "rectangle.3.group.fill")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(isScrapbookMode ? Color(red: 0.5, green: 0.35, blue: 0.15) : style.secondaryText.opacity(0.4))
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(isScrapbookMode ? Color(red: 0.91, green: 0.86, blue: 0.76).opacity(0.3) : style.surface.opacity(0.5))
-                .clipShape(Capsule())
-            }
-            .buttonStyle(.plain)
+            HStack(spacing: 0) {
+                            // Standard
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isScrapbookMode = false
+                                    isSlimMode = false
+                                    isShuffleMode = false
+                                    shuffleSeed = 0
+                                    updateFilter()
+                                }
+                            } label: {
+                                Image(systemName: "rectangle.grid.1x2")
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundStyle(!isScrapbookMode && !isSlimMode ? style.accent : style.secondaryText.opacity(0.4))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 8)
+                            }
+                            .buttonStyle(.plain)
+
+                            // Slim
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isScrapbookMode = false
+                                    isSlimMode = true
+                                    isShuffleMode = false
+                                    shuffleSeed = 0
+                                    updateFilter()
+                                }
+                            } label: {
+                                Image(systemName: "text.justify")
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundStyle(isSlimMode ? style.accent : style.secondaryText.opacity(0.4))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 8)
+                            }
+                            .buttonStyle(.plain)
+
+                            // Scrapbook
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isScrapbookMode = true
+                                    isSlimMode = false
+                                }
+                            } label: {
+                                Image(systemName: "rectangle.3.group.fill")
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundStyle(isScrapbookMode ? Color(red: 0.5, green: 0.35, blue: 0.15) : style.secondaryText.opacity(0.4))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 8)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .background(isScrapbookMode ? Color(red: 0.91, green: 0.86, blue: 0.76).opacity(0.3) : style.surface.opacity(0.5))
+                        .clipShape(Capsule())
         }
         .padding(.leading, 24)
         .padding(.trailing, 16)
@@ -145,7 +176,13 @@ struct FeedView: View {
                     LazyVStack(spacing: 0) {
                         feedHeader
                         entryFilterStrip
-                        entryRows
+                        if isSlimMode {
+                            SlimEntryFeed(entries: filteredEntries, style: style)
+                                .padding(.horizontal, 16)
+                                .padding(.top, 4)
+                        } else {
+                            entryRows
+                        }
                     }
                 }
                 .background(isScrapbookMode ? AnyView(ScrapbookBackground().ignoresSafeArea()) : AnyView(style.background.ignoresSafeArea()))
