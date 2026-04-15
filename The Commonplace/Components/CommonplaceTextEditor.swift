@@ -46,35 +46,38 @@ extension Notification.Name {
 
 struct CommonplaceTextEditor<Toolbar: View>: UIViewRepresentable {
     @Binding var text: String
-        var placeholder: String = ""
-        var usesSerifFont: Bool = false
-        var fontSize: CGFloat? = nil        // nil = use system body size
-        var fontWeight: UIFont.Weight = .regular
-        var minHeight: CGFloat = 32
-        var onSubmit: (() -> Void)? = nil
-        var toolbar: Toolbar
+            var placeholder: String = ""
+            var usesSerifFont: Bool = false
+            var fontSize: CGFloat? = nil        // nil = use system body size
+            var fontWeight: UIFont.Weight = .regular
+            var minHeight: CGFloat = 32
+            var focusOnAppear: Bool = false
+            var onSubmit: (() -> Void)? = nil
+            var toolbar: Toolbar
     
     private let debounceInterval: TimeInterval = 0.3
     
     // Convenience init without toolbar
-        init(
-            text: Binding<String>,
-            placeholder: String = "",
-            usesSerifFont: Bool = false,
-            fontSize: CGFloat? = nil,
-            fontWeight: UIFont.Weight = .regular,
-            minHeight: CGFloat = 32,
-            onSubmit: (() -> Void)? = nil
-        ) where Toolbar == EmptyView {
-            self._text = text
-            self.placeholder = placeholder
-            self.usesSerifFont = usesSerifFont
-            self.fontSize = fontSize
-            self.fontWeight = fontWeight
-            self.minHeight = minHeight
-            self.onSubmit = onSubmit
-            self.toolbar = EmptyView()
-        }
+            init(
+                text: Binding<String>,
+                placeholder: String = "",
+                usesSerifFont: Bool = false,
+                fontSize: CGFloat? = nil,
+                fontWeight: UIFont.Weight = .regular,
+                minHeight: CGFloat = 32,
+                focusOnAppear: Bool = false,
+                onSubmit: (() -> Void)? = nil
+            ) where Toolbar == EmptyView {
+                self._text = text
+                self.placeholder = placeholder
+                self.usesSerifFont = usesSerifFont
+                self.fontSize = fontSize
+                self.fontWeight = fontWeight
+                self.minHeight = minHeight
+                self.focusOnAppear = focusOnAppear
+                self.onSubmit = onSubmit
+                self.toolbar = EmptyView()
+            }
     
     // Full init with toolbar
     init(
@@ -106,8 +109,13 @@ struct CommonplaceTextEditor<Toolbar: View>: UIViewRepresentable {
         textView.font = resolvedUIFont
         textView.minHeight = minHeight
         textView.text = text
-        updatePlaceholder(textView, context: context)
-        return textView
+                updatePlaceholder(textView, context: context)
+                if focusOnAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        textView.becomeFirstResponder()
+                    }
+                }
+                return textView
     }
     
     func updateUIView(_ textView: GrowingTextView, context: Context) {

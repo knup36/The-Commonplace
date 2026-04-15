@@ -68,42 +68,42 @@ struct MediaDetailView: View {
         .navigationTitle(isPopulated ? "" : "New Media Entry")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-                    if editMode.isEditing {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button("Done") {
-                                editMode.exit()
-                            }
-                            .bold()
+            if editMode.isEditing {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        editMode.exit()
+                    }
+                    .bold()
+                    .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
+                }
+            } else {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        Button {
+                            editMode.enter()
+                        } label: {
+                            Label("Edit", systemImage: "rectangle.and.pencil.and.ellipsis")
+                        }
+                        Divider()
+                        Button {
+                            withAnimation { entry.isPinned.toggle() }
+                        } label: {
+                            Label(entry.isPinned ? "Remove Bookmark" : "Bookmark",
+                                  systemImage: entry.isPinned ? "bookmark.fill" : "bookmark")
+                        }
+                        Divider()
+                        Button(role: .destructive) {
+                            showingDeleteConfirmation = true
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
                             .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
-                        }
-                    } else {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Menu {
-                                Button {
-                                    editMode.enter()
-                                } label: {
-                                    Label("Edit", systemImage: "rectangle.and.pencil.and.ellipsis")
-                                }
-                                Divider()
-                                Button {
-                                    withAnimation { entry.isPinned.toggle() }
-                                } label: {
-                                    Label(entry.isPinned ? "Remove Bookmark" : "Bookmark",
-                                          systemImage: entry.isPinned ? "bookmark.fill" : "bookmark")
-                                }
-                                Divider()
-                                Button(role: .destructive) {
-                                    showingDeleteConfirmation = true
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            } label: {
-                                Image(systemName: "ellipsis.circle")
-                                    .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
-                            }
-                        }
                     }
                 }
+            }
+        }
         
         .onAppear {
             loadCoverImage()
@@ -310,39 +310,39 @@ struct MediaDetailView: View {
                 logSection
                 
                 // Tags + People
-                                let mediaAccent = entry.type.detailAccentColor(for: themeManager.current)
-                                if editMode.isEditing {
-                                    PersonInputView(tags: $entry.tagNames, accentColor: mediaAccent, style: style)
-                                        .padding(.horizontal, 20)
-                                    TagInputView(tags: $entry.tagNames, accentColor: mediaAccent, style: style)
-                                        .padding(.horizontal, 20)
-                                        .padding(.top, 4)
-                                } else {
-                                    let hasPeople = entry.tagNames.contains { $0.hasPrefix("@") }
-                                    let hasTags = entry.tagNames.contains { !$0.hasPrefix("@") }
-                                    ScrollView(.horizontal, showsIndicators: false) {
-                                        HStack(spacing: 6) {
-                                            if entry.isPinned {
-                                                Image(systemName: "bookmark.fill")
-                                                    .font(.system(size: 20))
-                                                    .foregroundStyle(mediaAccent)
-                                                if hasPeople || hasTags {
-                                                    pipe
-                                                }
-                                            }
-                                            if hasPeople {
-                                                PersonInputView(tags: $entry.tagNames, accentColor: mediaAccent, style: style)
-                                                if hasTags {
-                                                    pipe
-                                                }
-                                            }
-                                            if hasTags {
-                                                TagInputView(tags: $entry.tagNames, accentColor: mediaAccent, style: style)
-                                            }
-                                        }
-                                        .padding(.horizontal, 20)
-                                    }
+                let mediaAccent = entry.type.detailAccentColor(for: themeManager.current)
+                if editMode.isEditing {
+                    PersonInputView(tags: $entry.tagNames, accentColor: mediaAccent, style: style)
+                        .padding(.horizontal, 20)
+                    TagInputView(tags: $entry.tagNames, accentColor: mediaAccent, style: style)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 4)
+                } else {
+                    let hasPeople = entry.tagNames.contains { $0.hasPrefix("@") }
+                    let hasTags = entry.tagNames.contains { !$0.hasPrefix("@") }
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 6) {
+                            if entry.isPinned {
+                                Image(systemName: "bookmark.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundStyle(mediaAccent)
+                                if hasPeople || hasTags {
+                                    pipe
                                 }
+                            }
+                            if hasPeople {
+                                PersonInputView(tags: $entry.tagNames, accentColor: mediaAccent, style: style)
+                                if hasTags {
+                                    pipe
+                                }
+                            }
+                            if hasTags {
+                                TagInputView(tags: $entry.tagNames, accentColor: mediaAccent, style: style)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                }
                 
                 Divider()
                     .padding(.horizontal, 20)
@@ -433,10 +433,10 @@ struct MediaDetailView: View {
                             .font(.system(size: 16))
                             .foregroundStyle(localRating >= star ? .yellow : style.cardMetadataText)
                             .onTapGesture {
-                                                            guard editMode.isEditing else { return }
-                                                            localRating = localRating == star ? 0 : star
-                                                            scheduleSave()
-                                                        }
+                                guard editMode.isEditing else { return }
+                                localRating = localRating == star ? 0 : star
+                                scheduleSave()
+                            }
                     }
                 }
                 .transaction { $0.animation = nil }
@@ -458,15 +458,15 @@ struct MediaDetailView: View {
             ("Finished", "finished", "checkmark.circle")
         ]
         return HStack(spacing: 0) {
-                    ForEach(statuses, id: \.value) { item in
-                        let isSelected = localStatus == item.value
-                        let color = statusColor(for: item.value)
-                        let inactiveColor = entry.type.detailAccentColor(for: themeManager.current)
-                        Button {
-                            guard editMode.isEditing else { return }
-                            localStatus = item.value
-                            scheduleSave()
-                        } label: {
+            ForEach(statuses, id: \.value) { item in
+                let isSelected = localStatus == item.value
+                let color = statusColor(for: item.value)
+                let inactiveColor = entry.type.detailAccentColor(for: themeManager.current)
+                Button {
+                    guard editMode.isEditing else { return }
+                    localStatus = item.value
+                    scheduleSave()
+                } label: {
                     HStack(spacing: 5) {
                         Image(systemName: isSelected ? "\(item.icon).fill" : item.icon)
                             .font(style.typeCaption)
@@ -502,50 +502,58 @@ struct MediaDetailView: View {
     // MARK: - Notes Section
     
     var notesSection: some View {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("NOTES")
-                    .font(style.typeSectionHeader)
-                    .foregroundStyle(style.cardSecondaryText)
+        VStack(alignment: .leading, spacing: 10) {
+            Text("NOTES")
+                .font(style.typeSectionHeader)
+                .foregroundStyle(style.cardSecondaryText)
+                .padding(.horizontal, 20)
+            
+            if editMode.isEditing {
+                CommonplaceTextEditor(
+                    text: Binding(
+                        get: { entry.text },
+                        set: { entry.text = $0; try? modelContext.save() }
+                    ),
+                    placeholder: "Add notes about this title...",
+                    usesSerifFont: false
+                )
+                .padding(.horizontal, 20)
+            } else if !entry.text.isEmpty {
+                Text(entry.text)
+                    .font(style.typeBody)
+                    .foregroundStyle(style.cardPrimaryText)
                     .padding(.horizontal, 20)
-                
-                if editMode.isEditing {
-                    CommonplaceTextEditor(
-                        text: Binding(
-                            get: { entry.text },
-                            set: { entry.text = $0; try? modelContext.save() }
-                        ),
-                        placeholder: "Add notes about this title...",
-                        usesSerifFont: false
-                    )
-                    .padding(.horizontal, 20)
-                } else if !entry.text.isEmpty {
-                    Text(entry.text)
-                        .font(style.typeBody)
-                        .foregroundStyle(style.cardPrimaryText)
-                        .padding(.horizontal, 20)
-                }
             }
         }
+    }
     
     // MARK: - Log Section
     
     var logSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                            Text("LOG")
-                                .font(style.typeSectionHeader)
-                                .foregroundStyle(style.cardSecondaryText)
-                            Spacer()
-                            if editMode.isEditing {
-                                Button {
-                                    showingLogInput.toggle()
-                                } label: {
-                                    Image(systemName: "plus.circle")
-                                        .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
-                                }
-                            }
+                Text("LOG")
+                    .font(style.typeSectionHeader)
+                    .foregroundStyle(style.cardSecondaryText)
+                Spacer()
+                if editMode.isEditing {
+                    HStack(spacing: 12) {
+                        Button {
+                            appendWatchedEntry()
+                        } label: {
+                            Image(systemName: "plus.circle")
+                                .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
                         }
-                        .padding(.horizontal, 20)
+                        Button {
+                            showingLogInput.toggle()
+                        } label: {
+                            Image(systemName: "bubble.left")
+                                .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
             
             // New log entry input
             if showingLogInput {
@@ -553,7 +561,8 @@ struct MediaDetailView: View {
                     CommonplaceTextEditor(
                         text: $newLogText,
                         placeholder: "What are you thinking?",
-                        usesSerifFont: false
+                        usesSerifFont: false,
+                        focusOnAppear: true
                     )
                     .padding(.horizontal, 20)
                     
@@ -583,10 +592,10 @@ struct MediaDetailView: View {
             
             // Existing log entries
             if entry.mediaLog.isEmpty && !showingLogInput && editMode.isEditing {
-                            Text("No log entries yet. Tap + to add one.")
-                                .font(style.typeBodySecondary)
-                                .foregroundStyle(style.cardMetadataText)
-                                .padding(.horizontal, 20)
+                Text("No log entries yet. Tap + to add one.")
+                    .font(style.typeBodySecondary)
+                    .foregroundStyle(style.cardMetadataText)
+                    .padding(.horizontal, 20)
             } else {
                 VStack(spacing: 0) {
                     ForEach(entry.mediaLog.reversed(), id: \.self) { logEntry in
@@ -711,6 +720,21 @@ struct MediaDetailView: View {
         showingLogInput = false
         try? modelContext.save()
     }
+    func appendWatchedEntry() {
+        let today = Calendar.current.startOfDay(for: Date())
+        let alreadyLogged = entry.mediaLog.contains { log in
+            let parts = log.components(separatedBy: "::")
+            guard parts.count == 2,
+                  let date = ISO8601DateFormatter().date(from: parts[0]) else { return false }
+            return Calendar.current.startOfDay(for: date) == today && parts[1] == "Watched"
+        }
+        guard !alreadyLogged else { return }
+        
+        let dateString = ISO8601DateFormatter().string(from: Date())
+        entry.mediaLog.append("\(dateString)::Watched")
+        entry.touch()
+        try? modelContext.save()
+    }
     
     func loadCoverImage() {
         guard let path = entry.mediaCoverPath,
@@ -718,7 +742,7 @@ struct MediaDetailView: View {
         coverImage = UIImage(data: data)
     }
     // MARK: - Pipe Separator
-
+    
     var pipe: some View {
         Text("|")
             .font(.system(size: 18))
