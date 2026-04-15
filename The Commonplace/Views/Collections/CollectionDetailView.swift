@@ -9,6 +9,8 @@ struct CollectionDetailView: View {
     @Query var entries: [Entry]
     @EnvironmentObject var themeManager: ThemeManager
     @State private var searchText = ""
+        @State private var showingAddEntry: Bool = false
+        @State private var showingTemplatePicker: Bool = false
     
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color {
@@ -51,8 +53,15 @@ struct CollectionDetailView: View {
             }
         }
         .background(style.background)
-        .searchable(text: $searchText, prompt: "Search collection...")
-        .navigationBarTitleDisplayMode(.inline)
+                .searchable(text: $searchText, prompt: "Search collection...")
+                .navigationBarTitleDisplayMode(.inline)
+                .safeAreaInset(edge: .bottom) {
+                    ThoughtCaptureBar(
+                        showFullBar: false,
+                        showingAddEntry: $showingAddEntry,
+                        showingTemplatePicker: $showingTemplatePicker,
+                    )
+                }
     }
     
     // MARK: - Sub-views

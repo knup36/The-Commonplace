@@ -23,16 +23,12 @@ struct FeedView: View {
     @State private var filterType: EntryType? = nil
     @State private var filteredEntries: [Entry] = []
     @State private var visibleCount: Int = 50
-    @State private var thoughtText: String = ""
-    @State private var isCapturingThought: Bool = false
-    @FocusState private var thoughtFieldFocused: Bool
     @State private var currentPrompt: String = ""
     @AppStorage("feedScrapbookMode") private var isScrapbookMode: Bool = false
     @AppStorage("feedSlimMode") private var isSlimMode: Bool = false
     @AppStorage("feedShuffleSeed") private var shuffleSeed: Int = 0
     @State private var isShuffleMode: Bool = false
     
-    var currentPromptText: String { currentPrompt.isEmpty ? ThoughtPrompts.random() : currentPrompt }
     @EnvironmentObject var themeManager: ThemeManager
     
     let addTypes: [(type: EntryType, label: String, icon: String, color: Color)] = [
@@ -233,12 +229,13 @@ struct FeedView: View {
                 .onChange(of: entries) { _, _ in updateFilter() }
                 .onChange(of: filterType) { _, _ in visibleCount = 50; updateFilter() }
                 .onChange(of: deletedEntry) { _, _ in updateFilter() }
-                .onAppear {
-                    currentPrompt = ThoughtPrompts.random()
-                }
                 .safeAreaInset(edge: .bottom) {
-                    thoughtCaptureBar
-                }
+                    ThoughtCaptureBar(
+                                            showFullBar: true,
+                                            showingAddEntry: $showingAddEntry,
+                                            showingTemplatePicker: $showingTemplatePicker
+                                        )
+                                }
             }
             
             // Undo toast
@@ -346,99 +343,6 @@ struct FeedView: View {
         case .journal:
             ScrapbookJournalCard(entry: entry)
         }
-    }
-    
-    // MARK: - Thought Capture Bar
-    
-    var thoughtCaptureBar: some View {
-        HStack(spacing: 12) {
-            
-            // Search button — glass circle
-            NavigationLink(destination: SearchView()) {
-                ZStack {
-                    Circle()
-                        .fill(Color.primary.opacity(0.001))
-                        .frame(width: 44, height: 44)
-                        .glassEffect(.regular.interactive(), in: Circle())
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(style.accent)
-                }
-            }
-            .buttonStyle(.plain)
-            .contentShape(Circle())
-            // Thought capture field — glass capsule
-            HStack(spacing: 8) {
-                ZStack(alignment: .leading) {
-                    // Rotating prompt as placeholder — only shown when not capturing
-                    if !isCapturingThought && thoughtText.isEmpty {
-                        MarqueeText(
-                            text: currentPrompt,
-                            font: style.typeBody,
-                            color: Color(uiColor: .placeholderText)
-                        )
-                        .allowsHitTesting(false)
-                    }
-                    TextField("", text: $thoughtText, axis: .vertical)
-                        .font(style.typeBody)
-                        .foregroundStyle(style.primaryText)
-                        .focused($thoughtFieldFocused)
-                        .lineLimit(1...6)
-                        .onSubmit {
-                            createThought()
-                        }
-                        .onChange(of: thoughtFieldFocused) { _, focused in
-                            withAnimation(.spring(duration: 0.25)) {
-                                isCapturingThought = focused
-                            }
-                        }
-                }
-                
-                if isCapturingThought {
-                    Button {
-                        createThought()
-                    } label: {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 22))
-                            .foregroundStyle(style.accent)
-                    }
-                    .buttonStyle(.plain)
-                    .transition(.scale.combined(with: .opacity))
-                }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 22))
-            
-            // Add button — glass circle
-            Button {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                    showingAddEntry.toggle()
-                }
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(Color.primary.opacity(0.001))
-                        .frame(width: 44, height: 44)
-                        .glassEffect(.regular.interactive(), in: Circle())
-                    Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(style.accent)
-                        .rotationEffect(.degrees(showingAddEntry ? 45 : 0))
-                        .animation(.spring(response: 0.4, dampingFraction: 0.65), value: showingAddEntry)
-                }
-            }
-            .buttonStyle(.plain)
-            .contentShape(Circle())
-            .simultaneousGesture(
-                LongPressGesture(minimumDuration: 0.5).onEnded { _ in
-                    showingTemplatePicker = true
-                }
-            )
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .animation(.spring(duration: 0.25), value: isCapturingThought)
     }
     
     // MARK: - Add Entry Card
@@ -603,30 +507,6 @@ struct FeedView: View {
         // Reset backdated state for next entry
         isBackdated = false
         backdatedDate = Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
-    }
-    
-    func createThought() {
-        let trimmed = thoughtText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            thoughtFieldFocused = false
-            isCapturingThought = false
-            return
-        }
-        
-        let entry = Entry(type: .text, text: trimmed, tags: [])
-        if let location = locationManager.currentLocation {
-            entry.captureLatitude = location.coordinate.latitude
-            entry.captureLongitude = location.coordinate.longitude
-            entry.captureLocationName = locationManager.currentPlaceName
-        }
-        modelContext.insert(entry)
-        try? modelContext.save()
-        SearchIndex.shared.index(entry: entry)
-        
-        thoughtText = ""
-        thoughtFieldFocused = false
-        isCapturingThought = false
-        updateFilter()
     }
     
     func updateFilter() {
