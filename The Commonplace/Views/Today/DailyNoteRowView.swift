@@ -9,7 +9,8 @@ import SwiftData
 
 struct DailyNoteRowView: View {
     let entry: Entry
-    @EnvironmentObject var themeManager: ThemeManager
+        var isFullMode: Bool = false
+        @EnvironmentObject var themeManager: ThemeManager
     
     var style: any AppThemeStyle { themeManager.style }
     var purple: Color { EntryType.journal.detailAccentColor(for: themeManager.current) }
@@ -45,20 +46,20 @@ struct DailyNoteRowView: View {
             }
             
             // Note text
-            if !entry.text.isEmpty {
-                let lineLimit = 6
-                let lines = entry.text.components(separatedBy: "\n")
-                let truncated = entry.text.count > 300 || lines.count > lineLimit
-                Text(entry.text)
-                    .font(style.typeBody)
-                    .lineLimit(lineLimit)
-                    .foregroundStyle(style.cardPrimaryText)
-                if truncated {
-                    Text("more...")
-                        .font(style.typeCaption)
-                        .foregroundStyle(purple.opacity(0.7))
-                }
-            }
+                        if !entry.text.isEmpty {
+                            let lineLimit = 6
+                            let lines = entry.text.components(separatedBy: "\n")
+                            let truncated = !isFullMode && (entry.text.count > 300 || lines.count > lineLimit)
+                            Text(entry.text)
+                                .font(style.typeBody)
+                                .lineLimit(isFullMode ? nil : lineLimit)
+                                .foregroundStyle(style.cardPrimaryText)
+                            if truncated {
+                                Text("more...")
+                                    .font(style.typeCaption)
+                                    .foregroundStyle(purple.opacity(0.7))
+                            }
+                        }
             
             // Habit summary
             if !entry.completedHabitSnapshots.isEmpty || entry.totalHabitsAtTime > 0 {
