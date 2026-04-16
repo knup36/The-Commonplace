@@ -23,5 +23,7 @@
 	<array>
 		<string>group.com.johncaldwell.commonplace</string>
 	</array>
+	<key>inter-app-audio</key>
+	<true/>
 </dict>
 </plist>

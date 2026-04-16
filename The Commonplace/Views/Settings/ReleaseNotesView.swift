@@ -21,6 +21,20 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.1",
+            title: "Full Frontal",
+            notes: [
+                "Full reading mode — a new feed view that removes all text line limits so you can read entries in their entirety while scrolling. Toggle with the page icon in the feed header",
+                "Capture location now appears on feed cards in Full mode, beneath the date and time",
+                "ThoughtCaptureBar is now a reusable component — it lives in the Feed as always, and now also appears at the bottom of every Collection detail view for in-context capture",
+                "Tag quick-select while capturing — tap the tag button above the bar to slide out a suggestion strip of your most-used tags. Collection detail view surfaces that collection's tags first",
+                "Selected tags appear as removable pills inside the capture capsule before you submit",
+                "Cancel button (×) resets the entire capture state including any selected tags",
+                "Media log split into two actions — + stamps a one-tap Watched entry with today's date, speech bubble opens text input for a typed thought. Tapping Watched twice in one day is silently ignored",
+                "Log text input now auto-focuses the cursor when opened"
+            ]
+        ),
+        Release(
             version: "2.0.1",
             title: "Shot. Chaser.",
             notes: [
