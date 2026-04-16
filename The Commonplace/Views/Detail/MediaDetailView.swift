@@ -1,21 +1,20 @@
 // MediaDetailView.swift
 // Commonplace
 //
-// Detail view for .media entries (movies and TV shows).
-// Operates in two modes depending on whether TMDB metadata has been selected:
+// Detail view for .media entries (movies, TV shows, and podcasts).
+// Operates in two modes:
 //
-//   Empty state — shows a segmented Movie/TV picker and TMDB search.
-//   The user searches, picks a result, and metadata is fetched and locked in.
+//   Empty state — shows a segmented Movie/TV/Podcast picker and search.
+//   Movie and TV search via TMDBService. Podcast search via PodcastService.
 //
-//   Populated state — shows cover art, locked metadata (title, year, genre),
-//   a status picker (Want to Watch / In Progress / Finished), 5-star rating,
-//   a general notes field, and a timestamped media log for diary-style entries.
+//   Populated state — routes to type-specific detail section:
+//     MovieDetailSection, TVDetailSection, or PodcastDetailSection.
+//   All types share notes, log, tags/people, and metadata footer.
 //
-// TMDB metadata (title, year, genre, overview, cover art) is locked once selected.
+// TMDB/iTunes metadata is locked once selected.
 // Status, rating, notes, and log entries are always editable.
 //
-// Media log entries are stored in entry.mediaLog as "ISO8601date::note text" strings,
-// consistent with the stickyItems pattern used elsewhere in the app.
+// Media log entries stored as "ISO8601date::note text" strings.
 
 import SwiftUI
 import SwiftData
@@ -26,32 +25,34 @@ struct MediaDetailView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var themeManager: ThemeManager
     var style: any AppThemeStyle { themeManager.style }
-    
+
     @StateObject private var editMode = EditModeManager()
-    
+
     // MARK: - Search State
-    @State private var selectedMediaType: TMDBMediaType = .movie
+    @State private var selectedMediaType: MediaSearchType = .movie
     @State private var searchQuery: String = ""
-    @State private var searchResults: [TMDBSearchResult] = []
+    @State private var tmdbResults: [TMDBSearchResult] = []
+    @State private var podcastResults: [PodcastSearchResult] = []
     @State private var isSearching: Bool = false
     @State private var searchError: String? = nil
+
+    // MARK: - Entry State
     @State private var saveTask: Task<Void, Never>? = nil
     @State private var localRating: Int = 0
     @State private var localStatus: String = "wantTo"
     @State private var showingDeleteConfirmation = false
-    
+
     // MARK: - Log State
     @State private var newLogText: String = ""
     @State private var showingLogInput: Bool = false
-    
+
     // MARK: - Cover Art
     @State private var coverImage: UIImage? = nil
-    
-    // Whether metadata has been selected from TMDB
+
     var isPopulated: Bool { entry.mediaTitle != nil }
-    
+
     // MARK: - Body
-    
+
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -70,11 +71,9 @@ struct MediaDetailView: View {
         .toolbar {
             if editMode.isEditing {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        editMode.exit()
-                    }
-                    .bold()
-                    .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
+                    Button("Done") { editMode.exit() }
+                        .bold()
+                        .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
                 }
             } else {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -104,7 +103,6 @@ struct MediaDetailView: View {
                 }
             }
         }
-        
         .onAppear {
             loadCoverImage()
             localRating = entry.mediaRating ?? 0
@@ -118,40 +116,43 @@ struct MediaDetailView: View {
             Button("Cancel", role: .cancel) {}
         }
     }
-    
+
     // MARK: - Empty / Search State
-    
+
     var emptySearchView: some View {
         VStack(spacing: 24) {
             // Hero prompt
             VStack(spacing: 12) {
-                Image(systemName: "film.fill")
+                Image(systemName: selectedMediaType.icon)
                     .font(.system(size: 48))
                     .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
-                Text("What are you watching?")
+                Text(selectedMediaType.prompt)
                     .font(style.typeTitle2)
                     .fontWeight(.bold)
                     .foregroundStyle(style.cardPrimaryText)
-                Text("Search for a movie or TV show to get started.")
+                Text(selectedMediaType.subtitle)
                     .font(style.typeBodySecondary)
                     .foregroundStyle(style.cardSecondaryText)
                     .multilineTextAlignment(.center)
             }
             .padding(.top, 40)
             .padding(.horizontal, 24)
-            
-            // Movie / TV picker
+
+            // Movie / TV / Podcast picker
             Picker("Type", selection: $selectedMediaType) {
-                Text("Movie").tag(TMDBMediaType.movie)
-                Text("TV Show").tag(TMDBMediaType.tv)
+                Text("Movie").tag(MediaSearchType.movie)
+                Text("TV Show").tag(MediaSearchType.tv)
+                Text("Podcast").tag(MediaSearchType.podcast)
             }
             .pickerStyle(.segmented)
             .padding(.horizontal, 24)
             .onChange(of: selectedMediaType) { _, _ in
-                searchResults = []
+                tmdbResults = []
+                podcastResults = []
+                searchError = nil
                 if !searchQuery.isEmpty { performSearch() }
             }
-            
+
             // Search field
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
@@ -163,7 +164,8 @@ struct MediaDetailView: View {
                 if !searchQuery.isEmpty {
                     Button {
                         searchQuery = ""
-                        searchResults = []
+                        tmdbResults = []
+                        podcastResults = []
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(style.secondaryText)
@@ -175,20 +177,21 @@ struct MediaDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .padding(.horizontal, 24)
             .onChange(of: searchQuery) { _, newValue in
-                if newValue.isEmpty { searchResults = [] }
+                if newValue.isEmpty {
+                    tmdbResults = []
+                    podcastResults = []
+                }
             }
-            
+
             // Search button
             Button {
                 performSearch()
             } label: {
                 HStack {
                     if isSearching {
-                        ProgressView()
-                            .tint(.white)
+                        ProgressView().tint(.white)
                     } else {
-                        Text("Search")
-                            .fontWeight(.semibold)
+                        Text("Search").fontWeight(.semibold)
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -199,7 +202,7 @@ struct MediaDetailView: View {
             }
             .padding(.horizontal, 24)
             .disabled(searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearching)
-            
+
             // Error
             if let error = searchError {
                 Text(error)
@@ -207,63 +210,69 @@ struct MediaDetailView: View {
                     .foregroundStyle(.red)
                     .padding(.horizontal, 24)
             }
-            
+
             // Results
-            if !searchResults.isEmpty {
+            let hasResults = !tmdbResults.isEmpty || !podcastResults.isEmpty
+            if hasResults {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Results")
                         .font(style.typeSectionHeader)
                         .foregroundStyle(style.cardSecondaryText)
                         .padding(.horizontal, 24)
                         .padding(.bottom, 8)
-                    
-                    ForEach(searchResults) { result in
-                        Button {
-                            selectResult(result)
-                        } label: {
-                            searchResultRow(result)
+
+                    if selectedMediaType == .podcast {
+                        ForEach(podcastResults) { result in
+                            Button {
+                                selectPodcastResult(result)
+                            } label: {
+                                podcastResultRow(result)
+                            }
+                            .buttonStyle(.plain)
+                            if result.id != podcastResults.last?.id {
+                                Divider().padding(.leading, 24 + 56 + 12)
+                            }
                         }
-                        .buttonStyle(.plain)
-                        
-                        if result.id != searchResults.last?.id {
-                            Divider()
-                                .padding(.leading, 24 + 56 + 12)
+                    } else {
+                        ForEach(tmdbResults) { result in
+                            Button {
+                                selectTMDBResult(result)
+                            } label: {
+                                tmdbResultRow(result)
+                            }
+                            .buttonStyle(.plain)
+                            if result.id != tmdbResults.last?.id {
+                                Divider().padding(.leading, 24 + 56 + 12)
+                            }
                         }
                     }
                 }
             }
-            
+
             Spacer(minLength: 40)
         }
     }
-    
-    // MARK: - Search Result Row
-    
-    func searchResultRow(_ result: TMDBSearchResult) -> some View {
+
+    // MARK: - TMDB Result Row
+
+    func tmdbResultRow(_ result: TMDBSearchResult) -> some View {
         HStack(spacing: 12) {
-            // Poster thumbnail
             AsyncImage(url: result.thumbnailURL) { image in
-                image
-                    .resizable()
-                    .scaledToFill()
+                image.resizable().scaledToFill()
             } placeholder: {
                 RoundedRectangle(cornerRadius: 6)
                     .fill(style.surface)
-                    .overlay(
-                        Image(systemName: "film")
-                            .foregroundStyle(style.secondaryText)
-                    )
+                    .overlay(Image(systemName: "film").foregroundStyle(style.secondaryText))
             }
             .frame(width: 44, height: 66)
             .clipShape(RoundedRectangle(cornerRadius: 6))
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 Text(result.title)
                     .font(style.typeTitle3)
                     .fontWeight(.medium)
                     .foregroundStyle(style.cardPrimaryText)
                     .lineLimit(2)
-                    .multilineTextAlignment(.leading)
                 HStack(spacing: 6) {
                     if !result.year.isEmpty {
                         Text(result.year)
@@ -275,9 +284,7 @@ struct MediaDetailView: View {
                         .foregroundStyle(style.cardSecondaryText)
                 }
             }
-            
             Spacer()
-            
             Image(systemName: "chevron.right")
                 .font(.caption)
                 .foregroundStyle(style.tertiaryText)
@@ -286,29 +293,87 @@ struct MediaDetailView: View {
         .padding(.vertical, 10)
         .contentShape(Rectangle())
     }
-    
+
+    // MARK: - Podcast Result Row
+
+    func podcastResultRow(_ result: PodcastSearchResult) -> some View {
+        HStack(spacing: 12) {
+            AsyncImage(url: result.thumbnailURL) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(style.surface)
+                    .overlay(Image(systemName: "mic").foregroundStyle(style.secondaryText))
+            }
+            .frame(width: 56, height: 56)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(result.title)
+                    .font(style.typeTitle3)
+                    .fontWeight(.medium)
+                    .foregroundStyle(style.cardPrimaryText)
+                    .lineLimit(2)
+                if !result.publisher.isEmpty {
+                    Text(result.publisher)
+                        .font(style.typeCaption)
+                        .foregroundStyle(style.cardSecondaryText)
+                }
+                if !result.genre.isEmpty {
+                    Text(result.genre)
+                        .font(style.typeCaption)
+                        .foregroundStyle(style.cardSecondaryText)
+                }
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(style.tertiaryText)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
+    }
+
     // MARK: - Populated View
-    
+
     var populatedView: some View {
         VStack(spacing: 0) {
-            // Cover art header
-            coverArtHeader
-            
+            // Route to type-specific header + status section
+            switch entry.mediaType {
+            case "tv":
+                TVDetailSection(
+                    entry: entry,
+                    coverImage: coverImage,
+                    localRating: $localRating,
+                    localStatus: $localStatus,
+                    onStatusChange: scheduleSave
+                )
+            case "podcast":
+                PodcastDetailSection(
+                    entry: entry,
+                    coverImage: coverImage,
+                    localRating: $localRating,
+                    localStatus: $localStatus,
+                    onStatusChange: scheduleSave
+                )
+            default: // "movie" and any unknown type
+                MovieDetailSection(
+                    entry: entry,
+                    coverImage: coverImage,
+                    localRating: $localRating,
+                    localStatus: $localStatus,
+                    onStatusChange: scheduleSave
+                )
+            }
+
+            // Shared sections — identical across all media types
             VStack(spacing: 20) {
-                statusSection
-                
-                Divider()
-                    .padding(.horizontal, 20)
-                
-                // Notes
+                Divider().padding(.horizontal, 20)
                 notesSection
-                
-                Divider()
-                    .padding(.horizontal, 20)
-                
-                // Media log
+                Divider().padding(.horizontal, 20)
                 logSection
-                
+
                 // Tags + People
                 let mediaAccent = entry.type.detailAccentColor(for: themeManager.current)
                 if editMode.isEditing {
@@ -326,15 +391,11 @@ struct MediaDetailView: View {
                                 Image(systemName: "bookmark.fill")
                                     .font(.system(size: 20))
                                     .foregroundStyle(mediaAccent)
-                                if hasPeople || hasTags {
-                                    pipe
-                                }
+                                if hasPeople || hasTags { pipe }
                             }
                             if hasPeople {
                                 PersonInputView(tags: $entry.tagNames, accentColor: mediaAccent, style: style)
-                                if hasTags {
-                                    pipe
-                                }
+                                if hasTags { pipe }
                             }
                             if hasTags {
                                 TagInputView(tags: $entry.tagNames, accentColor: mediaAccent, style: style)
@@ -343,171 +404,26 @@ struct MediaDetailView: View {
                         .padding(.horizontal, 20)
                     }
                 }
-                
-                Divider()
+
+                Divider().padding(.horizontal, 20)
+                EntryMetadataFooter(entry: entry, style: style, accentColor: mediaAccent)
                     .padding(.horizontal, 20)
-                
-                // Metadata footer
-                EntryMetadataFooter(entry: entry, style: style, accentColor: entry.type.detailAccentColor(for: themeManager.current))                    .padding(.horizontal, 20)
                     .padding(.bottom, 40)
             }
             .padding(.top, 20)
             .padding(.bottom, 40)
         }
     }
-    
-    // MARK: - Cover Art Header
-    
-    var coverArtHeader: some View {
-        HStack(alignment: .top, spacing: 16) {
-            
-            // Poster — rectangular 2:3
-            Group {
-                if let image = coverImage {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 125, height: 188)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                } else {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(style.cardDivider)
-                        .frame(width: 125, height: 188)
-                        .overlay(
-                            Image(systemName: "film.fill")
-                                .font(.system(size: 32))
-                                .foregroundStyle(style.cardSecondaryText)
-                        )
-                }
-            }
-            
-            // Metadata column
-            VStack(alignment: .leading, spacing: 5) {
-                if let title = entry.mediaTitle {
-                    Text(title)
-                        .font(style.typeTitle3)
-                        .fontWeight(.bold)
-                        .foregroundStyle(style.cardPrimaryText)
-                        .lineLimit(3)
-                }
-                
-                Spacer().frame(height: 4)
-                
-                if let year = entry.mediaYear, !year.isEmpty {
-                    Text(year)
-                        .font(style.typeBodySecondary)
-                        .foregroundStyle(style.cardSecondaryText)
-                }
-                
-                if let type = entry.mediaType {
-                    Text(type == "tv" ? "Television Series" : "Movie")
-                        .font(style.typeBodySecondary)
-                        .foregroundStyle(style.cardSecondaryText)
-                }
-                
-                if let genre = entry.mediaGenre, !genre.isEmpty {
-                    Text(genre)
-                        .font(style.typeBodySecondary)
-                        .foregroundStyle(style.cardSecondaryText)
-                }
-                
-                if let runtime = entry.mediaRuntime, entry.mediaType == "movie" {
-                    let hours = runtime / 60
-                    let mins = runtime % 60
-                    Text(hours > 0 ? "\(hours)h \(mins)m" : "\(mins)m")
-                        .font(style.typeBodySecondary)
-                        .foregroundStyle(style.cardSecondaryText)
-                }
-                
-                if let seasons = entry.mediaSeasons, entry.mediaType == "tv" {
-                    Text("\(seasons) \(seasons == 1 ? "Season" : "Seasons")")
-                        .font(style.typeBodySecondary)
-                        .foregroundStyle(style.cardSecondaryText)
-                }
-                
-                // Star rating inline
-                Spacer().frame(height: 4)
-                HStack(spacing: 4) {
-                    ForEach(1...5, id: \.self) { star in
-                        Image(systemName: localRating >= star ? "star.fill" : "star")
-                            .font(.system(size: 16))
-                            .foregroundStyle(localRating >= star ? .yellow : style.cardMetadataText)
-                            .onTapGesture {
-                                guard editMode.isEditing else { return }
-                                localRating = localRating == star ? 0 : star
-                                scheduleSave()
-                            }
-                    }
-                }
-                .transaction { $0.animation = nil }
-            }
-            
-            Spacer()
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 20)
-        .padding(.bottom, 8)
-    }
-    
-    // MARK: - Status Section
-    
-    var statusSection: some View {
-        let statuses: [(label: String, value: String, icon: String)] = [
-            ("Watchlist", "wantTo", "bookmark"),
-            ("In Progress", "inProgress", "play.circle"),
-            ("Finished", "finished", "checkmark.circle")
-        ]
-        return HStack(spacing: 0) {
-            ForEach(statuses, id: \.value) { item in
-                let isSelected = localStatus == item.value
-                let color = statusColor(for: item.value)
-                let inactiveColor = entry.type.detailAccentColor(for: themeManager.current)
-                Button {
-                    guard editMode.isEditing else { return }
-                    localStatus = item.value
-                    scheduleSave()
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: isSelected ? "\(item.icon).fill" : item.icon)
-                            .font(style.typeCaption)
-                        Text(item.label)
-                            .font(style.typeLabel)
-                    }
-                    .foregroundStyle(isSelected ? color : inactiveColor.opacity(0.4))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 7)
-                    .background(isSelected ? color.opacity(0.15) : Color.clear)
-                }
-                .buttonStyle(.plain)
-                if item.value != "finished" {
-                    Divider()
-                        .frame(height: 16)
-                        .overlay(style.tertiaryText.opacity(0.3))
-                }
-            }
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(entry.type.detailAccentColor(for: themeManager.current).opacity(0.3), lineWidth: 0.5)
-        )
-        .padding(.horizontal, 20)
-        .padding(.top, 8)
-    }
-    
-    func statusColor(for value: String) -> Color {
-        return mediaStatusColor(for: value, theme: themeManager.current)
-    }
-    
+
     // MARK: - Notes Section
-    
+
     var notesSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("NOTES")
                 .font(style.typeSectionHeader)
                 .foregroundStyle(style.cardSecondaryText)
                 .padding(.horizontal, 20)
-            
+
             if editMode.isEditing {
                 CommonplaceTextEditor(
                     text: Binding(
@@ -526,9 +442,9 @@ struct MediaDetailView: View {
             }
         }
     }
-    
+
     // MARK: - Log Section
-    
+
     var logSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -554,8 +470,7 @@ struct MediaDetailView: View {
                 }
             }
             .padding(.horizontal, 20)
-            
-            // New log entry input
+
             if showingLogInput {
                 VStack(spacing: 8) {
                     CommonplaceTextEditor(
@@ -565,7 +480,7 @@ struct MediaDetailView: View {
                         focusOnAppear: true
                     )
                     .padding(.horizontal, 20)
-                    
+
                     HStack {
                         Spacer()
                         Button("Cancel") {
@@ -574,7 +489,7 @@ struct MediaDetailView: View {
                         }
                         .foregroundStyle(style.secondaryText)
                         .padding(.trailing, 8)
-                        
+
                         Button("Add") {
                             appendLogEntry()
                         }
@@ -589,8 +504,7 @@ struct MediaDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding(.horizontal, 20)
             }
-            
-            // Existing log entries
+
             if entry.mediaLog.isEmpty && !showingLogInput && editMode.isEditing {
                 Text("No log entries yet. Tap + to add one.")
                     .font(style.typeBodySecondary)
@@ -608,7 +522,7 @@ struct MediaDetailView: View {
             }
         }
     }
-    
+
     func logEntryRow(dateString: String, text: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             if let date = ISO8601DateFormatter().date(from: dateString) {
@@ -624,23 +538,33 @@ struct MediaDetailView: View {
         .padding(.vertical, 12)
         .padding(.horizontal, 20)
     }
-    
-    // MARK: - Actions
-    
+
+    // MARK: - Search Actions
+
     func performSearch() {
         guard !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         isSearching = true
         searchError = nil
-        searchResults = []
-        
+        tmdbResults = []
+        podcastResults = []
+
         Task {
             do {
-                let results = try await TMDBService.search(query: searchQuery, type: selectedMediaType)
-                await MainActor.run {
-                    searchResults = results
-                    isSearching = false
-                    if results.isEmpty {
-                        searchError = "No results found. Try a different title."
+                switch selectedMediaType {
+                case .podcast:
+                    let results = try await PodcastService.search(query: searchQuery)
+                    await MainActor.run {
+                        podcastResults = results
+                        isSearching = false
+                        if results.isEmpty { searchError = "No podcasts found. Try a different title." }
+                    }
+                case .movie, .tv:
+                    let tmdbType: TMDBMediaType = selectedMediaType == .movie ? .movie : .tv
+                    let results = try await TMDBService.search(query: searchQuery, type: tmdbType)
+                    await MainActor.run {
+                        tmdbResults = results
+                        isSearching = false
+                        if results.isEmpty { searchError = "No results found. Try a different title." }
                     }
                 }
             } catch {
@@ -651,56 +575,79 @@ struct MediaDetailView: View {
             }
         }
     }
-    
-    func selectResult(_ result: TMDBSearchResult) {
+
+    func selectTMDBResult(_ result: TMDBSearchResult) {
         Task {
-            // Fetch full detail for genres
             var detail: TMDBDetail? = nil
             do {
                 detail = try await TMDBService.fetchDetail(id: result.id, type: result.mediaType)
             } catch {
                 AppLogger.error("TMDB detail fetch failed for \(result.title)", domain: .api, error: error)
             }
-            
-            // Download poster
+
             var posterData: Data? = nil
             if let url = result.posterURL {
                 posterData = await TMDBService.downloadPoster(from: url)
             }
-            
+
             await MainActor.run {
-                // Populate entry fields
-                entry.mediaTitle    = detail?.title ?? result.title
-                entry.mediaType     = result.mediaType.rawValue
-                entry.mediaYear     = detail?.year ?? result.year
+                entry.mediaTitle   = detail?.title ?? result.title
+                entry.mediaType    = result.mediaType.rawValue
+                entry.mediaYear    = detail?.year ?? result.year
                 entry.mediaOverview = detail?.overview ?? result.overview
-                entry.mediaGenre    = detail?.genres.first
-                entry.tmdbID        = result.id
-                entry.mediaRuntime  = detail?.runtime
-                entry.mediaSeasons  = detail?.seasons
-                entry.mediaStatus   = "wantTo"
-                
-                // Save poster image
+                entry.mediaGenre   = detail?.genres.first
+                entry.tmdbID       = result.id
+                entry.mediaRuntime = detail?.runtime
+                entry.mediaSeasons = detail?.seasons
+                entry.mediaStatus  = "wantTo"
+
                 if let data = posterData {
                     entry.mediaCoverPath = try? MediaFileManager.save(
-                        data,
-                        type: .image,
-                        id: "\(entry.id.uuidString)_cover"
+                        data, type: .image, id: "\(entry.id.uuidString)_cover"
                     )
                     coverImage = UIImage(data: data)
                 }
-                
-                // Index in search
+
                 SearchIndex.shared.index(entry: entry)
-                
                 try? modelContext.save()
             }
         }
     }
+
+    func selectPodcastResult(_ result: PodcastSearchResult) {
+        Task {
+            var artworkData: Data? = nil
+            if let url = result.fullArtworkURL {
+                artworkData = await PodcastService.downloadArtwork(from: url)
+            }
+
+            await MainActor.run {
+                entry.mediaTitle    = result.title
+                entry.mediaType     = "podcast"
+                entry.mediaOverview = result.publisher
+                entry.mediaGenre    = result.genre
+                entry.mediaStatus   = "wantTo"
+                entry.url           = result.websiteURL
+
+                if let data = artworkData {
+                    entry.mediaCoverPath = try? MediaFileManager.save(
+                        data, type: .image, id: "\(entry.id.uuidString)_cover"
+                    )
+                    coverImage = UIImage(data: data)
+                }
+
+                SearchIndex.shared.index(entry: entry)
+                try? modelContext.save()
+            }
+        }
+    }
+
+    // MARK: - Entry Actions
+
     func scheduleSave() {
         saveTask?.cancel()
         saveTask = Task {
-            try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
+            try? await Task.sleep(nanoseconds: 300_000_000)
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 entry.mediaRating = localRating == 0 ? nil : localRating
@@ -710,16 +657,17 @@ struct MediaDetailView: View {
             }
         }
     }
+
     func appendLogEntry() {
         let trimmed = newLogText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        
         let dateString = ISO8601DateFormatter().string(from: Date())
         entry.mediaLog.append("\(dateString)::\(trimmed)")
         newLogText = ""
         showingLogInput = false
         try? modelContext.save()
     }
+
     func appendWatchedEntry() {
         let today = Calendar.current.startOfDay(for: Date())
         let alreadyLogged = entry.mediaLog.contains { log in
@@ -729,23 +677,55 @@ struct MediaDetailView: View {
             return Calendar.current.startOfDay(for: date) == today && parts[1] == "Watched"
         }
         guard !alreadyLogged else { return }
-        
         let dateString = ISO8601DateFormatter().string(from: Date())
         entry.mediaLog.append("\(dateString)::Watched")
         entry.touch()
         try? modelContext.save()
     }
-    
+
     func loadCoverImage() {
         guard let path = entry.mediaCoverPath,
               let data = MediaFileManager.load(path: path) else { return }
         coverImage = UIImage(data: data)
     }
+
     // MARK: - Pipe Separator
-    
+
     var pipe: some View {
         Text("|")
             .font(.system(size: 18))
             .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current).opacity(0.3))
+    }
+}
+
+// MARK: - Media Search Type
+
+enum MediaSearchType: String {
+    case movie   = "movie"
+    case tv      = "tv"
+    case podcast = "podcast"
+
+    var icon: String {
+        switch self {
+        case .movie:   return "film.fill"
+        case .tv:      return "tv.fill"
+        case .podcast: return "mic.fill"
+        }
+    }
+
+    var prompt: String {
+        switch self {
+        case .movie:   return "What are you watching?"
+        case .tv:      return "What are you watching?"
+        case .podcast: return "What are you listening to?"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .movie:   return "Search for a movie to get started."
+        case .tv:      return "Search for a TV show to get started."
+        case .podcast: return "Search for a podcast to get started."
+        }
     }
 }

@@ -160,23 +160,27 @@ struct FullEntryCardView: View {
             MusicEntryView(entry: entry)
         case .media:
             HStack(spacing: 10) {
-                if let path = entry.mediaCoverPath,
-                   let data = MediaFileManager.load(path: path),
-                   let uiImage = UIImage(data: data) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 50, height: 75)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                } else {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(style.cardDivider)
-                        .frame(width: 50, height: 75)
-                        .overlay(
-                            Image(systemName: "film.fill")
-                                .foregroundStyle(style.cardSecondaryText)
-                        )
-                }
+                let isPodcast = entry.mediaType == "podcast"
+                                let thumbWidth: CGFloat = 50
+                                let thumbHeight: CGFloat = isPodcast ? 50 : 75
+                                let thumbRadius: CGFloat = isPodcast ? 8 : 6
+                                if let path = entry.mediaCoverPath,
+                                   let data = MediaFileManager.load(path: path),
+                                   let uiImage = UIImage(data: data) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: thumbWidth, height: thumbHeight)
+                                        .clipShape(RoundedRectangle(cornerRadius: thumbRadius))
+                                } else {
+                                    RoundedRectangle(cornerRadius: thumbRadius)
+                                        .fill(style.cardDivider)
+                                        .frame(width: thumbWidth, height: thumbHeight)
+                                        .overlay(
+                                            Image(systemName: isPodcast ? "mic.fill" : "film.fill")
+                                                .foregroundStyle(style.cardSecondaryText)
+                                        )
+                                }
                 VStack(alignment: .leading, spacing: 4) {
                     if let title = entry.mediaTitle {
                         Text(title)
@@ -210,7 +214,7 @@ struct FullEntryCardView: View {
                         }
                     }
                     if let status = entry.mediaStatus {
-                        Text(mediaStatusLabel(for: status).uppercased())
+                        Text(mediaStatusLabel(for: status, mediaType: entry.mediaType).uppercased())
                             .font(.system(size: 8, weight: .semibold))
                             .kerning(0.6)
                             .foregroundStyle(mediaStatusColor(for: status, theme: themeManager.current))

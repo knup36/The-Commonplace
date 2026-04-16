@@ -46,6 +46,10 @@ struct SettingsView: View {
     @State private var exportStatusMessage = "Preparing export..."
     @State private var isExportingMarkdown = false
     @State private var markdownExportURL: URL? = nil
+    @State private var showingRangeExportSheet = false
+    @State private var rangeExportStart: Date = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+    @State private var rangeExportEnd: Date = Date()
+    @State private var isExportingRange = false
     
     // Import state
     @State private var isImporting = false
@@ -217,6 +221,25 @@ struct SettingsView: View {
             .disabled(isExportingMarkdown)
             
             Button {
+                showingRangeExportSheet = true
+            } label: {
+                if isExportingRange {
+                    HStack(spacing: 10) {
+                        ProgressView()
+                        Text("Exporting...")
+                            .foregroundStyle(style.primaryText)
+                    }
+                } else {
+                    Label("Export Markdown — Date Range", systemImage: "calendar.badge.clock")
+                        .foregroundStyle(accent)
+                }
+            }
+            .disabled(isExportingRange)
+            .sheet(isPresented: $showingRangeExportSheet) {
+                rangeExportSheet
+            }
+            
+            Button {
                 showingImportFilePicker = true
             } label: {
                 if isImporting {
@@ -306,6 +329,108 @@ struct SettingsView: View {
                     Text("Last synced: \(lastSynced.formatted(.relative(presentation: .named)))")
                         .foregroundStyle(style.tertiaryText)
                         .font(.footnote)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Range Export Sheet
+    
+    var rangeExportSheet: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    DatePicker(
+                        "Start Date",
+                        selection: $rangeExportStart,
+                        in: ...rangeExportEnd,
+                        displayedComponents: .date
+                    )
+                    .foregroundStyle(style.primaryText)
+                    
+                    DatePicker(
+                        "End Date",
+                        selection: $rangeExportEnd,
+                        in: rangeExportStart...,
+                        displayedComponents: .date
+                    )
+                    .foregroundStyle(style.primaryText)
+                } header: {
+                    Text("Date Range")
+                        .foregroundStyle(style.tertiaryText)
+                } footer: {
+                    Text("Exporting entries from \(rangeExportStart.formatted(date: .abbreviated, time: .omitted)) to \(rangeExportEnd.formatted(date: .abbreviated, time: .omitted)).")
+                        .foregroundStyle(style.tertiaryText)
+                }
+                
+                Section {
+                    Button {
+                        performRangeExport()
+                    } label: {
+                        if isExportingRange {
+                            HStack(spacing: 10) {
+                                ProgressView()
+                                Text("Exporting...")
+                                    .foregroundStyle(style.primaryText)
+                            }
+                        } else {
+                            Label("Export", systemImage: "arrow.up.doc.fill")
+                                .foregroundStyle(accent)
+                        }
+                    }
+                    .disabled(isExportingRange)
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(style.background)
+            .navigationTitle("Export Date Range")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        showingRangeExportSheet = false
+                    }
+                    .foregroundStyle(accent)
+                }
+            }
+        }
+    }
+    
+    func performRangeExport() {
+        isExportingRange = true
+        Task {
+            do {
+                let result = try MarkdownExporter.exportRange(
+                    entries: allEntries,
+                    from: rangeExportStart,
+                    to: rangeExportEnd
+                )
+                await MainActor.run {
+                                    isExportingRange = false
+                                    showingRangeExportSheet = false
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                                        let url = result.zipURL
+                                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                                           let rootVC = windowScene.windows.first?.rootViewController {
+                                            var topVC = rootVC
+                                            while let presented = topVC.presentedViewController {
+                                                topVC = presented
+                                            }
+                                            let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+                                            topVC.present(activityVC, animated: true)
+                                        }
+                                    }
+                                }
+            } catch {
+                await MainActor.run {
+                    isExportingRange = false
+                    if let exportError = error as? MarkdownExportError,
+                       exportError == .noEntries {
+                        importError = "No entries found in the selected date range."
+                    } else {
+                        importError = "Export failed: \(error.localizedDescription)"
+                    }
+                    showingImportError = true
                 }
             }
         }

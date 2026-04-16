@@ -115,9 +115,13 @@ class DataExporter {
         var locationRating: Int?
         var locationVisited: Bool?
         // Readwise (v1.14)
-        var readwiseSourceID: String?
-        var readwiseImportedHighlightIDs: [String]?
-    }
+                var readwiseSourceID: String?
+                var readwiseImportedHighlightIDs: [String]?
+                // v2.0
+                var linkedEntryIDs: [String]?
+                // v2.0.1
+                var isScreenshot: Bool?
+            }
     
     struct CollectionDTO: Codable {
         var id: String
@@ -322,8 +326,10 @@ class DataExporter {
                 locationRating: entry.locationRating,
                 locationVisited: entry.locationVisited,
                 readwiseSourceID: entry.readwiseSourceID,
-                readwiseImportedHighlightIDs: entry.readwiseImportedHighlightIDs.isEmpty ? nil : entry.readwiseImportedHighlightIDs
-            )
+                                readwiseImportedHighlightIDs: entry.readwiseImportedHighlightIDs.isEmpty ? nil : entry.readwiseImportedHighlightIDs,
+                                linkedEntryIDs: entry.linkedEntryIDs.isEmpty ? nil : entry.linkedEntryIDs,
+                                isScreenshot: entry.isScreenshot
+                            )
             
             // Media files
             if let path = entry.imagePath,

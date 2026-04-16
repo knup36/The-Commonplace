@@ -161,6 +161,10 @@ class DataImporter {
             // Readwise (v1.14)
             entry.readwiseSourceID = dto.readwiseSourceID
             entry.readwiseImportedHighlightIDs = dto.readwiseImportedHighlightIDs ?? []
+            // v2.0
+            entry.linkedEntryIDs = dto.linkedEntryIDs ?? []
+            // v2.0.1
+            entry.isScreenshot = dto.isScreenshot ?? false
             
             // Media files
             if let filename = dto.imageFile,

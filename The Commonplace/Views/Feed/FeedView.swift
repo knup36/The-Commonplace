@@ -295,15 +295,6 @@ struct FeedView: View {
     
     var entryFilterStrip: some View {
         ZStack(alignment: .leading) {
-            // Background pill — hidden in scrapbook mode
-            if !isScrapbookMode {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(style.surface.opacity(0.5))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .strokeBorder(style.cardBorder, lineWidth: 0.5)
-                    )
-            }
             
             // Sliding selection indicator
             if let selected = filterType {

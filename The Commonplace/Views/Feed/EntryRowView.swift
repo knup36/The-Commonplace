@@ -120,14 +120,14 @@ struct EntryRowView: View {
                         .fixedSize()
                     }
                 } else if entry.type == .photo {
-                                    let subtype = entry.videoPath != nil ? "VIDEO" : (entry.isScreenshot ? "SCREENSHOT" : "PHOTO")
-                                    HStack(spacing: 0) {
-                                        NYLabel("SHOT", color: UIColor(dimLabelColor))
-                                            .fixedSize()
-                                        NYLabel(" · \(subtype)",
-                                                color: UIColor(dimLabelColor).withAlphaComponent(0.5))
-                                        .fixedSize()
-                                    }
+                    let subtype = entry.videoPath != nil ? "VIDEO" : (entry.isScreenshot ? "SCREENSHOT" : "PHOTO")
+                    HStack(spacing: 0) {
+                        NYLabel("SHOT", color: UIColor(dimLabelColor))
+                            .fixedSize()
+                        NYLabel(" · \(subtype)",
+                                color: UIColor(dimLabelColor).withAlphaComponent(0.5))
+                        .fixedSize()
+                    }
                 } else {
                     NYLabel(typeLabelText.uppercased(), color: UIColor(dimLabelColor))
                         .fixedSize()
@@ -139,18 +139,19 @@ struct EntryRowView: View {
     var typeLabelText: String {
         if entry.type == .media {
             switch entry.mediaType {
-            case "movie": return "Movie"
-            case "tv":    return "TV Show"
-            default:      return "Media"
+            case "movie":   return "Movie"
+            case "tv":      return "TV Show"
+            case "podcast": return "Podcast"
+            default:        return "Media"
             }
         }
         if entry.type == .link, let contentType = entry.linkContentType {
             return "Link · \(contentType.capitalized)"
         }
         if entry.type == .photo {
-                    if entry.videoPath != nil { return "Shot · Video" }
-                    return entry.isScreenshot ? "Shot · Screenshot" : "Shot · Photo"
-                }
+            if entry.videoPath != nil { return "Shot · Video" }
+            return entry.isScreenshot ? "Shot · Screenshot" : "Shot · Photo"
+        }
         return entry.type.displayName
     }
     
@@ -233,20 +234,24 @@ struct EntryRowView: View {
             MusicEntryView(entry: entry)
         case .media:
             HStack(spacing: 10) {
+                let isPodcast = entry.mediaType == "podcast"
+                let thumbWidth: CGFloat = 50
+                let thumbHeight: CGFloat = isPodcast ? 50 : 75
+                let thumbRadius: CGFloat = isPodcast ? 8 : 6
                 if let path = entry.mediaCoverPath,
                    let data = MediaFileManager.load(path: path),
                    let uiImage = UIImage(data: data) {
                     Image(uiImage: uiImage)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: 50, height: 75)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .frame(width: thumbWidth, height: thumbHeight)
+                        .clipShape(RoundedRectangle(cornerRadius: thumbRadius))
                 } else {
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: thumbRadius)
                         .fill(style.cardDivider)
-                        .frame(width: 50, height: 75)
+                        .frame(width: thumbWidth, height: thumbHeight)
                         .overlay(
-                            Image(systemName: "film.fill")
+                            Image(systemName: isPodcast ? "mic.fill" : "film.fill")
                                 .foregroundStyle(style.cardSecondaryText)
                         )
                 }
@@ -284,7 +289,7 @@ struct EntryRowView: View {
                         }
                     }
                     if let status = entry.mediaStatus {
-                        Text(mediaStatusLabel(for: status).uppercased())
+                        Text(mediaStatusLabel(for: status, mediaType: entry.mediaType).uppercased())
                             .font(.system(size: 8, weight: .semibold))
                             .kerning(0.6)
                             .foregroundStyle(mediaStatusColor(for: status, theme: themeManager.current))
@@ -454,7 +459,15 @@ struct EntryRowView: View {
 
 // MARK: - Helpers
 
-func mediaStatusLabel(for status: String) -> String {
+func mediaStatusLabel(for status: String, mediaType: String? = nil) -> String {
+    if mediaType == "podcast" {
+        switch status {
+        case "wantTo":     return "Want to Listen"
+        case "inProgress": return "Listening"
+        case "finished":   return "Finished"
+        default:           return status
+        }
+    }
     switch status {
     case "wantTo":     return "Want to Watch"
     case "inProgress": return "In Progress"

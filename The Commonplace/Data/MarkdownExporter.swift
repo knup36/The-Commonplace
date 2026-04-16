@@ -34,40 +34,40 @@ import UIKit
 import ZIPFoundation
 
 struct MarkdownExporter {
-
+    
     // MARK: - Export Result
-
+    
     struct ExportResult {
         let zipURL: URL
         let entryCount: Int
         let mediaFileCount: Int
         let weekCount: Int
-
+        
         var message: String {
             "\(entryCount) entries exported across \(weekCount) weekly files with \(mediaFileCount) media files."
         }
     }
-
+    
     // MARK: - Export
     
     static func exportWeek(entries: [Entry], weekStart: Date) throws -> ExportResult {
         let calendar = Calendar.current
         let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) ?? weekStart
-
+        
         let weekEntries = entries
             .filter { $0.createdAt >= weekStart && $0.createdAt < weekEnd }
             .sorted { $0.createdAt < $1.createdAt }
-
+        
         guard !weekEntries.isEmpty else {
             throw MarkdownExportError.noEntries
         }
-
+        
         let tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("commonplace_week_\(UUID().uuidString)")
         let mediaURL = tempDir.appendingPathComponent("media")
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: mediaURL, withIntermediateDirectories: true)
-
+        
         var mediaFileCount = 0
         let filename = weekFilename(for: weekStart, entries: weekEntries)
         let fileURL = tempDir.appendingPathComponent(filename)
@@ -78,7 +78,7 @@ struct MarkdownExporter {
             mediaFileCount: &mediaFileCount
         )
         try markdown.write(to: fileURL, atomically: true, encoding: .utf8)
-
+        
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         let zipURL = FileManager.default.temporaryDirectory
@@ -96,7 +96,7 @@ struct MarkdownExporter {
             try archive.addEntry(with: "media/\(file.lastPathComponent)", fileURL: file)
         }
         try FileManager.default.removeItem(at: tempDir)
-
+        
         return ExportResult(
             zipURL: zipURL,
             entryCount: weekEntries.count,
@@ -104,18 +104,99 @@ struct MarkdownExporter {
             weekCount: 1
         )
     }
+    
+    // MARK: - Export Range
 
-    static func export(entries: [Entry]) throws -> ExportResult {
+        static func exportRange(entries: [Entry], from startDate: Date, to endDate: Date) throws -> ExportResult {
+            let calendar = Calendar.current
+            let start = calendar.startOfDay(for: startDate)
+            let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: endDate)) ?? endDate
+
+            let rangeEntries = entries
+                .filter { $0.createdAt >= start && $0.createdAt < end }
+                .sorted { $0.createdAt < $1.createdAt }
+
+            guard !rangeEntries.isEmpty else {
+                throw MarkdownExportError.noEntries
+            }
+
+            let tempDir = FileManager.default.temporaryDirectory
+                .appendingPathComponent("commonplace_range_\(UUID().uuidString)")
+            let mediaURL = tempDir.appendingPathComponent("media")
+            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: mediaURL, withIntermediateDirectories: true)
+
+            let weeks = groupByWeek(entries: rangeEntries)
+            var mediaFileCount = 0
+
+            for (weekStart, weekEntries) in weeks.sorted(by: { $0.key < $1.key }) {
+                let filename = weekFilename(for: weekStart, entries: weekEntries)
+                let fileURL = tempDir.appendingPathComponent(filename)
+                let markdown = try renderWeek(
+                    weekStart: weekStart,
+                    entries: weekEntries,
+                    mediaURL: mediaURL,
+                    mediaFileCount: &mediaFileCount
+                )
+                try markdown.write(to: fileURL, atomically: true, encoding: .utf8)
+            }
+
+            let readmeURL = tempDir.appendingPathComponent("README.md")
+            try readme().write(to: readmeURL, atomically: true, encoding: .utf8)
+
+            // ZIP filename includes the date range
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            let startString = formatter.string(from: startDate)
+            let endString = formatter.string(from: endDate)
+            let zipURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent("Commonplace-\(startString)-to-\(endString).zip")
+            if FileManager.default.fileExists(atPath: zipURL.path) {
+                try FileManager.default.removeItem(at: zipURL)
+            }
+            let archive = try Archive(url: zipURL, accessMode: .create)
+            let allFiles = try FileManager.default.contentsOfDirectory(
+                at: tempDir,
+                includingPropertiesForKeys: nil,
+                options: .skipsHiddenFiles
+            )
+            for file in allFiles {
+                if file.hasDirectoryPath {
+                    let subFiles = (try? FileManager.default.contentsOfDirectory(
+                        at: file,
+                        includingPropertiesForKeys: nil
+                    )) ?? []
+                    for subFile in subFiles {
+                        try archive.addEntry(
+                            with: "\(file.lastPathComponent)/\(subFile.lastPathComponent)",
+                            fileURL: subFile
+                        )
+                    }
+                } else {
+                    try archive.addEntry(with: file.lastPathComponent, fileURL: file)
+                }
+            }
+            try FileManager.default.removeItem(at: tempDir)
+
+            return ExportResult(
+                zipURL: zipURL,
+                entryCount: rangeEntries.count,
+                mediaFileCount: mediaFileCount,
+                weekCount: weeks.count
+            )
+        }
+
+        static func export(entries: [Entry]) throws -> ExportResult {
         // Filter to last 30 days
         let cutoff = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
         let recentEntries = entries
             .filter { $0.createdAt >= cutoff }
             .sorted { $0.createdAt < $1.createdAt }
-
+        
         guard !recentEntries.isEmpty else {
             throw MarkdownExportError.noEntries
         }
-
+        
         // Create temp folder
         let tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("commonplace_markdown_\(UUID().uuidString)")
@@ -123,11 +204,11 @@ struct MarkdownExporter {
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: mediaURL, withIntermediateDirectories: true)
         let folderURL = tempDir
-
+        
         // Group entries by week
         let weeks = groupByWeek(entries: recentEntries)
         var mediaFileCount = 0
-
+        
         // Write each weekly file
         for (weekStart, weekEntries) in weeks.sorted(by: { $0.key < $1.key }) {
             let filename = weekFilename(for: weekStart, entries: weekEntries)
@@ -140,11 +221,11 @@ struct MarkdownExporter {
             )
             try markdown.write(to: fileURL, atomically: true, encoding: .utf8)
         }
-
+        
         // Write README
         let readmeURL = folderURL.appendingPathComponent("README.md")
         try readme().write(to: readmeURL, atomically: true, encoding: .utf8)
-
+        
         // Build ZIP
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM-yyyy"
@@ -177,7 +258,7 @@ struct MarkdownExporter {
             }
         }
         try FileManager.default.removeItem(at: tempDir)
-
+        
         return ExportResult(
             zipURL: zipURL,
             entryCount: recentEntries.count,
@@ -185,9 +266,9 @@ struct MarkdownExporter {
             weekCount: weeks.count
         )
     }
-
+    
     // MARK: - Week Grouping
-
+    
     private static func groupByWeek(entries: [Entry]) -> [Date: [Entry]] {
         var weeks: [Date: [Entry]] = [:]
         let calendar = Calendar.current
@@ -197,7 +278,7 @@ struct MarkdownExporter {
         }
         return weeks
     }
-
+    
     private static func weekFilename(for weekStart: Date, entries: [Entry]) -> String {
         let calendar = Calendar.current
         let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
@@ -207,21 +288,21 @@ struct MarkdownExporter {
         weekFormatter.dateFormat = "MMdd"
         let displayFormatter = DateFormatter()
         displayFormatter.dateFormat = "MMMdd"
-
+        
         // Calculate week number of month
         let weekOfMonth = calendar.component(.weekOfMonth, from: weekStart)
-
+        
         return "\(yearFormatter.string(from: weekStart))-\(monthString(from: weekStart))-W\(weekOfMonth)-\(displayFormatter.string(from: weekStart))-\(displayFormatter.string(from: weekEnd)).md"
     }
-
+    
     private static func monthString(from date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MM"
         return formatter.string(from: date)
     }
-
+    
     // MARK: - Week Rendering
-
+    
     private static func renderWeek(
         weekStart: Date,
         entries: [Entry],
@@ -229,21 +310,21 @@ struct MarkdownExporter {
         mediaFileCount: inout Int
     ) throws -> String {
         var lines: [String] = []
-
+        
         // Week header
         let headerFormatter = DateFormatter()
         headerFormatter.dateFormat = "MMMM d, yyyy"
         lines.append("# Commonplace — Week of \(headerFormatter.string(from: weekStart))")
         lines.append("")
-
+        
         // Group by day
         let days = Dictionary(grouping: entries) { entry -> Date in
             Calendar.current.startOfDay(for: entry.createdAt)
         }
-
+        
         for day in days.keys.sorted() {
             let dayEntries = days[day] ?? []
-
+            
             // Day header
             let dayFormatter = DateFormatter()
             dayFormatter.dateFormat = "EEEE, MMMM d"
@@ -251,12 +332,12 @@ struct MarkdownExporter {
             lines.append("")
             lines.append("## \(dayFormatter.string(from: day))")
             lines.append("")
-
+            
             for entry in dayEntries.sorted(by: { $0.createdAt < $1.createdAt }) {
                 let timeFormatter = DateFormatter()
                 timeFormatter.dateFormat = "h:mm a"
                 let time = timeFormatter.string(from: entry.createdAt)
-
+                
                 lines.append(try renderEntry(
                     entry: entry,
                     time: time,
@@ -266,12 +347,12 @@ struct MarkdownExporter {
                 lines.append("")
             }
         }
-
+        
         return lines.joined(separator: "\n")
     }
-
+    
     // MARK: - Entry Rendering
-
+    
     private static func renderEntry(
         entry: Entry,
         time: String,
@@ -279,16 +360,17 @@ struct MarkdownExporter {
         mediaFileCount: inout Int
     ) throws -> String {
         var lines: [String] = []
-
+        
         switch entry.type {
         case .text:
             lines.append("### 📝 Note — \(time)")
             if !entry.text.isEmpty {
                 lines.append(entry.text)
             }
-
+            
         case .photo:
-            lines.append("### 📷 Photo — \(time)")
+            let shotLabel = entry.videoPath != nil ? "Video" : (entry.isScreenshot ? "Screenshot" : "Photo")
+            lines.append("### 📷 Shot · \(shotLabel) — \(time)")
             if let path = entry.imagePath,
                let data = MediaFileManager.load(path: path) {
                 let filename = "\(entry.id.uuidString)_image.jpg"
@@ -303,7 +385,7 @@ struct MarkdownExporter {
                 lines.append("")
                 lines.append("*Extracted text: \(extracted)*")
             }
-
+            
         case .audio:
             lines.append("### 🎙️ Audio — \(time)")
             if let path = entry.audioPath,
@@ -317,7 +399,7 @@ struct MarkdownExporter {
                 lines.append("")
                 lines.append("**Transcript:** \(transcript)")
             }
-
+            
         case .link:
             lines.append("### 🔗 Link — \(time)")
             if let title = entry.linkTitle { lines.append("**\(title)**") }
@@ -330,7 +412,7 @@ struct MarkdownExporter {
                 let preview = String(markdown.prefix(500))
                 lines.append(preview + (markdown.count > 500 ? "..." : ""))
             }
-
+            
         case .journal:
             lines.append("### 📓 Journal — \(time)")
             var emojiLine = ""
@@ -353,7 +435,7 @@ struct MarkdownExporter {
                 lines.append("")
                 lines.append("![Journal Photo](media/\(filename))")
             }
-
+            
         case .location:
             lines.append("### 📍 Place — \(time)")
             if let name = entry.locationName { lines.append("**\(name)**") }
@@ -365,7 +447,7 @@ struct MarkdownExporter {
                 lines.append("")
                 lines.append(entry.text)
             }
-
+            
         case .sticky:
             lines.append("### ✅ List — \(time)")
             if let title = entry.stickyTitle, !title.isEmpty {
@@ -379,18 +461,24 @@ struct MarkdownExporter {
                 let checked = entry.stickyChecked.contains(id)
                 lines.append("- [\(checked ? "x" : " ")] \(text)")
             }
-
+            
         case .music:
             lines.append("### 🎵 Music — \(time)")
+            // linkTitle stores the track name for music entries
             if let title = entry.linkTitle { lines.append("**\(title)**") }
             if let artist = entry.musicArtist { lines.append("*\(artist)*") }
             if let album = entry.musicAlbum { lines.append(album) }
             if let url = entry.url { lines.append(url) }
-
+            
         case .media:
-            // Render movie/TV entry with metadata, status, rating, and any log entries
-            let typeLabel = entry.mediaType == "tv" ? "TV Show" : "Movie"
-            lines.append("### 🎬 \(typeLabel) — \(time)")
+            let typeLabel: String
+            switch entry.mediaType {
+            case "tv":      typeLabel = "TV Show"
+            case "podcast": typeLabel = "Podcast"
+            default:        typeLabel = "Movie"
+            }
+            let mediaIcon = entry.mediaType == "podcast" ? "🎙️" : "🎬"
+            lines.append("### \(mediaIcon) \(typeLabel) — \(time)")
             if let title = entry.mediaTitle {
                 var titleLine = "**\(title)**"
                 if let year = entry.mediaYear { titleLine += " (\(year))" }
@@ -398,18 +486,19 @@ struct MarkdownExporter {
             }
             if let genre = entry.mediaGenre { lines.append("*\(genre)*") }
             if let status = entry.mediaStatus {
+                let isPodcast = entry.mediaType == "podcast"
                 let statusLabel: String
                 switch status {
-                case "wantTo":      statusLabel = "Want to Watch"
-                case "inProgress":  statusLabel = "In Progress"
-                case "finished":    statusLabel = "Finished"
-                default:            statusLabel = status
+                case "wantTo":     statusLabel = isPodcast ? "Want to Listen" : "Want to Watch"
+                case "inProgress": statusLabel = isPodcast ? "Listening" : "In Progress"
+                case "finished":   statusLabel = "Finished"
+                default:           statusLabel = status
                 }
                 lines.append("**Status:** \(statusLabel)")
             }
             if let rating = entry.mediaRating, rating > 0 {
-                let stars = String(repeating: "★", count: rating) + String(repeating: "☆", count: 10 - rating)
-                lines.append("**Rating:** \(stars) (\(rating)/10)")
+                let stars = String(repeating: "★", count: rating) + String(repeating: "☆", count: 5 - rating)
+                lines.append("**Rating:** \(stars) (\(rating)/5)")
             }
             if let overview = entry.mediaOverview, !overview.isEmpty {
                 lines.append("")
@@ -438,44 +527,44 @@ struct MarkdownExporter {
                 lines.append("![Cover](media/\(filename))")
             }
         }
-
+        
         // Tags
         if !entry.tagNames.isEmpty {
             let tagString = entry.tagNames.map { "#\($0)" }.joined(separator: " ")
             lines.append("")
             lines.append("**Tags:** \(tagString)")
         }
-
+        
         return lines.joined(separator: "\n")
     }
-
+    
     // MARK: - README
-
+    
     private static func readme() -> String {
         """
         # Commonplace Archive
-
+        
         This archive was exported from Commonplace on \(DateFormatter.localizedString(from: Date(), dateStyle: .long, timeStyle: .short)).
-
+        
         ## Structure
-
+        
         - Weekly markdown files covering the last 30 days
         - `media/` folder containing all images and audio files
         - Media files are referenced inline in the markdown files
-
+        
         ## Importing
-
+        
         ### Obsidian
         Drop this folder into your Obsidian vault. Images and audio will display inline.
-
+        
         ### Bear
         Import individual .md files via File → Import.
-
+        
         ### Apple Notes
         Open each .md file and copy the contents.
-
+        
         ## Entry Types
-
+        
         | Icon | Type |
         |------|------|
         | 📝 | Note |
@@ -486,8 +575,9 @@ struct MarkdownExporter {
         | 📍 | Place |
         | ✅ | List |
         | 🎵 | Music |
-        | 🎬 | Media |
-
+        | 🎬 | Movie / TV Show |
+        | 🎙️ | Podcast |
+        
         ---
         *Exported by Commonplace — your personal archive*
         """
@@ -499,7 +589,7 @@ struct MarkdownExporter {
 enum MarkdownExportError: LocalizedError {
     case noEntries
     case iCloudUnavailable
-
+    
     var errorDescription: String? {
         switch self {
         case .noEntries:
