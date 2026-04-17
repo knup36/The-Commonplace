@@ -32,7 +32,7 @@ struct JournalMetadataSection: View {
                 }
 
                 // Emojis + habits + activity rings inline
-                HStack(spacing: 12) {
+                HStack(alignment: .bottom, spacing: 12) {
                     if !entry.weatherEmoji.isEmpty {
                         Text(entry.weatherEmoji).font(.title2)
                     }
@@ -51,9 +51,6 @@ struct JournalMetadataSection: View {
                                 .font(style.typeCaption)
                                 .foregroundStyle(style.cardSecondaryText)
                         }
-                        .frame(width: 56, height: 56)
-                        .background(accentColor.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     if entry.healthDataFetched {
                         VStack(spacing: 1) {
@@ -75,13 +72,7 @@ struct JournalMetadataSection: View {
                                     .stroke(Color(red: 0.0, green: 0.78, blue: 0.75), style: StrokeStyle(lineWidth: 4, lineCap: .round))
                             }
                             .frame(width: 46, height: 46)
-                            Text("Activity")
-                                .font(style.typeCaption)
-                                .foregroundStyle(style.cardSecondaryText)
                         }
-                        .frame(width: 56, height: 56)
-                        .background(Color.white.opacity(0.05))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                 }
 

@@ -213,10 +213,11 @@ struct StickyDetailView: View {
     
     var bottomInputBar: some View {
         HStack(spacing: 12) {
-            TextField(editingItemID == nil ? "New item..." : "Edit item...", text: $inputText)
+            TextField(editingItemID == nil ? "New item..." : "Edit item...", text: $inputText, axis: .vertical)
                 .font(style.typeBody)
                 .foregroundStyle(style.cardPrimaryText)
                 .focused($inputFocused)
+                .lineLimit(1...4)
                 .onSubmit {
                     commitInput()
                 }

@@ -81,8 +81,16 @@ struct WeeklyReviewFlowView: View {
     }
     
     var weekMedia: [Entry] {
-        weekEntries.filter { $0.type == .media }
-    }
+            weekEntries.filter { entry in
+                guard entry.type == .media else { return false }
+                return entry.mediaLog.contains { log in
+                    let parts = log.components(separatedBy: "::")
+                    guard parts.count == 2,
+                          let logDate = ISO8601DateFormatter().date(from: parts[0]) else { return false }
+                    return logDate >= weekStart && logDate < weekEnd
+                }
+            }
+        }
     
     var habitCompletionSummary: String {
         let journalEntries = weekEntries.filter { $0.type == .journal }
