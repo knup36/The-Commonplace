@@ -201,7 +201,14 @@ class ReadwiseSyncCoordinator {
                     guard let text = highlight.content, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                         return nil
                     }
-                    return text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    // Strip markdown links — keep display text, discard URLs
+                    // "[link text](url)" → "link text"
+                    let stripped = text.replacingOccurrences(
+                        of: "\\[([^\\]]+)\\]\\([^)]+\\)",
+                        with: "$1",
+                        options: .regularExpression
+                    )
+                    return stripped.trimmingCharacters(in: .whitespacesAndNewlines)
                 }
                 
                 let ids = sorted.map { $0.id }

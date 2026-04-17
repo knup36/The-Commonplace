@@ -139,22 +139,22 @@ struct EntryDetailView: View {
             }
         }
         .onAppear {
-                    let isNewEntry = Date().timeIntervalSince(entry.createdAt) < 10
-                    if entry.type == .text {
-                        loadNoteParts()
-                        if isNewEntry {
-                            editMode.enter()
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                noteTitleFocused = true
-                            }
-                        }
-                    } else if isNewEntry {
-                        editMode.enter()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            textFieldFocused = true
-                        }
+            let isNewEntry = Date().timeIntervalSince(entry.createdAt) < 10
+            if entry.type == .text {
+                loadNoteParts()
+                if isNewEntry {
+                    editMode.enter()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        noteTitleFocused = true
                     }
                 }
+            } else if isNewEntry {
+                editMode.enter()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    textFieldFocused = true
+                }
+            }
+        }
         .onDisappear {
             SearchIndex.shared.index(entry: entry)
         }
@@ -244,28 +244,31 @@ struct EntryDetailView: View {
             .onAppear { editText = entry.text }
             .onChange(of: editText) { _, newValue in entry.text = newValue }
         } else {
-                    if !entry.text.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            if entry.readwiseSourceID != nil {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "quote.opening")
-                                        .font(.system(size: 11, weight: .medium))
-                                        .foregroundStyle(style.cardMetadataText)
-                                    Text("PULL QUOTES")
-                                        .font(style.typeSectionHeader)
-                                        .foregroundStyle(style.cardMetadataText)
-                                }
-                            }
-                            Text(entry.text)
-                                .font(style.typeBody)
-                                .foregroundStyle(style.cardPrimaryText)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+            if !entry.text.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    if entry.readwiseSourceID != nil {
+                        HStack(spacing: 6) {
+                            Image(systemName: "quote.opening")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(style.cardMetadataText)
+                            Text("PULL QUOTES")
+                                .font(style.typeSectionHeader)
+                                .foregroundStyle(style.cardMetadataText)
                         }
                     }
+                    Text(entry.text)
+                        .font(style.typeBody)
+                        .foregroundStyle(style.cardPrimaryText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(nil)
+                        .truncationMode(.tail)
                 }
+            }
+        }
     }
     // MARK: - Pipe Separator
-
+    
     var pipe: some View {
         Text("|")
             .font(.system(size: 18))

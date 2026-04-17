@@ -21,6 +21,20 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.3",
+            title: "For Love of the Game",
+            notes: [
+                "Game support — search for any game via RAWG, with 16:9 hero art, title, release year, all platforms, and developer pulled in automatically",
+                "Game status picker uses Someday / Playing / Finished instead of watch-focused labels",
+                "Feed cards show GAME type label and portrait thumbnail for game entries",
+                "New mediaPlatform field on Entry model — dedicated storage for game platform information",
+                "Slim feed now shows square thumbnails for Shot entries with capture location when no note text is present",
+                "Slim feed sticky entries show list title, inline progress bar, and completion count",
+                "Slim feed journal, note, and sticky entries have improved left margin breathing room",
+                "Notes section in all media detail views now correctly left-aligned"
+            ]
+        ),
+        Release(
             version: "2.2.1",
             title: "Clean Up on Aisle Three",
             notes: [
