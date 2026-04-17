@@ -25,34 +25,35 @@ struct MediaDetailView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var themeManager: ThemeManager
     var style: any AppThemeStyle { themeManager.style }
-
+    
     @StateObject private var editMode = EditModeManager()
-
+    
     // MARK: - Search State
     @State private var selectedMediaType: MediaSearchType = .movie
     @State private var searchQuery: String = ""
     @State private var tmdbResults: [TMDBSearchResult] = []
     @State private var podcastResults: [PodcastSearchResult] = []
+    @State private var gameResults: [RAWGSearchResult] = []
     @State private var isSearching: Bool = false
     @State private var searchError: String? = nil
-
+    
     // MARK: - Entry State
     @State private var saveTask: Task<Void, Never>? = nil
     @State private var localRating: Int = 0
     @State private var localStatus: String = "wantTo"
     @State private var showingDeleteConfirmation = false
-
+    
     // MARK: - Log State
     @State private var newLogText: String = ""
     @State private var showingLogInput: Bool = false
-
+    
     // MARK: - Cover Art
     @State private var coverImage: UIImage? = nil
-
+    
     var isPopulated: Bool { entry.mediaTitle != nil }
-
+    
     // MARK: - Body
-
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -116,9 +117,9 @@ struct MediaDetailView: View {
             Button("Cancel", role: .cancel) {}
         }
     }
-
+    
     // MARK: - Empty / Search State
-
+    
     var emptySearchView: some View {
         VStack(spacing: 24) {
             // Hero prompt
@@ -137,12 +138,13 @@ struct MediaDetailView: View {
             }
             .padding(.top, 40)
             .padding(.horizontal, 24)
-
-            // Movie / TV / Podcast picker
+            
+            // Movie / TV / Podcast / Game picker
             Picker("Type", selection: $selectedMediaType) {
                 Text("Movie").tag(MediaSearchType.movie)
                 Text("TV Show").tag(MediaSearchType.tv)
                 Text("Podcast").tag(MediaSearchType.podcast)
+                Text("Game").tag(MediaSearchType.game)
             }
             .pickerStyle(.segmented)
             .padding(.horizontal, 24)
@@ -152,7 +154,7 @@ struct MediaDetailView: View {
                 searchError = nil
                 if !searchQuery.isEmpty { performSearch() }
             }
-
+            
             // Search field
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
@@ -166,6 +168,7 @@ struct MediaDetailView: View {
                         searchQuery = ""
                         tmdbResults = []
                         podcastResults = []
+                        gameResults = []
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(style.secondaryText)
@@ -180,9 +183,10 @@ struct MediaDetailView: View {
                 if newValue.isEmpty {
                     tmdbResults = []
                     podcastResults = []
+                    gameResults = []
                 }
             }
-
+            
             // Search button
             Button {
                 performSearch()
@@ -202,7 +206,7 @@ struct MediaDetailView: View {
             }
             .padding(.horizontal, 24)
             .disabled(searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearching)
-
+            
             // Error
             if let error = searchError {
                 Text(error)
@@ -210,9 +214,9 @@ struct MediaDetailView: View {
                     .foregroundStyle(.red)
                     .padding(.horizontal, 24)
             }
-
+            
             // Results
-            let hasResults = !tmdbResults.isEmpty || !podcastResults.isEmpty
+            let hasResults = !tmdbResults.isEmpty || !podcastResults.isEmpty || !gameResults.isEmpty
             if hasResults {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Results")
@@ -220,7 +224,7 @@ struct MediaDetailView: View {
                         .foregroundStyle(style.cardSecondaryText)
                         .padding(.horizontal, 24)
                         .padding(.bottom, 8)
-
+                    
                     if selectedMediaType == .podcast {
                         ForEach(podcastResults) { result in
                             Button {
@@ -230,6 +234,18 @@ struct MediaDetailView: View {
                             }
                             .buttonStyle(.plain)
                             if result.id != podcastResults.last?.id {
+                                Divider().padding(.leading, 24 + 56 + 12)
+                            }
+                        }
+                    } else if selectedMediaType == .game {
+                        ForEach(gameResults) { result in
+                            Button {
+                                selectGameResult(result)
+                            } label: {
+                                gameResultRow(result)
+                            }
+                            .buttonStyle(.plain)
+                            if result.id != gameResults.last?.id {
                                 Divider().padding(.leading, 24 + 56 + 12)
                             }
                         }
@@ -248,13 +264,13 @@ struct MediaDetailView: View {
                     }
                 }
             }
-
+            
             Spacer(minLength: 40)
         }
     }
-
+    
     // MARK: - TMDB Result Row
-
+    
     func tmdbResultRow(_ result: TMDBSearchResult) -> some View {
         HStack(spacing: 12) {
             AsyncImage(url: result.thumbnailURL) { image in
@@ -266,7 +282,7 @@ struct MediaDetailView: View {
             }
             .frame(width: 44, height: 66)
             .clipShape(RoundedRectangle(cornerRadius: 6))
-
+            
             VStack(alignment: .leading, spacing: 4) {
                 Text(result.title)
                     .font(style.typeTitle3)
@@ -293,9 +309,9 @@ struct MediaDetailView: View {
         .padding(.vertical, 10)
         .contentShape(Rectangle())
     }
-
+    
     // MARK: - Podcast Result Row
-
+    
     func podcastResultRow(_ result: PodcastSearchResult) -> some View {
         HStack(spacing: 12) {
             AsyncImage(url: result.thumbnailURL) { image in
@@ -307,7 +323,7 @@ struct MediaDetailView: View {
             }
             .frame(width: 56, height: 56)
             .clipShape(RoundedRectangle(cornerRadius: 8))
-
+            
             VStack(alignment: .leading, spacing: 4) {
                 Text(result.title)
                     .font(style.typeTitle3)
@@ -334,9 +350,95 @@ struct MediaDetailView: View {
         .padding(.vertical, 10)
         .contentShape(Rectangle())
     }
-
+    
+    // MARK: - Game Result Row
+    
+    func gameResultRow(_ result: RAWGSearchResult) -> some View {
+        HStack(spacing: 12) {
+            AsyncImage(url: result.thumbnailURL) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(style.surface)
+                    .overlay(Image(systemName: "gamecontroller").foregroundStyle(style.secondaryText))
+            }
+            .frame(width: 44, height: 66)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(result.title)
+                    .font(style.typeTitle3)
+                    .fontWeight(.medium)
+                    .foregroundStyle(style.cardPrimaryText)
+                    .lineLimit(2)
+                HStack(spacing: 6) {
+                    if !result.year.isEmpty {
+                        Text(result.year)
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.cardSecondaryText)
+                    }
+                    if !result.genre.isEmpty {
+                        Text("· \(result.genre)")
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.cardSecondaryText)
+                    }
+                }
+                if !result.platforms.isEmpty {
+                    Text(result.platforms)
+                        .font(style.typeCaption)
+                        .foregroundStyle(style.cardSecondaryText)
+                        .lineLimit(1)
+                }
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(style.tertiaryText)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
+    }
+    
+    func selectGameResult(_ result: RAWGSearchResult) {
+        Task {
+            // Fetch full detail for developer/publisher
+            var detail: RAWGSearchResult? = nil
+            do {
+                detail = try await RAWGService.fetchDetail(id: result.id)
+            } catch {
+                AppLogger.error("RAWG detail fetch failed for \(result.title)", domain: .api, error: error)
+            }
+            
+            var artworkData: Data? = nil
+            if let url = result.fullImageURL {
+                artworkData = await RAWGService.downloadArtwork(from: url)
+            }
+            
+            await MainActor.run {
+                entry.mediaTitle    = detail?.title ?? result.title
+                entry.mediaType     = "game"
+                entry.mediaYear     = detail?.year ?? result.year
+                entry.mediaGenre    = detail?.genre ?? result.genre
+                entry.mediaPlatform = detail?.platforms ?? result.platforms
+                entry.mediaOverview = detail?.developer ?? result.developer
+                entry.mediaStatus   = "wantTo"
+                
+                if let data = artworkData {
+                    entry.mediaCoverPath = try? MediaFileManager.save(
+                        data, type: .image, id: "\(entry.id.uuidString)_cover"
+                    )
+                    coverImage = UIImage(data: data)
+                }
+                
+                SearchIndex.shared.index(entry: entry)
+                try? modelContext.save()
+            }
+        }
+    }
+    
     // MARK: - Populated View
-
+    
     var populatedView: some View {
         VStack(spacing: 0) {
             // Route to type-specific header + status section
@@ -357,7 +459,15 @@ struct MediaDetailView: View {
                     localStatus: $localStatus,
                     onStatusChange: scheduleSave
                 )
-            default: // "movie" and any unknown type
+            case "game":
+                GameDetailSection(
+                    entry: entry,
+                    coverImage: coverImage,
+                    localRating: $localRating,
+                    localStatus: $localStatus,
+                    onStatusChange: scheduleSave
+                )
+            default:
                 MovieDetailSection(
                     entry: entry,
                     coverImage: coverImage,
@@ -366,14 +476,14 @@ struct MediaDetailView: View {
                     onStatusChange: scheduleSave
                 )
             }
-
+            
             // Shared sections — identical across all media types
             VStack(spacing: 20) {
                 Divider().padding(.horizontal, 20)
                 notesSection
                 Divider().padding(.horizontal, 20)
                 logSection
-
+                
                 // Tags + People
                 let mediaAccent = entry.type.detailAccentColor(for: themeManager.current)
                 if editMode.isEditing {
@@ -404,7 +514,7 @@ struct MediaDetailView: View {
                         .padding(.horizontal, 20)
                     }
                 }
-
+                
                 Divider().padding(.horizontal, 20)
                 EntryMetadataFooter(entry: entry, style: style, accentColor: mediaAccent)
                     .padding(.horizontal, 20)
@@ -414,16 +524,16 @@ struct MediaDetailView: View {
             .padding(.bottom, 40)
         }
     }
-
+    
     // MARK: - Notes Section
-
+    
     var notesSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("NOTES")
                 .font(style.typeSectionHeader)
                 .foregroundStyle(style.cardSecondaryText)
                 .padding(.horizontal, 20)
-
+            
             if editMode.isEditing {
                 CommonplaceTextEditor(
                     text: Binding(
@@ -438,13 +548,14 @@ struct MediaDetailView: View {
                 Text(entry.text)
                     .font(style.typeBody)
                     .foregroundStyle(style.cardPrimaryText)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
             }
         }
     }
-
+    
     // MARK: - Log Section
-
+    
     var logSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -470,7 +581,7 @@ struct MediaDetailView: View {
                 }
             }
             .padding(.horizontal, 20)
-
+            
             if showingLogInput {
                 VStack(spacing: 8) {
                     CommonplaceTextEditor(
@@ -480,7 +591,7 @@ struct MediaDetailView: View {
                         focusOnAppear: true
                     )
                     .padding(.horizontal, 20)
-
+                    
                     HStack {
                         Spacer()
                         Button("Cancel") {
@@ -489,7 +600,7 @@ struct MediaDetailView: View {
                         }
                         .foregroundStyle(style.secondaryText)
                         .padding(.trailing, 8)
-
+                        
                         Button("Add") {
                             appendLogEntry()
                         }
@@ -504,7 +615,7 @@ struct MediaDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding(.horizontal, 20)
             }
-
+            
             if entry.mediaLog.isEmpty && !showingLogInput && editMode.isEditing {
                 Text("No log entries yet. Tap + to add one.")
                     .font(style.typeBodySecondary)
@@ -522,7 +633,7 @@ struct MediaDetailView: View {
             }
         }
     }
-
+    
     func logEntryRow(dateString: String, text: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             if let date = ISO8601DateFormatter().date(from: dateString) {
@@ -538,16 +649,16 @@ struct MediaDetailView: View {
         .padding(.vertical, 12)
         .padding(.horizontal, 20)
     }
-
+    
     // MARK: - Search Actions
-
+    
     func performSearch() {
         guard !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         isSearching = true
         searchError = nil
         tmdbResults = []
         podcastResults = []
-
+        
         Task {
             do {
                 switch selectedMediaType {
@@ -557,6 +668,13 @@ struct MediaDetailView: View {
                         podcastResults = results
                         isSearching = false
                         if results.isEmpty { searchError = "No podcasts found. Try a different title." }
+                    }
+                case .game:
+                    let results = try await RAWGService.search(query: searchQuery)
+                    await MainActor.run {
+                        gameResults = results
+                        isSearching = false
+                        if results.isEmpty { searchError = "No games found. Try a different title." }
                     }
                 case .movie, .tv:
                     let tmdbType: TMDBMediaType = selectedMediaType == .movie ? .movie : .tv
@@ -575,7 +693,7 @@ struct MediaDetailView: View {
             }
         }
     }
-
+    
     func selectTMDBResult(_ result: TMDBSearchResult) {
         Task {
             var detail: TMDBDetail? = nil
@@ -584,12 +702,12 @@ struct MediaDetailView: View {
             } catch {
                 AppLogger.error("TMDB detail fetch failed for \(result.title)", domain: .api, error: error)
             }
-
+            
             var posterData: Data? = nil
             if let url = result.posterURL {
                 posterData = await TMDBService.downloadPoster(from: url)
             }
-
+            
             await MainActor.run {
                 entry.mediaTitle   = detail?.title ?? result.title
                 entry.mediaType    = result.mediaType.rawValue
@@ -600,27 +718,27 @@ struct MediaDetailView: View {
                 entry.mediaRuntime = detail?.runtime
                 entry.mediaSeasons = detail?.seasons
                 entry.mediaStatus  = "wantTo"
-
+                
                 if let data = posterData {
                     entry.mediaCoverPath = try? MediaFileManager.save(
                         data, type: .image, id: "\(entry.id.uuidString)_cover"
                     )
                     coverImage = UIImage(data: data)
                 }
-
+                
                 SearchIndex.shared.index(entry: entry)
                 try? modelContext.save()
             }
         }
     }
-
+    
     func selectPodcastResult(_ result: PodcastSearchResult) {
         Task {
             var artworkData: Data? = nil
             if let url = result.fullArtworkURL {
                 artworkData = await PodcastService.downloadArtwork(from: url)
             }
-
+            
             await MainActor.run {
                 entry.mediaTitle    = result.title
                 entry.mediaType     = "podcast"
@@ -628,22 +746,22 @@ struct MediaDetailView: View {
                 entry.mediaGenre    = result.genre
                 entry.mediaStatus   = "wantTo"
                 entry.url           = result.websiteURL
-
+                
                 if let data = artworkData {
                     entry.mediaCoverPath = try? MediaFileManager.save(
                         data, type: .image, id: "\(entry.id.uuidString)_cover"
                     )
                     coverImage = UIImage(data: data)
                 }
-
+                
                 SearchIndex.shared.index(entry: entry)
                 try? modelContext.save()
             }
         }
     }
-
+    
     // MARK: - Entry Actions
-
+    
     func scheduleSave() {
         saveTask?.cancel()
         saveTask = Task {
@@ -657,7 +775,7 @@ struct MediaDetailView: View {
             }
         }
     }
-
+    
     func appendLogEntry() {
         let trimmed = newLogText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -667,7 +785,7 @@ struct MediaDetailView: View {
         showingLogInput = false
         try? modelContext.save()
     }
-
+    
     func appendWatchedEntry() {
         let today = Calendar.current.startOfDay(for: Date())
         let alreadyLogged = entry.mediaLog.contains { log in
@@ -682,15 +800,15 @@ struct MediaDetailView: View {
         entry.touch()
         try? modelContext.save()
     }
-
+    
     func loadCoverImage() {
         guard let path = entry.mediaCoverPath,
               let data = MediaFileManager.load(path: path) else { return }
         coverImage = UIImage(data: data)
     }
-
+    
     // MARK: - Pipe Separator
-
+    
     var pipe: some View {
         Text("|")
             .font(.system(size: 18))
@@ -704,28 +822,32 @@ enum MediaSearchType: String {
     case movie   = "movie"
     case tv      = "tv"
     case podcast = "podcast"
-
+    case game    = "game"
+    
     var icon: String {
         switch self {
         case .movie:   return "film.fill"
         case .tv:      return "tv.fill"
         case .podcast: return "mic.fill"
+        case .game:    return "gamecontroller.fill"
         }
     }
-
+    
     var prompt: String {
         switch self {
         case .movie:   return "What are you watching?"
         case .tv:      return "What are you watching?"
         case .podcast: return "What are you listening to?"
+        case .game:    return "What are you playing?"
         }
     }
-
+    
     var subtitle: String {
         switch self {
         case .movie:   return "Search for a movie to get started."
         case .tv:      return "Search for a TV show to get started."
         case .podcast: return "Search for a podcast to get started."
+        case .game:    return "Search for a game to get started."
         }
     }
 }

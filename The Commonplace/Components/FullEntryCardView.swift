@@ -18,15 +18,15 @@ struct FullEntryCardView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @Query var allTagObjects: [Tag]
     @Query var allPersonTags: [Tag]
-
+    
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { entry.type.accentColor(for: themeManager.current) }
     var cardColor: Color { entry.type.cardColor(for: themeManager.current) }
     var labelColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
     var dimLabelColor: Color { labelColor.opacity(0.5) }
-
+    
     // MARK: - Type Label (identical to EntryRowView)
-
+    
     @ViewBuilder
     var typeLabel: some View {
         if style.showsEntryTypeLabel {
@@ -40,7 +40,7 @@ struct FullEntryCardView: View {
                             .fixedSize()
                         NYLabel(" · \(contentType.uppercased())",
                                 color: UIColor(dimLabelColor).withAlphaComponent(0.5))
-                            .fixedSize()
+                        .fixedSize()
                     }
                 } else if entry.type == .photo {
                     let subtype = entry.videoPath != nil ? "VIDEO" : (entry.isScreenshot ? "SCREENSHOT" : "PHOTO")
@@ -49,7 +49,7 @@ struct FullEntryCardView: View {
                             .fixedSize()
                         NYLabel(" · \(subtype)",
                                 color: UIColor(dimLabelColor).withAlphaComponent(0.5))
-                            .fixedSize()
+                        .fixedSize()
                     }
                 } else {
                     NYLabel(typeLabelText.uppercased(), color: UIColor(dimLabelColor))
@@ -58,13 +58,15 @@ struct FullEntryCardView: View {
             }
         }
     }
-
+    
     var typeLabelText: String {
         if entry.type == .media {
             switch entry.mediaType {
-            case "movie": return "Movie"
-            case "tv":    return "TV Show"
-            default:      return "Media"
+            case "movie":   return "Movie"
+            case "tv":      return "TV Show"
+            case "podcast": return "Podcast"
+            case "game":    return "Game"
+            default:        return "Media"
             }
         }
         if entry.type == .link, let contentType = entry.linkContentType {
@@ -76,9 +78,9 @@ struct FullEntryCardView: View {
         }
         return entry.type.displayName
     }
-
+    
     // MARK: - Metadata Column (adds capture location)
-
+    
     var metadataColumn: some View {
         VStack(alignment: .trailing, spacing: 2) {
             HStack(spacing: 6) {
@@ -97,9 +99,9 @@ struct FullEntryCardView: View {
         }
         .fixedSize()
     }
-
+    
     // MARK: - Card Content (uncapped text)
-
+    
     @ViewBuilder
     var cardContent: some View {
         switch entry.type {
@@ -128,7 +130,7 @@ struct FullEntryCardView: View {
                 }
             }
         case .journal:
-                    DailyNoteRowView(entry: entry, isFullMode: true)
+            DailyNoteRowView(entry: entry, isFullMode: true)
         case .audio:
             let displayText = entry.text.isEmpty ? (entry.transcript ?? "") : entry.text
             if !displayText.isEmpty {
@@ -161,26 +163,27 @@ struct FullEntryCardView: View {
         case .media:
             HStack(spacing: 10) {
                 let isPodcast = entry.mediaType == "podcast"
-                                let thumbWidth: CGFloat = 50
-                                let thumbHeight: CGFloat = isPodcast ? 50 : 75
-                                let thumbRadius: CGFloat = isPodcast ? 8 : 6
-                                if let path = entry.mediaCoverPath,
-                                   let data = MediaFileManager.load(path: path),
-                                   let uiImage = UIImage(data: data) {
-                                    Image(uiImage: uiImage)
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: thumbWidth, height: thumbHeight)
-                                        .clipShape(RoundedRectangle(cornerRadius: thumbRadius))
-                                } else {
-                                    RoundedRectangle(cornerRadius: thumbRadius)
-                                        .fill(style.cardDivider)
-                                        .frame(width: thumbWidth, height: thumbHeight)
-                                        .overlay(
-                                            Image(systemName: isPodcast ? "mic.fill" : "film.fill")
-                                                .foregroundStyle(style.cardSecondaryText)
-                                        )
-                                }
+                let isGame = entry.mediaType == "game"
+                let thumbWidth: CGFloat = 50
+                let thumbHeight: CGFloat = isPodcast ? 50 : 75
+                let thumbRadius: CGFloat = isPodcast ? 8 : 6
+                if let path = entry.mediaCoverPath,
+                   let data = MediaFileManager.load(path: path),
+                   let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: thumbWidth, height: thumbHeight)
+                        .clipShape(RoundedRectangle(cornerRadius: thumbRadius))
+                } else {
+                    RoundedRectangle(cornerRadius: thumbRadius)
+                        .fill(style.cardDivider)
+                        .frame(width: thumbWidth, height: thumbHeight)
+                        .overlay(
+                            Image(systemName: isPodcast ? "mic.fill" : isGame ? "gamecontroller.fill" : "film.fill")
+                                .foregroundStyle(style.cardSecondaryText)
+                        )
+                }
                 VStack(alignment: .leading, spacing: 4) {
                     if let title = entry.mediaTitle {
                         Text(title)
@@ -230,9 +233,9 @@ struct FullEntryCardView: View {
             StickyEntryView(entry: entry, isPreview: true)
         }
     }
-
+    
     // MARK: - Note Text (uncapped)
-
+    
     func noteText(italic: Bool) -> some View {
         Text(entry.text)
             .font(style.typeBody)
@@ -240,9 +243,9 @@ struct FullEntryCardView: View {
             .foregroundStyle(style.cardSecondaryText)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
-
+    
     // MARK: - Tags Row (all tags, no cap)
-
+    
     @ViewBuilder
     var tagsRow: some View {
         HStack(alignment: .bottom, spacing: 8) {
@@ -324,9 +327,9 @@ struct FullEntryCardView: View {
             metadataColumn
         }
     }
-
+    
     // MARK: - Body
-
+    
     var body: some View {
         if entry.tagNames.contains(WeeklyReviewTheme.weeklyReviewTag) {
             WeeklyReviewRowView(entry: entry)
@@ -338,7 +341,7 @@ struct FullEntryCardView: View {
             regularBody
         }
     }
-
+    
     var regularBody: some View {
         VStack(alignment: .leading, spacing: 8) {
             ZStack(alignment: .topTrailing) {

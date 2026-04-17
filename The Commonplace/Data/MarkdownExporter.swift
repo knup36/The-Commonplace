@@ -106,87 +106,87 @@ struct MarkdownExporter {
     }
     
     // MARK: - Export Range
-
-        static func exportRange(entries: [Entry], from startDate: Date, to endDate: Date) throws -> ExportResult {
-            let calendar = Calendar.current
-            let start = calendar.startOfDay(for: startDate)
-            let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: endDate)) ?? endDate
-
-            let rangeEntries = entries
-                .filter { $0.createdAt >= start && $0.createdAt < end }
-                .sorted { $0.createdAt < $1.createdAt }
-
-            guard !rangeEntries.isEmpty else {
-                throw MarkdownExportError.noEntries
-            }
-
-            let tempDir = FileManager.default.temporaryDirectory
-                .appendingPathComponent("commonplace_range_\(UUID().uuidString)")
-            let mediaURL = tempDir.appendingPathComponent("media")
-            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-            try FileManager.default.createDirectory(at: mediaURL, withIntermediateDirectories: true)
-
-            let weeks = groupByWeek(entries: rangeEntries)
-            var mediaFileCount = 0
-
-            for (weekStart, weekEntries) in weeks.sorted(by: { $0.key < $1.key }) {
-                let filename = weekFilename(for: weekStart, entries: weekEntries)
-                let fileURL = tempDir.appendingPathComponent(filename)
-                let markdown = try renderWeek(
-                    weekStart: weekStart,
-                    entries: weekEntries,
-                    mediaURL: mediaURL,
-                    mediaFileCount: &mediaFileCount
-                )
-                try markdown.write(to: fileURL, atomically: true, encoding: .utf8)
-            }
-
-            let readmeURL = tempDir.appendingPathComponent("README.md")
-            try readme().write(to: readmeURL, atomically: true, encoding: .utf8)
-
-            // ZIP filename includes the date range
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
-            let startString = formatter.string(from: startDate)
-            let endString = formatter.string(from: endDate)
-            let zipURL = FileManager.default.temporaryDirectory
-                .appendingPathComponent("Commonplace-\(startString)-to-\(endString).zip")
-            if FileManager.default.fileExists(atPath: zipURL.path) {
-                try FileManager.default.removeItem(at: zipURL)
-            }
-            let archive = try Archive(url: zipURL, accessMode: .create)
-            let allFiles = try FileManager.default.contentsOfDirectory(
-                at: tempDir,
-                includingPropertiesForKeys: nil,
-                options: .skipsHiddenFiles
-            )
-            for file in allFiles {
-                if file.hasDirectoryPath {
-                    let subFiles = (try? FileManager.default.contentsOfDirectory(
-                        at: file,
-                        includingPropertiesForKeys: nil
-                    )) ?? []
-                    for subFile in subFiles {
-                        try archive.addEntry(
-                            with: "\(file.lastPathComponent)/\(subFile.lastPathComponent)",
-                            fileURL: subFile
-                        )
-                    }
-                } else {
-                    try archive.addEntry(with: file.lastPathComponent, fileURL: file)
-                }
-            }
-            try FileManager.default.removeItem(at: tempDir)
-
-            return ExportResult(
-                zipURL: zipURL,
-                entryCount: rangeEntries.count,
-                mediaFileCount: mediaFileCount,
-                weekCount: weeks.count
-            )
+    
+    static func exportRange(entries: [Entry], from startDate: Date, to endDate: Date) throws -> ExportResult {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: startDate)
+        let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: endDate)) ?? endDate
+        
+        let rangeEntries = entries
+            .filter { $0.createdAt >= start && $0.createdAt < end }
+            .sorted { $0.createdAt < $1.createdAt }
+        
+        guard !rangeEntries.isEmpty else {
+            throw MarkdownExportError.noEntries
         }
-
-        static func export(entries: [Entry]) throws -> ExportResult {
+        
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("commonplace_range_\(UUID().uuidString)")
+        let mediaURL = tempDir.appendingPathComponent("media")
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: mediaURL, withIntermediateDirectories: true)
+        
+        let weeks = groupByWeek(entries: rangeEntries)
+        var mediaFileCount = 0
+        
+        for (weekStart, weekEntries) in weeks.sorted(by: { $0.key < $1.key }) {
+            let filename = weekFilename(for: weekStart, entries: weekEntries)
+            let fileURL = tempDir.appendingPathComponent(filename)
+            let markdown = try renderWeek(
+                weekStart: weekStart,
+                entries: weekEntries,
+                mediaURL: mediaURL,
+                mediaFileCount: &mediaFileCount
+            )
+            try markdown.write(to: fileURL, atomically: true, encoding: .utf8)
+        }
+        
+        let readmeURL = tempDir.appendingPathComponent("README.md")
+        try readme().write(to: readmeURL, atomically: true, encoding: .utf8)
+        
+        // ZIP filename includes the date range
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let startString = formatter.string(from: startDate)
+        let endString = formatter.string(from: endDate)
+        let zipURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Commonplace-\(startString)-to-\(endString).zip")
+        if FileManager.default.fileExists(atPath: zipURL.path) {
+            try FileManager.default.removeItem(at: zipURL)
+        }
+        let archive = try Archive(url: zipURL, accessMode: .create)
+        let allFiles = try FileManager.default.contentsOfDirectory(
+            at: tempDir,
+            includingPropertiesForKeys: nil,
+            options: .skipsHiddenFiles
+        )
+        for file in allFiles {
+            if file.hasDirectoryPath {
+                let subFiles = (try? FileManager.default.contentsOfDirectory(
+                    at: file,
+                    includingPropertiesForKeys: nil
+                )) ?? []
+                for subFile in subFiles {
+                    try archive.addEntry(
+                        with: "\(file.lastPathComponent)/\(subFile.lastPathComponent)",
+                        fileURL: subFile
+                    )
+                }
+            } else {
+                try archive.addEntry(with: file.lastPathComponent, fileURL: file)
+            }
+        }
+        try FileManager.default.removeItem(at: tempDir)
+        
+        return ExportResult(
+            zipURL: zipURL,
+            entryCount: rangeEntries.count,
+            mediaFileCount: mediaFileCount,
+            weekCount: weeks.count
+        )
+    }
+    
+    static func export(entries: [Entry]) throws -> ExportResult {
         // Filter to last 30 days
         let cutoff = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
         let recentEntries = entries
@@ -475,9 +475,15 @@ struct MarkdownExporter {
             switch entry.mediaType {
             case "tv":      typeLabel = "TV Show"
             case "podcast": typeLabel = "Podcast"
+            case "game":    typeLabel = "Game"
             default:        typeLabel = "Movie"
             }
-            let mediaIcon = entry.mediaType == "podcast" ? "🎙️" : "🎬"
+            let mediaIcon: String
+            switch entry.mediaType {
+            case "podcast": mediaIcon = "🎙️"
+            case "game":    mediaIcon = "🎮"
+            default:        mediaIcon = "🎬"
+            }
             lines.append("### \(mediaIcon) \(typeLabel) — \(time)")
             if let title = entry.mediaTitle {
                 var titleLine = "**\(title)**"
@@ -485,14 +491,33 @@ struct MarkdownExporter {
                 lines.append(titleLine)
             }
             if let genre = entry.mediaGenre { lines.append("*\(genre)*") }
+            if entry.mediaType == "game", let platform = entry.mediaPlatform, !platform.isEmpty {
+                lines.append("**Platform:** \(platform)")
+            }
             if let status = entry.mediaStatus {
-                let isPodcast = entry.mediaType == "podcast"
                 let statusLabel: String
-                switch status {
-                case "wantTo":     statusLabel = isPodcast ? "Want to Listen" : "Want to Watch"
-                case "inProgress": statusLabel = isPodcast ? "Listening" : "In Progress"
-                case "finished":   statusLabel = "Finished"
-                default:           statusLabel = status
+                switch entry.mediaType {
+                case "podcast":
+                    switch status {
+                    case "wantTo":     statusLabel = "Want to Listen"
+                    case "inProgress": statusLabel = "Listening"
+                    case "finished":   statusLabel = "Finished"
+                    default:           statusLabel = status
+                    }
+                case "game":
+                    switch status {
+                    case "wantTo":     statusLabel = "Someday"
+                    case "inProgress": statusLabel = "Playing"
+                    case "finished":   statusLabel = "Finished"
+                    default:           statusLabel = status
+                    }
+                default:
+                    switch status {
+                    case "wantTo":     statusLabel = "Want to Watch"
+                    case "inProgress": statusLabel = "In Progress"
+                    case "finished":   statusLabel = "Finished"
+                    default:           statusLabel = status
+                    }
                 }
                 lines.append("**Status:** \(statusLabel)")
             }

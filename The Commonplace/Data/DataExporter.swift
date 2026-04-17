@@ -105,8 +105,9 @@ class DataExporter {
         var mediaLog: [String]?
         var tmdbID: Int?
         var mediaRuntime: Int?
-        var mediaSeasons: Int?
-        // Weekly Review fields (v1.12.1)
+                var mediaSeasons: Int?
+                var mediaPlatform: String?
+                // Weekly Review fields (v1.12.1)
         var weeklyReviewHighlight: String?
         var weeklyReviewCarryForward: String?
         var weeklyReviewGratitude: String?
@@ -319,6 +320,7 @@ class DataExporter {
                 tmdbID: entry.tmdbID,
                 mediaRuntime: entry.mediaRuntime,
                 mediaSeasons: entry.mediaSeasons,
+                mediaPlatform: entry.mediaPlatform,
                 weeklyReviewHighlight: entry.weeklyReviewHighlight,
                 weeklyReviewCarryForward: entry.weeklyReviewCarryForward,
                 weeklyReviewGratitude: entry.weeklyReviewGratitude,

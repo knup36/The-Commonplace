@@ -138,13 +138,14 @@ struct EntryRowView: View {
     
     var typeLabelText: String {
         if entry.type == .media {
-            switch entry.mediaType {
-            case "movie":   return "Movie"
-            case "tv":      return "TV Show"
-            case "podcast": return "Podcast"
-            default:        return "Media"
-            }
-        }
+                    switch entry.mediaType {
+                    case "movie":   return "Movie"
+                    case "tv":      return "TV Show"
+                    case "podcast": return "Podcast"
+                    case "game":    return "Game"
+                    default:        return "Media"
+                    }
+                }
         if entry.type == .link, let contentType = entry.linkContentType {
             return "Link · \(contentType.capitalized)"
         }
@@ -235,9 +236,10 @@ struct EntryRowView: View {
         case .media:
             HStack(spacing: 10) {
                 let isPodcast = entry.mediaType == "podcast"
-                let thumbWidth: CGFloat = 50
-                let thumbHeight: CGFloat = isPodcast ? 50 : 75
-                let thumbRadius: CGFloat = isPodcast ? 8 : 6
+                                let isGame = entry.mediaType == "game"
+                                let thumbWidth: CGFloat = 50
+                                let thumbHeight: CGFloat = isPodcast ? 50 : 75
+                                let thumbRadius: CGFloat = isPodcast ? 8 : 6
                 if let path = entry.mediaCoverPath,
                    let data = MediaFileManager.load(path: path),
                    let uiImage = UIImage(data: data) {
@@ -248,12 +250,12 @@ struct EntryRowView: View {
                         .clipShape(RoundedRectangle(cornerRadius: thumbRadius))
                 } else {
                     RoundedRectangle(cornerRadius: thumbRadius)
-                        .fill(style.cardDivider)
-                        .frame(width: thumbWidth, height: thumbHeight)
-                        .overlay(
-                            Image(systemName: isPodcast ? "mic.fill" : "film.fill")
-                                .foregroundStyle(style.cardSecondaryText)
-                        )
+                                            .fill(style.cardDivider)
+                                            .frame(width: thumbWidth, height: thumbHeight)
+                                            .overlay(
+                                                Image(systemName: isPodcast ? "mic.fill" : isGame ? "gamecontroller.fill" : "film.fill")
+                                                    .foregroundStyle(style.cardSecondaryText)
+                                            )
                 }
                 VStack(alignment: .leading, spacing: 4) {
                     if let title = entry.mediaTitle {
@@ -464,6 +466,14 @@ func mediaStatusLabel(for status: String, mediaType: String? = nil) -> String {
         switch status {
         case "wantTo":     return "Want to Listen"
         case "inProgress": return "Listening"
+        case "finished":   return "Finished"
+        default:           return status
+        }
+    }
+    if mediaType == "game" {
+        switch status {
+        case "wantTo":     return "Someday"
+        case "inProgress": return "Playing"
         case "finished":   return "Finished"
         default:           return status
         }

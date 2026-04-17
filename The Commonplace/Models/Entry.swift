@@ -5,8 +5,8 @@
 // All entry types share this one model, differentiated by the `type` field.
 //
 // ============================================================
-// SCHEMA VERSION: 9
-// Last updated: v2.0.1
+// SCHEMA VERSION: 10
+// Last updated: v2.3
 //
 // Schema change policy:
 //   - Adding optional fields: safe, no migration needed
@@ -48,6 +48,7 @@
 //   v1.14.1 — locationVisited
 //   v2.0    — linkedEntryIDs
 //   v2.0.1  — isScreenshot
+//   v2.3    — mediaPlatform
 //
 // Deprecated fields (do not remove yet):
 //   journalImageData — deprecated v1.9.1, replaced by journalImagePath
@@ -172,7 +173,8 @@ class Entry {
     var mediaLog: [String] = []
     var tmdbID: Int? = nil
     var mediaRuntime: Int? = nil  // minutes — movies only
-    var mediaSeasons: Int? = nil  // season count — TV only
+        var mediaSeasons: Int? = nil  // season count — TV only
+        var mediaPlatform: String? = nil  // platform(s) — games only
     
     // Weekly Review (v1.12.1)
     // Dedicated fields replacing key:value encoding in entry.text

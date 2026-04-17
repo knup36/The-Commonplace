@@ -148,7 +148,8 @@ class DataImporter {
                 entry.mediaLog = dto.mediaLog ?? []
                 entry.tmdbID = dto.tmdbID
                 entry.mediaRuntime = dto.mediaRuntime
-                entry.mediaSeasons = dto.mediaSeasons
+                                entry.mediaSeasons = dto.mediaSeasons
+                                entry.mediaPlatform = dto.mediaPlatform
             }
             // Weekly Review fields
             entry.weeklyReviewHighlight = dto.weeklyReviewHighlight
