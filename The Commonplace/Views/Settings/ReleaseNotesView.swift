@@ -21,6 +21,21 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.2",
+            title: "Is This Thing On?",
+            notes: [
+                "Podcast support — search for any podcast via iTunes, saved as a media entry with square artwork, publisher, genre, and listen status (Want to Listen / Listening / Finished)",
+                "Feed cards show PODCAST type label and square artwork thumbnail for podcast entries",
+                "Media detail view refactored into type-specific components — Movie, TV Show, and Podcast each get their own layout and metadata section",
+                "New markdown export option in Settings — pick a custom date range, see a readable summary, and export. ZIP filename includes the date range",
+                "Feed entry filter strip no longer has a bounding box — icons float freely on the background",
+                "isScreenshot and linkedEntryIDs were missing from export/import — both now correctly included in .commonplace archives",
+                "Markdown export now correctly labels Podcasts with type, status labels, and icon",
+                "Star ratings in markdown export now correctly show out of 5 instead of 10",
+                "Shot entries in markdown export now distinguish between Photo, Screenshot, and Video"
+            ]
+        ),
+        Release(
             version: "2.1",
             title: "Full Frontal",
             notes: [

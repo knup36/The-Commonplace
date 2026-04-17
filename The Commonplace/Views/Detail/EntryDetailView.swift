@@ -244,13 +244,25 @@ struct EntryDetailView: View {
             .onAppear { editText = entry.text }
             .onChange(of: editText) { _, newValue in entry.text = newValue }
         } else {
-            if !entry.text.isEmpty {
-                Text(entry.text)
-                    .font(style.typeBody)
-                    .foregroundStyle(style.cardPrimaryText)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
+                    if !entry.text.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            if entry.readwiseSourceID != nil {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "quote.opening")
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundStyle(style.cardMetadataText)
+                                    Text("PULL QUOTES")
+                                        .font(style.typeSectionHeader)
+                                        .foregroundStyle(style.cardMetadataText)
+                                }
+                            }
+                            Text(entry.text)
+                                .font(style.typeBody)
+                                .foregroundStyle(style.cardPrimaryText)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                }
     }
     // MARK: - Pipe Separator
 

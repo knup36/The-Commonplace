@@ -196,17 +196,17 @@ class ReadwiseSyncCoordinator {
             return a < b
         }
         
-        let bullets = sorted.compactMap { highlight -> String? in
-            // Reader highlights store the highlighted text in the content field
-            guard let text = highlight.content, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                return nil
-            }
-            return "• \"\(text.trimmingCharacters(in: .whitespacesAndNewlines))\""
-        }
-        
-        let ids = sorted.map { $0.id }
-        
-        return (bullets.joined(separator: "\n"), ids)
+        let paragraphs = sorted.compactMap { highlight -> String? in
+                    // Reader highlights store the highlighted text in the content field
+                    guard let text = highlight.content, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                        return nil
+                    }
+                    return text.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                
+                let ids = sorted.map { $0.id }
+                
+                return (paragraphs.joined(separator: "\n\n"), ids)
     }
     
     // MARK: - SwiftData Lookup

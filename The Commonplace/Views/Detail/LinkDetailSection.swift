@@ -55,55 +55,54 @@ struct LinkDetailSection: View {
                         contentTypeSelector
                     }
                     
-                    // Always show the rich link preview card regardless of content type
-                    LinkPreviewView(entry: entry)
-                    if let contentType = entry.linkContentType {
-                        Label(contentType.capitalized, systemImage: iconFor(contentType))
-                            .font(style.typeCaption)
-                            .foregroundStyle(accentColor.opacity(0.7))
-                    }
-                    
-                    if let urlString = entry.url, let url = URL(string: urlString) {
-                        HStack(spacing: 10) {
-                            // Status label
-                            if isExtracting {
-                                HStack(spacing: 6) {
-                                    ProgressView()
-                                    Text("Saving...")
+                    // Readwise articles get an editorial hero layout
+                    // Regular link entries keep the compact LinkPreviewView
+                    if entry.readwiseSourceID != nil {
+                        readwiseHeroHeader
+                    } else {
+                        LinkPreviewView(entry: entry)
+                        if let contentType = entry.linkContentType {
+                            Label(contentType.capitalized, systemImage: iconFor(contentType))
+                                .font(style.typeCaption)
+                                .foregroundStyle(accentColor.opacity(0.7))
+                        }
+                        if let urlString = entry.url, let url = URL(string: urlString) {
+                            HStack(spacing: 10) {
+                                if isExtracting {
+                                    HStack(spacing: 6) {
+                                        ProgressView()
+                                        Text("Saving...")
+                                            .font(style.typeCaption)
+                                            .foregroundStyle(style.secondaryText)
+                                    }
+                                } else if let mc = entry.markdownContent, mc != "__failed__" {
+                                    Label("Article Saved", systemImage: "checkmark.circle.fill")
                                         .font(style.typeCaption)
                                         .foregroundStyle(style.secondaryText)
+                                } else if entry.markdownContent == "__failed__" {
+                                    Label("Unavailable", systemImage: "exclamationmark.circle")
+                                        .font(style.typeCaption)
+                                        .foregroundStyle(style.tertiaryText)
                                 }
-                            } else if let mc = entry.markdownContent, mc != "__failed__" {
-                                Label("Article Saved", systemImage: "checkmark.circle.fill")
-                                    .font(style.typeCaption)
-                                    .foregroundStyle(style.secondaryText)
-                            } else if entry.markdownContent == "__failed__" {
-                                Label("Unavailable", systemImage: "exclamationmark.circle")
-                                    .font(style.typeCaption)
-                                    .foregroundStyle(style.tertiaryText)
-                            }
-                            
-                            Spacer()
-                            
-                            // Action buttons
-                            Button {
-                                UIApplication.shared.open(url)
-                            } label: {
-                                Label("Safari", systemImage: "safari")
-                                    .font(style.typeLabel)
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .tint(accentColor)
-                            
-                            if let mc = entry.markdownContent, mc != "__failed__" {
+                                Spacer()
                                 Button {
-                                    showingArticleReader = true
+                                    UIApplication.shared.open(url)
                                 } label: {
-                                    Label("Read", systemImage: "doc.text")
+                                    Label("Safari", systemImage: "safari")
                                         .font(style.typeLabel)
                                 }
                                 .buttonStyle(.borderedProminent)
-                                .tint(accentColor.opacity(0.5))
+                                .tint(accentColor)
+                                if let mc = entry.markdownContent, mc != "__failed__" {
+                                    Button {
+                                        showingArticleReader = true
+                                    } label: {
+                                        Label("Read", systemImage: "doc.text")
+                                            .font(style.typeLabel)
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                    .tint(accentColor.opacity(0.5))
+                                }
                             }
                         }
                     }
@@ -134,6 +133,121 @@ struct LinkDetailSection: View {
                     isExtracting = false
                 }
             }
+        }
+    }
+    
+    // MARK: - Readwise Hero Header
+    
+    @State private var heroImage: UIImage? = nil
+    
+    var readwiseHeroHeader: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            
+            // Full-bleed hero image
+            Group {
+                if let image = heroImage {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 220)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                } else {
+                    Rectangle()
+                        .fill(accentColor.opacity(0.08))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 220)
+                        .overlay(
+                            Image(systemName: "doc.richtext")
+                                .font(.system(size: 40))
+                                .foregroundStyle(accentColor.opacity(0.2))
+                        )
+                }
+            }
+            .onAppear {
+                if heroImage == nil,
+                   let path = entry.previewImagePath,
+                   let data = MediaFileManager.load(path: path) {
+                    heroImage = UIImage(data: data)
+                }
+            }
+            
+            // Title
+            VStack(alignment: .leading, spacing: 8) {
+                if let title = entry.linkTitle, !title.isEmpty {
+                    Text(title)
+                        .font(style.typeTitle2)
+                        .fontWeight(.bold)
+                        .foregroundStyle(style.cardPrimaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                
+                // Domain + favicon
+                HStack(spacing: 4) {
+                    if let faviconPath = entry.faviconPath,
+                       let faviconData = MediaFileManager.load(path: faviconPath),
+                       let favicon = UIImage(data: faviconData) {
+                        Image(uiImage: favicon)
+                            .resizable()
+                            .frame(width: 12, height: 12)
+                            .clipShape(RoundedRectangle(cornerRadius: 2))
+                    }
+                    if let urlString = entry.url,
+                       let url = URL(string: urlString),
+                       let host = url.host {
+                        Text(host.replacingOccurrences(of: "www.", with: ""))
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.cardMetadataText)
+                    }
+                }
+                
+                // Action buttons + status
+                if let urlString = entry.url, let url = URL(string: urlString) {
+                    HStack(spacing: 10) {
+                        Button {
+                            UIApplication.shared.open(url)
+                        } label: {
+                            Label("Safari", systemImage: "safari")
+                                .font(style.typeLabel)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(accentColor)
+                        
+                        if let mc = entry.markdownContent, mc != "__failed__" {
+                            Button {
+                                showingArticleReader = true
+                            } label: {
+                                Label("Read", systemImage: "doc.text")
+                                    .font(style.typeLabel)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(accentColor.opacity(0.5))
+                        }
+                        
+                        Spacer()
+                        
+                        if isExtracting {
+                            HStack(spacing: 6) {
+                                ProgressView()
+                                Text("Saving...")
+                                    .font(style.typeCaption)
+                                    .foregroundStyle(style.secondaryText)
+                            }
+                        } else if let mc = entry.markdownContent, mc != "__failed__" {
+                            Label("Saved", systemImage: "checkmark.circle.fill")
+                                .font(style.typeCaption)
+                                .foregroundStyle(style.secondaryText)
+                        } else if entry.markdownContent == "__failed__" {
+                            Label("Unavailable", systemImage: "exclamationmark.circle")
+                                .font(style.typeCaption)
+                                .foregroundStyle(style.tertiaryText)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 4)
+            .padding(.top, 16)
+            .padding(.bottom, 8)
         }
     }
     
