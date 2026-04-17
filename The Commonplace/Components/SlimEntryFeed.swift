@@ -47,14 +47,32 @@ struct SlimEntryFeed: View {
         return HStack(spacing: 10) {
             
             // Thumbnail
-            if hasThumbnail(entry: entry) {
-                slimThumbnail(entry: entry)
-                    .padding(.leading, 10)
-            }
+                        if hasThumbnail(entry: entry) {
+                            slimThumbnail(entry: entry)
+                                .padding(.leading, 10)
+                        } else if entry.type == .text || entry.type == .journal || entry.type == .sticky {
+                            Color.clear.frame(width: 6)
+                        }
             
             // Text content
             VStack(alignment: .leading, spacing: 3) {
-                if entry.type == .link, let title = entry.linkTitle, !title.isEmpty {
+                if entry.type == .photo {
+                    Spacer()
+                    let title = slimTitle(for: entry)
+                    if !title.isEmpty {
+                        Text(title)
+                            .font(style.typeBody)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(style.cardPrimaryText)
+                            .lineLimit(2)
+                    }
+                    if let location = entry.captureLocationName, !location.isEmpty {
+                        Text(location)
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.cardMetadataText)
+                            .lineLimit(1)
+                    }
+                } else if entry.type == .link, let title = entry.linkTitle, !title.isEmpty {
                     Text(title)
                         .font(style.typeBody)
                         .fontWeight(.semibold)
@@ -67,12 +85,28 @@ struct SlimEntryFeed: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(style.cardPrimaryText)
                         .lineLimit(3)
-                    let subtitle = slimSubtitle(for: entry)
-                    if !subtitle.isEmpty {
-                        Text(subtitle)
-                            .font(entry.type == .media ? style.typeCaption : style.typeBodySecondary)
-                            .foregroundStyle(style.cardSecondaryText)
-                            .lineLimit(2)
+                    if entry.type == .sticky {
+                        let total = entry.stickyItems.count
+                        let done = entry.stickyChecked.count
+                        if total > 0 {
+                            HStack(spacing: 8) {
+                                ProgressView(value: Double(done), total: Double(total))
+                                    .tint(accent)
+                                    .frame(width: 220)
+                                Text("\(done)/\(total)")
+                                    .font(style.typeCaption)
+                                    .foregroundStyle(style.cardSecondaryText)
+                                    .fixedSize()
+                            }
+                        }
+                    } else {
+                        let subtitle = slimSubtitle(for: entry)
+                        if !subtitle.isEmpty {
+                            Text(subtitle)
+                                .font(entry.type == .media ? style.typeCaption : style.typeBodySecondary)
+                                .foregroundStyle(style.cardSecondaryText)
+                                .lineLimit(2)
+                        }
                     }
                 }
             }
@@ -99,7 +133,7 @@ struct SlimEntryFeed: View {
     
     func hasThumbnail(entry: Entry) -> Bool {
         switch entry.type {
-        case .location, .media, .link, .music, .audio: return true
+        case .location, .media, .link, .music, .audio, .photo: return true
         default: return false
         }
     }
@@ -150,6 +184,18 @@ struct SlimEntryFeed: View {
             }
         case .music:
             if let path = entry.musicArtworkPath,
+               let data = MediaFileManager.load(path: path),
+               let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size, height: size)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else {
+                slimIconThumb(icon: entry.type.icon, accent: accent, size: size)
+            }
+        case .photo:
+            if let path = entry.imagePath,
                let data = MediaFileManager.load(path: path),
                let uiImage = UIImage(data: data) {
                 Image(uiImage: uiImage)
@@ -224,6 +270,11 @@ struct SlimEntryFeed: View {
                 return String(transcript.prefix(60))
             }
             return "Sound"
+        case .photo:
+            let text = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            return text.isEmpty ? "" : String(text.prefix(60))
+        case .sticky:
+            return entry.stickyTitle ?? "List"
         default:
             let text = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
             return text.isEmpty ? entry.type.displayName : String(text.prefix(60))

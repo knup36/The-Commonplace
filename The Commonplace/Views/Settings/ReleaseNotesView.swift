@@ -21,6 +21,18 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.2.1",
+            title: "Clean Up on Aisle Three",
+            notes: [
+                "Readwise highlights now render as clean paragraphs with breathing room — bullet points and quote marks removed",
+                "Readwise article detail view now shows a full-bleed hero image with editorial title and action button layout",
+                "Pull Quotes section header added above highlight text in Readwise entries",
+                "Journal detail activity rings no longer boxed — float freely with bottom-aligned row",
+                "Sticky entry input field now word wraps up to 4 lines instead of scrolling off screen",
+                "Weekly Review Media Watched section now only shows entries with log activity during that specific week"
+            ]
+        ),
+        Release(
             version: "2.2",
             title: "Is This Thing On?",
             notes: [
