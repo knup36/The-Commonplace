@@ -41,7 +41,7 @@ class JournalPromptService: ObservableObject {
     private let cacheDateKey = "journalPrompt_cachedDate"
     private let dismissedDateKey = "journalPrompt_dismissedDate"
 
-    private let apiKey = "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"
+    private let apiKey = Secrets.anthropicAPIKey
     private let model = "claude-sonnet-4-20250514"
 
     private var todayString: String {

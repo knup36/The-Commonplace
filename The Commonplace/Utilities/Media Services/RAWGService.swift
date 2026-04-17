@@ -32,7 +32,7 @@ struct RAWGSearchResult: Identifiable {
 
 struct RAWGService {
 
-    private static let apiKey = "393b645348eb49be8a545256601b7c16"
+    private static let apiKey = Secrets.rawgAPIKey
     private static let baseURL = "https://api.rawg.io/api"
 
     // MARK: - Search
