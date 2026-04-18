@@ -78,6 +78,14 @@ class DataImporter {
             collection.filterLocationLongitude = dto.filterLocationLongitude
             collection.filterLocationRadius = dto.filterLocationRadius
             collection.filterMediaStatus = dto.filterMediaStatus
+            collection.collectionType = dto.collectionType
+                        collection.folioEmoji = dto.folioEmoji
+            if let filename = dto.folioHeaderImageFile,
+               let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
+                collection.folioHeaderImagePath = try? MediaFileManager.save(
+                    data, type: .image, id: "\(dto.id)_folio_header"
+                )
+            }
             modelContext.insert(collection)
             collectionsImported += 1
         }
@@ -148,8 +156,8 @@ class DataImporter {
                 entry.mediaLog = dto.mediaLog ?? []
                 entry.tmdbID = dto.tmdbID
                 entry.mediaRuntime = dto.mediaRuntime
-                                entry.mediaSeasons = dto.mediaSeasons
-                                entry.mediaPlatform = dto.mediaPlatform
+                entry.mediaSeasons = dto.mediaSeasons
+                entry.mediaPlatform = dto.mediaPlatform
             }
             // Weekly Review fields
             entry.weeklyReviewHighlight = dto.weeklyReviewHighlight

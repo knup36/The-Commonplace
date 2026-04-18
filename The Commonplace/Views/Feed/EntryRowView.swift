@@ -95,6 +95,7 @@ struct EntryRowView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @Query var allTagObjects: [Tag]
     @Query var allPersonTags: [Tag]
+    @Query var allCollections: [Collection]
     
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { entry.type.accentColor(for: themeManager.current) }
@@ -138,14 +139,14 @@ struct EntryRowView: View {
     
     var typeLabelText: String {
         if entry.type == .media {
-                    switch entry.mediaType {
-                    case "movie":   return "Movie"
-                    case "tv":      return "TV Show"
-                    case "podcast": return "Podcast"
-                    case "game":    return "Game"
-                    default:        return "Media"
-                    }
-                }
+            switch entry.mediaType {
+            case "movie":   return "Movie"
+            case "tv":      return "TV Show"
+            case "podcast": return "Podcast"
+            case "game":    return "Game"
+            default:        return "Media"
+            }
+        }
         if entry.type == .link, let contentType = entry.linkContentType {
             return "Link · \(contentType.capitalized)"
         }
@@ -236,10 +237,10 @@ struct EntryRowView: View {
         case .media:
             HStack(spacing: 10) {
                 let isPodcast = entry.mediaType == "podcast"
-                                let isGame = entry.mediaType == "game"
-                                let thumbWidth: CGFloat = 50
-                                let thumbHeight: CGFloat = isPodcast ? 50 : 75
-                                let thumbRadius: CGFloat = isPodcast ? 8 : 6
+                let isGame = entry.mediaType == "game"
+                let thumbWidth: CGFloat = 50
+                let thumbHeight: CGFloat = isPodcast ? 50 : 75
+                let thumbRadius: CGFloat = isPodcast ? 8 : 6
                 if let path = entry.mediaCoverPath,
                    let data = MediaFileManager.load(path: path),
                    let uiImage = UIImage(data: data) {
@@ -250,12 +251,12 @@ struct EntryRowView: View {
                         .clipShape(RoundedRectangle(cornerRadius: thumbRadius))
                 } else {
                     RoundedRectangle(cornerRadius: thumbRadius)
-                                            .fill(style.cardDivider)
-                                            .frame(width: thumbWidth, height: thumbHeight)
-                                            .overlay(
-                                                Image(systemName: isPodcast ? "mic.fill" : isGame ? "gamecontroller.fill" : "film.fill")
-                                                    .foregroundStyle(style.cardSecondaryText)
-                                            )
+                        .fill(style.cardDivider)
+                        .frame(width: thumbWidth, height: thumbHeight)
+                        .overlay(
+                            Image(systemName: isPodcast ? "mic.fill" : isGame ? "gamecontroller.fill" : "film.fill")
+                                .foregroundStyle(style.cardSecondaryText)
+                        )
                 }
                 VStack(alignment: .leading, spacing: 4) {
                     if let title = entry.mediaTitle {
@@ -369,7 +370,9 @@ struct EntryRowView: View {
                     HStack(spacing: 4) {
                         ForEach(visibleTags.prefix(3), id: \.self) { tag in
                             let folioTag = allTagObjects.first { $0.name == tag && $0.isFolio }
+                                                        let folioCollection = allCollections.first { $0.isFolio && $0.filterTags.contains(tag) && $0.filterTags.count == 1 }
                             if let folio = folioTag {
+                                // Old Tag-based Folio
                                 HStack(spacing: 3) {
                                     if let emoji = folio.subjectEmoji {
                                         Text(emoji).font(.system(size: 10))
@@ -380,6 +383,30 @@ struct EntryRowView: View {
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
                                 .background(Color(hex: folio.colorHex ?? "#888780").opacity(0.2))
+                                .foregroundStyle(style.cardPrimaryText)
+                                .clipShape(Capsule())
+                                .overlay(
+                                    Capsule().strokeBorder(
+                                        LinearGradient(
+                                            colors: [Color(white: 0.85), Color(white: 0.6), Color(white: 0.85), Color(white: 0.5), Color(white: 0.85)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1.5
+                                    )
+                                )
+                            } else if let folio = folioCollection {
+                                // New Collection-based Folio
+                                HStack(spacing: 3) {
+                                    if let emoji = folio.folioEmoji {
+                                        Text(emoji).font(.system(size: 10))
+                                    }
+                                    Text(folio.name)
+                                        .font(style.typeCaption)
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color(hex: folio.colorHex).opacity(0.2))
                                 .foregroundStyle(style.cardPrimaryText)
                                 .clipShape(Capsule())
                                 .overlay(

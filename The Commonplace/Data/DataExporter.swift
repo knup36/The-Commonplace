@@ -105,9 +105,9 @@ class DataExporter {
         var mediaLog: [String]?
         var tmdbID: Int?
         var mediaRuntime: Int?
-                var mediaSeasons: Int?
-                var mediaPlatform: String?
-                // Weekly Review fields (v1.12.1)
+        var mediaSeasons: Int?
+        var mediaPlatform: String?
+        // Weekly Review fields (v1.12.1)
         var weeklyReviewHighlight: String?
         var weeklyReviewCarryForward: String?
         var weeklyReviewGratitude: String?
@@ -116,13 +116,13 @@ class DataExporter {
         var locationRating: Int?
         var locationVisited: Bool?
         // Readwise (v1.14)
-                var readwiseSourceID: String?
-                var readwiseImportedHighlightIDs: [String]?
-                // v2.0
-                var linkedEntryIDs: [String]?
-                // v2.0.1
-                var isScreenshot: Bool?
-            }
+        var readwiseSourceID: String?
+        var readwiseImportedHighlightIDs: [String]?
+        // v2.0
+        var linkedEntryIDs: [String]?
+        // v2.0.1
+        var isScreenshot: Bool?
+    }
     
     struct CollectionDTO: Codable {
         var id: String
@@ -143,6 +143,10 @@ class DataExporter {
         var filterLocationLongitude: Double?
         var filterLocationRadius: Double?
         var filterMediaStatus: [String]
+        // Folio fields (v2.4)
+                var collectionType: String?
+                var folioEmoji: String?
+                var folioHeaderImageFile: String?
     }
     
     struct HabitDTO: Codable {
@@ -328,10 +332,10 @@ class DataExporter {
                 locationRating: entry.locationRating,
                 locationVisited: entry.locationVisited,
                 readwiseSourceID: entry.readwiseSourceID,
-                                readwiseImportedHighlightIDs: entry.readwiseImportedHighlightIDs.isEmpty ? nil : entry.readwiseImportedHighlightIDs,
-                                linkedEntryIDs: entry.linkedEntryIDs.isEmpty ? nil : entry.linkedEntryIDs,
-                                isScreenshot: entry.isScreenshot
-                            )
+                readwiseImportedHighlightIDs: entry.readwiseImportedHighlightIDs.isEmpty ? nil : entry.readwiseImportedHighlightIDs,
+                linkedEntryIDs: entry.linkedEntryIDs.isEmpty ? nil : entry.linkedEntryIDs,
+                isScreenshot: entry.isScreenshot
+            )
             
             // Media files
             if let path = entry.imagePath,
@@ -404,8 +408,9 @@ class DataExporter {
         }
         
         // Build collection DTOs
-        let collectionDTOs = collections.map { c in
-            CollectionDTO(
+        var collectionDTOs: [CollectionDTO] = []
+        for c in collections {
+            var dto = CollectionDTO(
                 id: c.id.uuidString,
                 createdAt: c.createdAt,
                 name: c.name,
@@ -423,8 +428,20 @@ class DataExporter {
                 filterLocationLatitude: c.filterLocationLatitude,
                 filterLocationLongitude: c.filterLocationLongitude,
                 filterLocationRadius: c.filterLocationRadius,
-                filterMediaStatus: c.filterMediaStatus
+                filterMediaStatus: c.filterMediaStatus,
+                collectionType: c.collectionType,
+                                folioEmoji: c.folioEmoji,
+                                folioHeaderImageFile: nil
             )
+            // Export Folio header image
+            if let path = c.folioHeaderImagePath,
+               let data = MediaFileManager.load(path: path) {
+                let filename = "collection_\(c.id.uuidString)_header.jpg"
+                try data.write(to: mediaDir.appendingPathComponent(filename))
+                dto.folioHeaderImageFile = filename
+                mediaFileCount += 1
+            }
+            collectionDTOs.append(dto)
         }
         
         // Build habit DTOs

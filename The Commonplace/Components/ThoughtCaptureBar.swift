@@ -47,18 +47,29 @@ struct ThoughtCaptureBar: View {
 
     var style: any AppThemeStyle { themeManager.style }
 
+    @Query var allCollections: [Collection]
+
     // Most-used tags across all entries, context tags pinned to front
-    var suggestedTags: [String] {
-        let allNames = allEntries.flatMap { $0.tagNames }.filter { !$0.hasPrefix("@") }
-        let counts = Dictionary(allNames.map { ($0, 1) }, uniquingKeysWith: +)
-        let sorted = counts
-            .sorted { $0.value > $1.value }
-            .map { $0.key }
-            .filter { !selectedTags.contains($0) }
-        let pinned = contextTags.filter { !selectedTags.contains($0) }
-        let rest = sorted.filter { !pinned.contains($0) }
-        return pinned + rest
-    }
+        var suggestedTags: [String] {
+            let soloFolioTags = Set(allCollections.filter { collection in
+                guard collection.isFolio else { return false }
+                guard collection.filterTags.count == 1 else { return false }
+                return collection.filterTypes.isEmpty &&
+                       collection.filterSearchText == nil &&
+                       collection.filterLocationLatitude == nil &&
+                       (DateFilterRange(rawValue: collection.filterDateRange) ?? .allTime) == .allTime
+            }.flatMap { $0.filterTags })
+            let allNames = allEntries.flatMap { $0.tagNames }
+                .filter { !$0.hasPrefix("@") && !soloFolioTags.contains($0) }
+            let counts = Dictionary(allNames.map { ($0, 1) }, uniquingKeysWith: +)
+            let sorted = counts
+                .sorted { $0.value > $1.value }
+                .map { $0.key }
+                .filter { !selectedTags.contains($0) }
+            let pinned = contextTags.filter { !selectedTags.contains($0) }
+            let rest = sorted.filter { !pinned.contains($0) }
+            return pinned + rest
+        }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {

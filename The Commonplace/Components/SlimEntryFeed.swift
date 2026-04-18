@@ -17,7 +17,7 @@
 //   SlimEntryFeed(entries: slimEntries, style: style)
 //
 // Used in:
-//   FolioDetailView — entries below stickies and photos
+//   CollectionDetailView — entries below stickies and photos (Folio layout)
 
 import SwiftUI
 import MapKit

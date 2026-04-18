@@ -60,19 +60,19 @@ struct LibraryView: View {
     }
     
     var displayedCollections: [Collection] {
-        switch currentSort {
-        case .custom:
-            return reorderedCollections
-        case .name:
-            return allCollections.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-        case .entryCount:
-            return allCollections.sorted { entryCount(for: $0) > entryCount(for: $1) }
-        case .dateCreated:
-            return allCollections.sorted { $0.createdAt > $1.createdAt }
-        case .recentlyModified:
-            return allCollections.sorted { latestEntry(for: $0) > latestEntry(for: $1) }
+            switch currentSort {
+            case .custom:
+                return reorderedCollections.filter { !$0.isFolio }
+            case .name:
+                return allCollections.filter { !$0.isFolio }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            case .entryCount:
+                return allCollections.filter { !$0.isFolio }.sorted { entryCount(for: $0) > entryCount(for: $1) }
+            case .dateCreated:
+                return allCollections.filter { !$0.isFolio }.sorted { $0.createdAt > $1.createdAt }
+            case .recentlyModified:
+                return allCollections.filter { !$0.isFolio }.sorted { latestEntry(for: $0) > latestEntry(for: $1) }
+            }
         }
-    }
     
     func entryCount(for collection: Collection) -> Int {
         allEntries.filter { collectionMatches(entry: $0, collection: collection) }.count
@@ -98,13 +98,23 @@ struct LibraryView: View {
     // MARK: - Tags logic
     
     var allTags: [(tag: String, count: Int)] {
-        let folioNames = Set(allTagObjects.filter { $0.isFolio }.map { $0.name })
-        var tagCounts: [String: Int] = [:]
-        for entry in allEntries {
-            for tag in entry.tagNames where !tag.hasPrefix("@") && !folioNames.contains(tag) {
-                tagCounts[tag, default: 0] += 1
+            let folioNames = Set(allTagObjects.filter { $0.isFolio }.map { $0.name })
+            // Hide tags that are the sole filter in a Folio's filterTags
+            let soloFolioTags = Set(allCollections.filter { collection in
+                guard collection.isFolio else { return false }
+                guard collection.filterTags.count == 1 else { return false }
+                // Only hide if no other filter rules are active
+                return collection.filterTypes.isEmpty &&
+                       collection.filterSearchText == nil &&
+                       collection.filterLocationLatitude == nil &&
+                       (DateFilterRange(rawValue: collection.filterDateRange) ?? .allTime) == .allTime
+            }.flatMap { $0.filterTags })
+            var tagCounts: [String: Int] = [:]
+            for entry in allEntries {
+                for tag in entry.tagNames where !tag.hasPrefix("@") && !folioNames.contains(tag) && !soloFolioTags.contains(tag) {
+                    tagCounts[tag, default: 0] += 1
+                }
             }
-        }
         let mapped = tagCounts.map { (tag: $0.key, count: $0.value) }
         switch currentTagSort {
         case .name:
@@ -304,10 +314,10 @@ struct LibraryView: View {
                     }
                     try? modelContext.save()
                 }
-                reorderedCollections = allCollections.sorted { $0.order < $1.order }
+                reorderedCollections = allCollections.filter { !$0.isFolio }.sorted { $0.order < $1.order }
             }
             .onChange(of: allCollections) {
-                reorderedCollections = allCollections.sorted { $0.order < $1.order }
+                reorderedCollections = allCollections.filter { !$0.isFolio }.sorted { $0.order < $1.order }
             }
             .scrollContentBackground(.hidden)
             .background(style.background.ignoresSafeArea())
@@ -362,12 +372,7 @@ struct LibraryView: View {
                 NavigationRouter.destination(for: entry)
             }
             .navigationDestination(for: Tag.self) { tag in
-                if tag.isFolio {
-                    FolioDetailView(tag: tag)
-                        .environmentObject(EditModeManager())
-                } else {
-                    PersonDetailView(tag: tag)
-                }
+                PersonDetailView(tag: tag)
             }
             .sheet(isPresented: $showingAddCollection) {
                 CollectionFormView()
@@ -382,11 +387,11 @@ struct LibraryView: View {
     
     // MARK: - Folios Content
     
-    var allFolios: [Tag] {
-        allTagObjects
-            .filter { $0.isFolio }
-            .sorted { $0.folioDisplayName < $1.folioDisplayName }
-    }
+    var allFolios: [Collection] {
+            allCollections
+                .filter { $0.isFolio }
+                .sorted { $0.name < $1.name }
+        }
     
     @ViewBuilder
     var foliosContent: some View {
@@ -429,38 +434,38 @@ struct LibraryView: View {
         }
     }
     
-    func folioGridCell(folio: Tag) -> some View {
-        ZStack {
-            Capsule()
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [
-                            Color(white: 0.85),
-                            Color(white: 0.6),
-                            Color(white: 0.85),
-                            Color(white: 0.5),
-                            Color(white: 0.85)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1.5
-                )
-                .background(Color(hex: folio.colorHex ?? "#888780").opacity(0.2))
-                .clipShape(Capsule())
-                .frame(height: 64)
-            VStack(spacing: 3) {
-                Text(folio.subjectEmoji ?? "◆")
-                    .font(.system(size: 24))
-                Text(folio.folioDisplayName)
-                    .font(style.typeCaption)
-                    .fontWeight(.medium)
-                    .foregroundStyle(style.primaryText)
-                    .lineLimit(1)
+    func folioGridCell(folio: Collection) -> some View {
+            ZStack {
+                Capsule()
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [
+                                Color(white: 0.85),
+                                Color(white: 0.6),
+                                Color(white: 0.85),
+                                Color(white: 0.5),
+                                Color(white: 0.85)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.5
+                    )
+                    .background(Color(hex: folio.colorHex).opacity(0.2))
+                    .clipShape(Capsule())
+                    .frame(height: 64)
+                VStack(spacing: 3) {
+                    Text(folio.folioEmoji ?? "◆")
+                        .font(.system(size: 24))
+                    Text(folio.name)
+                        .font(style.typeCaption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(style.primaryText)
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, 12)
             }
-            .padding(.horizontal, 12)
         }
-    }
     
     // MARK: - People Content
     

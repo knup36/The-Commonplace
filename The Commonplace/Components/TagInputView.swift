@@ -26,14 +26,16 @@ struct TagInputView: View {
         tags.filter { !$0.hasPrefix("@") }
     }
     
+    @Query var allCollections: [Collection]
+    
     var allExistingTags: [String] {
-        let allNames = entries.flatMap { $0.tagNames }.filter { !$0.hasPrefix("@") }
-        let counts = Dictionary(allNames.map { ($0, 1) }, uniquingKeysWith: +)
-        return counts
-            .filter { !tags.contains($0.key) }
-            .sorted { $0.value > $1.value }
-            .map { $0.key }
-    }
+            let allNames = entries.flatMap { $0.tagNames }.filter { !$0.hasPrefix("@") }
+            let counts = Dictionary(allNames.map { ($0, 1) }, uniquingKeysWith: +)
+            return counts
+                .filter { !tags.contains($0.key) }
+                .sorted { $0.value > $1.value }
+                .map { $0.key }
+        }
     
     var suggestions: [String] {
         if inputText.isEmpty { return allExistingTags }
@@ -125,10 +127,19 @@ struct TagInputView: View {
                                 inputText = ""
                             } label: {
                                 let folioTag = allTagObjects.first { $0.name == suggestion && $0.isFolio }
+                                let folioCollection = allCollections.first { $0.isFolio && $0.filterTags.contains(suggestion) && $0.filterTags.count == 1 }
+                                let isFolioStyle = folioTag != nil || folioCollection != nil
                                 HStack(spacing: 4) {
                                     if let folio = folioTag, let emoji = folio.subjectEmoji {
                                         Text(emoji).font(.caption)
                                         Text(folio.folioDisplayName)
+                                            .font(.caption)
+                                            .foregroundStyle(style?.primaryText ?? .primary)
+                                    } else if let folio = folioCollection {
+                                        if let emoji = folio.folioEmoji {
+                                            Text(emoji).font(.caption)
+                                        }
+                                        Text(folio.name)
                                             .font(.caption)
                                             .foregroundStyle(style?.primaryText ?? .primary)
                                     } else {
@@ -137,11 +148,15 @@ struct TagInputView: View {
                                 }
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 5)
-                                .background(folioTag != nil ? Color(hex: folioTag?.colorHex ?? "#888780").opacity(0.2) : style?.pillBackground ?? Color(uiColor: .systemGray5))
+                                .background(
+                                    folioCollection != nil ? Color(hex: folioCollection!.colorHex).opacity(0.2) :
+                                        folioTag != nil ? Color(hex: folioTag?.colorHex ?? "#888780").opacity(0.2) :
+                                        style?.pillBackground ?? Color(uiColor: .systemGray5)
+                                )
                                 .foregroundStyle(accentColor)
                                 .clipShape(Capsule())
                                 .overlay(
-                                    folioTag != nil ?
+                                    isFolioStyle ?
                                     Capsule().strokeBorder(
                                         LinearGradient(
                                             colors: [Color(white: 0.85), Color(white: 0.6), Color(white: 0.85), Color(white: 0.5), Color(white: 0.85)],
@@ -165,16 +180,24 @@ struct TagInputView: View {
     
     func tagPill(_ tag: String) -> some View {
         let folioTag = allTagObjects.first { $0.name == tag && $0.isFolio }
+        let folioCollection = allCollections.first { $0.isFolio && $0.filterTags.contains(tag) && $0.filterTags.count == 1 && $0.isFolio }
+        let isFolioStyle = folioTag != nil || folioCollection != nil
+        
         return HStack(spacing: 4) {
             if let folio = folioTag, let emoji = folio.subjectEmoji {
-                Text(emoji)
-                    .font(.caption)
+                Text(emoji).font(.caption)
                 Text(folio.folioDisplayName)
                     .font(.caption)
                     .foregroundStyle(style?.primaryText ?? .primary)
-            } else {
-                Text(tag)
+            } else if let folio = folioCollection {
+                if let emoji = folio.folioEmoji {
+                    Text(emoji).font(.caption)
+                }
+                Text(folio.name)
                     .font(.caption)
+                    .foregroundStyle(style?.primaryText ?? .primary)
+            } else {
+                Text(tag).font(.caption)
             }
             if editMode.isEditing {
                 Button {
@@ -187,11 +210,15 @@ struct TagInputView: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 5)
-        .background(folioTag != nil ? Color(hex: folioTag?.colorHex ?? "#888780").opacity(0.2) : accentColor.opacity(0.2))
+        .background(
+            folioCollection != nil ? Color(hex: folioCollection!.colorHex).opacity(0.2) :
+                folioTag != nil ? Color(hex: folioTag?.colorHex ?? "#888780").opacity(0.2) :
+                accentColor.opacity(0.2)
+        )
         .foregroundStyle(accentColor)
         .clipShape(Capsule())
         .overlay(
-            folioTag != nil ?
+            isFolioStyle ?
             Capsule().strokeBorder(
                 LinearGradient(
                     colors: [Color(white: 0.85), Color(white: 0.6), Color(white: 0.85), Color(white: 0.5), Color(white: 0.85)],

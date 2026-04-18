@@ -13,16 +13,10 @@ struct TagFeedView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.modelContext) var modelContext
     @State private var searchText = ""
-    @State private var showingEmojiPicker = false
-    @State private var promotedFolio: Tag? = nil
     @State private var showingDeleteConfirmation = false
     
     var tagObject: Tag? {
         allTags.first { $0.name == tag }
-    }
-    
-    var isAlreadyFolio: Bool {
-        tagObject?.isFolio == true
     }
     
     var style: any AppThemeStyle { themeManager.style }
@@ -64,14 +58,6 @@ struct TagFeedView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
-                    if !isAlreadyFolio {
-                        Button {
-                            showingEmojiPicker = true
-                        } label: {
-                            Label("Promote to Folio", systemImage: "book.pages.fill")
-                        }
-                        Divider()
-                    }
                     Button {
                         withAnimation { tagObject?.isPinned.toggle() }
                         try? modelContext.save()
@@ -93,50 +79,22 @@ struct TagFeedView: View {
         }
         .confirmationDialog("Delete \"\(tag)\"?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
             Button("Delete Tag", role: .destructive) {
-                if let tagObj = tagObject {
-                    modelContext.delete(tagObj)
-                    try? modelContext.save()
-                }
-            }
+                            // Remove Tag object
+                            if let tagObj = tagObject {
+                                modelContext.delete(tagObj)
+                            }
+                            // Remove tag string from all entries
+                            for entry in entries where entry.tagNames.contains(tag) {
+                                entry.tagNames.removeAll { $0 == tag }
+                            }
+                            try? modelContext.save()
+                        }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will delete the tag but won't remove it from entries that use it.")
-        }
-        .searchable(text: $searchText, prompt: "Search entries...")
-        .sheet(isPresented: $showingEmojiPicker) {
-            FolioPromotionSheet(
-                tagName: tag,
-                onSelect: { emoji, colorHex in
-                    promotedFolio = promoteToFolio(emoji: emoji, colorHex: colorHex)
-                    showingEmojiPicker = false
-                },
-                onCancel: {
-                    showingEmojiPicker = false
+                    let count = filteredEntries.count
+                    Text("'\(tag)' will be removed from \(count) \(count == 1 ? "entry" : "entries").")
                 }
-            )
-        }
-        .navigationDestination(item: $promotedFolio) { folio in
-            FolioDetailView(tag: folio)
-                .environmentObject(EditModeManager())
-        }
-    }
-    
-    // MARK: - Promotion
-    
-    @discardableResult
-    func promoteToFolio(emoji: String, colorHex: String = "#888780") -> Tag? {
-        let tagObj: Tag
-        if let existing = tagObject {
-            tagObj = existing
-        } else {
-            tagObj = Tag(name: tag)
-            modelContext.insert(tagObj)
-        }
-        tagObj.subjectType = "folioGeneric"
-        tagObj.subjectEmoji = emoji
-        tagObj.colorHex = colorHex
-        try? modelContext.save()
-        return tagObj
+        .searchable(text: $searchText, prompt: "Search entries...")
     }
 }
 // MARK: - Emoji Picker Sheet

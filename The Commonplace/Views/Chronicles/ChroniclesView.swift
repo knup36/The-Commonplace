@@ -36,6 +36,7 @@ struct ChroniclesView: View {
             ScrollView {
                 LazyVStack(spacing: 16) {
                     chroniclesHeader
+                    DogEarsCard(entries: entries, style: style)
                     OnThisDayCard(entries: entries, style: style, themeManager: themeManager)
                     MoodTimelineCard(entries: entries, style: style)
                     StatsCard(entries: entries, style: style, themeManager: themeManager)

@@ -2,6 +2,7 @@ import Foundation
 import CoreLocation
 
 func collectionMatches(entry: Entry, collection: Collection) -> Bool {
+
     if collection.filterSearchText == "__bookmarks__" {
         return entry.isPinned
     }
