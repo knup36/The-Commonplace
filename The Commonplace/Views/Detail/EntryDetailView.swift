@@ -51,7 +51,8 @@ struct EntryDetailView: View {
                 LinkDetailSection(entry: entry, style: style, accentColor: entryAccent)
                 MusicDetailSection(entry: entry, style: style, accentColor: entryAccent)
                 JournalMetadataSection(entry: entry, style: style, accentColor: entryAccent)
-                textContentSection
+                                textContentSection
+                                journalPhotoSection
                 if editMode.isEditing {
                     PersonInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
                     TagInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
@@ -267,6 +268,15 @@ struct EntryDetailView: View {
             }
         }
     }
+    // MARK: - Journal Photo Section
+    
+    @ViewBuilder
+    var journalPhotoSection: some View {
+        if entry.type == .journal {
+            JournalPhotoDetailSection(entry: entry, style: style, accentColor: entryAccent)
+        }
+    }
+    
     // MARK: - Pipe Separator
     
     var pipe: some View {

@@ -82,17 +82,6 @@ struct JournalMetadataSection: View {
                     .font(style.typeCaption)
                     .foregroundStyle(style.cardSecondaryText)
             }
-
-            // Journal photo
-            if let path = entry.journalImagePath,
-               let data = MediaFileManager.load(path: path),
-               let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
         }
     }
 }

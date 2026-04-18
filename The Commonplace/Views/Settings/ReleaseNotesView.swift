@@ -21,6 +21,22 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.4",
+            title: "Dog Day Afternoon",
+            notes: [
+                "Folios rebuilt on Collections — more powerful filter rules, same rich presentation",
+                "Collection builder gains Collection | Folio picker — create Folios directly from scratch",
+                "Folio name locked after creation, tag hiding logic updated to match new architecture",
+                "Folio pills render wherever a tag matches a Folio's sole filter tag",
+                "Dog-Ears Chronicles card — surfaces incomplete stickies and 'later' tagged entries",
+                "Tag delete from tag feed view — removes tag from all entries with confirmation",
+                "Filter chips now show all active conditions: type, tag, date, location, status",
+                "Edit Collection and Edit Folio options added to detail view ··· menu",
+                "FolioDetailView retired — CollectionDetailView handles all layouts",
+                "Promote to Folio removed from tag feed — lives in Collection builder instead"
+            ]
+        ),
+        Release(
             version: "2.3",
             title: "For Love of the Game",
             notes: [
