@@ -18,6 +18,8 @@ struct EntryDetailView: View {
     @State private var editText = ""
     @State private var noteTitle = ""
     @State private var noteBody = ""
+    @State private var audioTitle = ""
+    @State private var audioBody = ""
     @State private var showingDeleteConfirmation = false
     @FocusState private var textFieldFocused: Bool
     @FocusState private var noteTitleFocused: Bool
@@ -28,6 +30,21 @@ struct EntryDetailView: View {
         let parts = entry.text.components(separatedBy: "\n")
         noteTitle = parts.first ?? ""
         noteBody = parts.dropFirst().joined(separator: "\n")
+    }
+    
+    func loadAudioParts() {
+        let parts = entry.text.components(separatedBy: "\n")
+        audioTitle = parts.first ?? ""
+        audioBody = parts.dropFirst().joined(separator: "\n")
+    }
+    
+    func saveAudioParts() {
+        if audioBody.isEmpty {
+            entry.text = audioTitle
+        } else {
+            entry.text = audioTitle + "\n" + audioBody
+        }
+        entry.touch()
     }
     
     // Rejoin title and body back into entry.text
@@ -47,40 +64,27 @@ struct EntryDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 PhotoDetailSection(entry: entry, style: style, accentColor: entryAccent)
-                AudioDetailSection(entry: entry, style: style, accentColor: entryAccent)
+                AudioDetailSection(
+                    entry: entry,
+                    style: style,
+                    accentColor: entryAccent,
+                    audioTitle: $audioTitle,
+                    onTitleChange: { newTitle in
+                        audioTitle = newTitle
+                        saveAudioParts()
+                    }
+                )
                 LinkDetailSection(entry: entry, style: style, accentColor: entryAccent)
                 MusicDetailSection(entry: entry, style: style, accentColor: entryAccent)
                 JournalMetadataSection(entry: entry, style: style, accentColor: entryAccent)
-                                textContentSection
-                                journalPhotoSection
-                if editMode.isEditing {
-                    PersonInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
-                    TagInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
-                } else {
-                    let hasPeople = entry.tagNames.contains { $0.hasPrefix("@") }
-                    let hasTags = entry.tagNames.contains { !$0.hasPrefix("@") }
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 6) {
-                            if entry.isPinned {
-                                Image(systemName: "bookmark.fill")
-                                    .font(.system(size: 20))
-                                    .foregroundStyle(entryAccent)
-                                if hasPeople || hasTags {
-                                    pipe
-                                }
-                            }
-                            if hasPeople {
-                                PersonInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
-                                if hasTags {
-                                    pipe
-                                }
-                            }
-                            if hasTags {
-                                TagInputView(tags: $entry.tagNames, accentColor: entryAccent, style: style)
-                            }
-                        }
-                    }
-                }
+                textContentSection
+                journalPhotoSection
+                EntryTagRow(
+                    tagNames: $entry.tagNames,
+                    isPinned: entry.isPinned,
+                    accentColor: entryAccent,
+                    style: style
+                )
                 Divider()
                     .overlay(style.cardDivider)
                 EntryMetadataFooter(entry: entry, style: style, accentColor: entryAccent)
@@ -141,6 +145,9 @@ struct EntryDetailView: View {
         }
         .onAppear {
             let isNewEntry = Date().timeIntervalSince(entry.createdAt) < 10
+            if entry.type == .audio {
+                loadAudioParts()
+            }
             if entry.type == .text {
                 loadNoteParts()
                 if isNewEntry {
@@ -174,8 +181,30 @@ struct EntryDetailView: View {
     var textContentSection: some View {
         if entry.type == .text {
             noteContentSection
+        } else if entry.type == .audio {
+            audioBodySection
         } else {
             genericContentSection
+        }
+    }
+    
+    @ViewBuilder
+    var audioBodySection: some View {
+        if editMode.isEditing {
+            CommonplaceTextEditor(
+                text: $audioBody,
+                placeholder: "Add notes...",
+                usesSerifFont: false,
+                minHeight: 32
+            )
+            .focused($textFieldFocused)
+            .foregroundStyle(style.primaryText)
+            .onChange(of: audioBody) { _, _ in saveAudioParts() }
+        } else if !audioBody.isEmpty {
+            Text(audioBody)
+                .font(style.typeBody)
+                .foregroundStyle(style.cardPrimaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
     
@@ -245,7 +274,10 @@ struct EntryDetailView: View {
             .onAppear { editText = entry.text }
             .onChange(of: editText) { _, newValue in entry.text = newValue }
         } else {
-            if !entry.text.isEmpty {
+            let displayText = entry.type == .audio
+            ? entry.text.components(separatedBy: "\n").dropFirst().joined(separator: "\n")
+            : entry.text
+            if !displayText.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
                     if entry.readwiseSourceID != nil {
                         HStack(spacing: 6) {
@@ -257,7 +289,7 @@ struct EntryDetailView: View {
                                 .foregroundStyle(style.cardMetadataText)
                         }
                     }
-                    Text(entry.text)
+                    Text(displayText)
                         .font(style.typeBody)
                         .foregroundStyle(style.cardPrimaryText)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -276,14 +308,4 @@ struct EntryDetailView: View {
             JournalPhotoDetailSection(entry: entry, style: style, accentColor: entryAccent)
         }
     }
-    
-    // MARK: - Pipe Separator
-    
-    var pipe: some View {
-        Text("|")
-            .font(.system(size: 18))
-            .foregroundStyle(entryAccent.opacity(0.3))
-    }
 }
-
-

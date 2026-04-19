@@ -148,34 +148,12 @@ struct LocationDetailView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     
-                    if editMode.isEditing {
-                        PersonInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
-                        TagInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
-                    } else {
-                        let hasPeople = entry.tagNames.contains { $0.hasPrefix("@") }
-                        let hasTags = entry.tagNames.contains { !$0.hasPrefix("@") }
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 6) {
-                                if entry.isPinned {
-                                    Image(systemName: "bookmark.fill")
-                                        .font(.system(size: 20))
-                                        .foregroundStyle(accentColor)
-                                    if hasPeople || hasTags {
-                                        pipe
-                                    }
-                                }
-                                if hasPeople {
-                                    PersonInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
-                                    if hasTags {
-                                        pipe
-                                    }
-                                }
-                                if hasTags {
-                                    TagInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
-                                }
-                            }
-                        }
-                    }
+                    EntryTagRow(
+                                            tagNames: $entry.tagNames,
+                                            isPinned: entry.isPinned,
+                                            accentColor: accentColor,
+                                            style: style
+                                        )
                     
                     Divider()
                         .overlay(style.cardDivider)
@@ -276,12 +254,5 @@ struct LocationDetailView: View {
                 await MainActor.run { mapItem.openInMaps() }
             }
         }
-    }
-    // MARK: - Pipe Separator
-    
-    var pipe: some View {
-        Text("|")
-            .font(.system(size: 18))
-            .foregroundStyle(accentColor.opacity(0.3))
     }
 }

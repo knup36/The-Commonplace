@@ -1,17 +1,27 @@
-import SwiftUI
-
-// MARK: - AudioDetailSection
+// AudioDetailSection.swift
+// Commonplace
+//
 // Displays the audio section within EntryDetailView.
 // Shown when entry.type == .audio.
+//
 // Handles two states:
 //   1. No audio recorded yet — shows AudioEntryView (record/import UI)
-//   2. Audio exists — shows AudioPlayerView + transcript (or "no transcript" message)
+//   2. Audio exists — shows AudioPlayerView + transcript
+//
+// Title and body are split from entry.text using \n delimiter,
+// matching the same pattern as note entries. EntryDetailView owns
+// the audioTitle/audioBody state and passes title as a Binding here.
+//
 // Screen: Entry Detail (tap any audio entry in the Feed or Collections tab)
+
+import SwiftUI
 
 struct AudioDetailSection: View {
     @Bindable var entry: Entry
     var style: any AppThemeStyle
     var accentColor: Color
+    @Binding var audioTitle: String
+    var onTitleChange: (String) -> Void
     
     @EnvironmentObject var editMode: EditModeManager
     
@@ -21,18 +31,26 @@ struct AudioDetailSection: View {
                 if editMode.isEditing {
                     AudioEntryView(
                         audioPath: Binding(get: { entry.audioPath }, set: { entry.audioPath = $0 }),
-                        transcript: Binding(get: { entry.transcript ?? "" }, set: { entry.transcript = $0.isEmpty ? nil : $0 })
+                        transcript: Binding(get: { entry.transcript ?? "" }, set: { entry.transcript = $0.isEmpty ? nil : $0 }),
+                        style: style,
+                        accentColor: accentColor
                     )
                     .onChange(of: entry.audioPath) { _, newValue in
-                        if newValue != nil {
-                            entry.touch()
-                        }
+                        if newValue != nil { entry.touch() }
                     }
                 }
             }
+            
             if let path = entry.audioPath,
                let audioData = MediaFileManager.load(path: path) {
-                AudioPlayerView(audioData: audioData)
+                AudioPlayerView(
+                    audioData: audioData,
+                    style: style,
+                    accentColor: accentColor,
+                    titleText: audioTitle,
+                    onTitleChange: onTitleChange
+                )
+                
                 if let transcript = entry.transcript, !transcript.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
                         Label("Transcript", systemImage: "text.bubble")
