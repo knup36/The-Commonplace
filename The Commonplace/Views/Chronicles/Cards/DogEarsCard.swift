@@ -2,111 +2,138 @@
 // Commonplace
 //
 // Chronicles card surfacing entries that need attention —
-// stickies with unchecked items older than 3 days, and entries tagged "later".
+// stickies with unchecked items, and entries tagged "later".
 //
-// Card hides entirely when there is nothing to show.
-// Stickies show unchecked item count. "Later" entries show preview text.
-// All rows are tappable — navigate directly to the entry.
+// Two separate horizontal strips:
+//   1. Stickies with unchecked items — single row
+//   2. Later-tagged entries — two-row LazyHGrid
 //
-// No schema changes required. Reads from existing entry fields.
+// Both strips use a negative trailing padding trick to let the last
+// card peek out, signalling to the user that there is more to scroll.
+//
+// Updated v2.4 — separated strips, peek affordance, 2-row later grid.
 
 import SwiftUI
 
 struct DogEarsCard: View {
     let entries: [Entry]
     var style: any AppThemeStyle
-
-    // Stickies with at least one unchecked item, older than 3 days
+    
+    @EnvironmentObject var themeManager: ThemeManager
+    
     var overdueStickies: [Entry] {
-        let cutoff = Date().addingTimeInterval(-3 * 24 * 60 * 60)
-        return entries.filter { entry in
+        entries.filter { entry in
             guard entry.type == .sticky else { return false }
-            guard entry.createdAt < cutoff else { return false }
-            let unchecked = entry.stickyItems.filter { !entry.stickyChecked.contains($0) }
+            let unchecked = entry.stickyItems.filter { raw in
+                let id = raw.components(separatedBy: "::").first ?? ""
+                return !entry.stickyChecked.contains(id)
+            }
             return !unchecked.isEmpty
         }
     }
-
-    // Entries tagged "later"
+    
     var laterEntries: [Entry] {
-        entries.filter { $0.tagNames.contains("later") && $0.type != .sticky }
+        entries.filter { $0.tagNames.contains("later") }
     }
-
-    var dogEarEntries: [Entry] {
-        let combined = overdueStickies + laterEntries
-        return Array(combined.prefix(6))
+    
+    var hasContent: Bool {
+        !overdueStickies.isEmpty || !laterEntries.isEmpty
     }
-
+    
     var body: some View {
-        if dogEarEntries.isEmpty { return AnyView(EmptyView()) }
+        if !hasContent { return AnyView(EmptyView()) }
         return AnyView(
-            ChroniclesCardContainer(title: "Dog-Ears", icon: "bookmark.fill") {
-                VStack(spacing: 10) {
-                    ForEach(dogEarEntries) { entry in
-                        NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                            dogEarRow(entry: entry)
-                        }
-                        .buttonStyle(.plain)
-                        if entry.id != dogEarEntries.last?.id {
-                            Divider()
-                                .overlay(ChroniclesTheme.sectionDivider)
+            ChroniclesCardContainer(title: "Dog-Ears", icon: "bookmark.fill", background: .parchment) {
+                VStack(alignment: .leading, spacing: 0) {
+                    
+                    // MARK: - Stickies strip
+                    if !overdueStickies.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Lists")
+                                .font(style.typeCaption)
+                                .foregroundStyle(Color.white.opacity(0.4))
+                                .padding(.leading, 2)
+                            
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 10) {
+                                    ForEach(overdueStickies) { entry in
+                                        NavigationLink(destination: NavigationRouter.destination(for: entry)) {
+                                            CompactEntryCard(entry: entry, style: style)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                    if overdueStickies.count > 5 {
+                                        seeMoreCard(count: overdueStickies.count - 5)
+                                    }
+                                }
+                                .padding(.trailing, 32)
+                            }
+                            .padding(.trailing, -16)
                         }
                     }
-                    if (overdueStickies.count + laterEntries.count) > 6 {
-                        let remaining = (overdueStickies.count + laterEntries.count) - 6
-                        Text("\(remaining) more waiting")
-                            .font(style.typeCaption)
-                            .foregroundStyle(ChroniclesTheme.tertiaryText)
-                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    
+                    // MARK: - Divider
+                    if !overdueStickies.isEmpty && !laterEntries.isEmpty {
+                        Divider()
+                            .overlay(Color.white.opacity(0.1))
+                            .padding(.vertical, 12)
+                    }
+                    
+                    // MARK: - Later entries strip (2-row grid)
+                    if !laterEntries.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Later")
+                                .font(style.typeCaption)
+                                .foregroundStyle(Color.white.opacity(0.4))
+                                .padding(.leading, 2)
+                            
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                LazyHGrid(
+                                    rows: laterEntries.count <= 5
+                                    ? [GridItem(.fixed(80), spacing: 10)]
+                                    : [GridItem(.fixed(80), spacing: 10),
+                                       GridItem(.fixed(80), spacing: 10)],
+                                    spacing: 10
+                                ) {
+                                    ForEach(laterEntries) { entry in
+                                        NavigationLink(destination: NavigationRouter.destination(for: entry)) {
+                                            CompactEntryCard(entry: entry, style: style)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                    if laterEntries.count > 10 {
+                                        seeMoreCard(count: laterEntries.count - 10)
+                                    }
+                                }
+                                .padding(.trailing, 32)
+                            }
+                            .padding(.trailing, -16)
+                        }
                     }
                 }
             }
         )
     }
-
-    func dogEarRow(entry: Entry) -> some View {
-        HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(ageText(for: entry.createdAt))
+    
+    // MARK: - See More Card
+    
+    func seeMoreCard(count: Int) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.white.opacity(0.06))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
+                )
+            VStack(spacing: 4) {
+                Text("+\(count)")
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color.white.opacity(0.6))
+                Text("more")
                     .font(style.typeCaption)
-                    .foregroundStyle(ChroniclesTheme.accentAmber)
-                Text(previewText(for: entry))
-                    .font(style.typeBodySecondary)
-                    .foregroundStyle(ChroniclesTheme.primaryText)
-                    .lineLimit(2)
-                if entry.type == .sticky {
-                    let uncheckedCount = entry.stickyItems.filter { !entry.stickyChecked.contains($0) }.count
-                    Text("\(uncheckedCount) \(uncheckedCount == 1 ? "item" : "items") remaining")
-                        .font(style.typeCaption)
-                        .foregroundStyle(ChroniclesTheme.tertiaryText)
-                }
+                    .foregroundStyle(Color.white.opacity(0.35))
             }
-            Spacer()
-            Image(systemName: entry.type.icon)
-                .font(.system(size: 12))
-                .foregroundStyle(ChroniclesTheme.tertiaryText)
         }
-    }
-
-    func ageText(for date: Date) -> String {
-        let days = Calendar.current.dateComponents([.day], from: date, to: Date()).day ?? 0
-        if days == 0 { return "Today" }
-        if days == 1 { return "Yesterday" }
-        if days < 7  { return "\(days) days ago" }
-        let weeks = days / 7
-        return weeks == 1 ? "1 week ago" : "\(weeks) weeks ago"
-    }
-
-    func previewText(for entry: Entry) -> String {
-        switch entry.type {
-        case .sticky:   return entry.stickyTitle?.isEmpty == false ? entry.stickyTitle! : "Untitled list"
-        case .location: return entry.locationName ?? "A place"
-        case .link:     return entry.linkTitle ?? entry.url ?? "A link"
-        case .media:    return entry.mediaTitle ?? "A media entry"
-        case .music:    return entry.linkTitle ?? "A track"
-        default:
-            let text = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            return text.isEmpty ? entry.type.displayName : text
-        }
+        .frame(width: 80, height: 80)
     }
 }

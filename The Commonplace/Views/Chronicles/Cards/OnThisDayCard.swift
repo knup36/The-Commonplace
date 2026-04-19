@@ -1,93 +1,124 @@
 // OnThisDayCard.swift
 // Commonplace
 //
-// Chronicles card showing entries captured on this date in previous years.
-// Surfaces memories from the archive without any user action required.
-// Empty state shown when no entries exist for this date in past years.
+// Chronicles card showing entries from approximately one month ago.
+// Renamed from "On This Day" — that card requires a full year of data
+// before it populates, so this surfaces memories from 28–35 days ago
+// instead, giving new users immediate value.
+//
+// Each entry row shows the entry type icon in its accent color,
+// preview text, and a relative time label.
+// All rows are tappable — navigate directly to the entry.
+//
+// Updated v2.4 — renamed, 30-day window, colored entry type icons.
 
 import SwiftUI
-import SwiftData
 
 struct OnThisDayCard: View {
     let entries: [Entry]
     var style: any AppThemeStyle
     let themeManager: ThemeManager
-
-    var onThisDayEntries: [Entry] {
+    
+    // Entries from 28–35 days ago — a "one month ago" window
+    var oneMonthAgoEntries: [Entry] {
         let calendar = Calendar.current
-        let today = Date()
-        let currentMonth = calendar.component(.month, from: today)
-        let currentDay = calendar.component(.day, from: today)
-        let currentYear = calendar.component(.year, from: today)
-
-        return entries.filter { entry in
-            let month = calendar.component(.month, from: entry.createdAt)
-            let day = calendar.component(.day, from: entry.createdAt)
-            let year = calendar.component(.year, from: entry.createdAt)
-            return month == currentMonth && day == currentDay && year != currentYear
-        }
+        let now = Date()
+        guard let windowStart = calendar.date(byAdding: .day, value: -35, to: now),
+              let windowEnd   = calendar.date(byAdding: .day, value: -28, to: now)
+        else { return [] }
+        return entries.filter { $0.createdAt >= windowStart && $0.createdAt <= windowEnd }
     }
-
+    
     var body: some View {
-        ChroniclesCardContainer(title: "On This Day", icon: "calendar") {
-            if onThisDayEntries.isEmpty {
-                Text("No entries from this date in previous years yet. Keep capturing — your archive grows with time.")
+        ChroniclesCardContainer(title: "One Month Ago", icon: "clock.arrow.circlepath", background: .parchment) {
+            if oneMonthAgoEntries.isEmpty {
+                Text("Nothing captured around this time last month. Keep adding entries — your archive will grow.")
                     .font(style.typeBodySecondary)
                     .foregroundStyle(ChroniclesTheme.tertiaryText)
             } else {
-                VStack(spacing: 10) {
-                    ForEach(onThisDayEntries.prefix(3)) { entry in
+                VStack(spacing: 0) {
+                    ForEach(oneMonthAgoEntries.prefix(5)) { entry in
                         NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                            onThisDayRow(entry: entry)
+                            entryRow(entry: entry)
                         }
                         .buttonStyle(.plain)
-                        if entry.id != onThisDayEntries.prefix(3).last?.id {
+                        
+                        if entry.id != oneMonthAgoEntries.prefix(5).last?.id {
                             Divider()
                                 .overlay(ChroniclesTheme.sectionDivider)
+                                .padding(.leading, 36)
                         }
                     }
-                    if onThisDayEntries.count > 3 {
-                        Text("\(onThisDayEntries.count - 3) more from this date")
+                    
+                    if oneMonthAgoEntries.count > 5 {
+                        let remaining = oneMonthAgoEntries.count - 5
+                        Text("\(remaining) more from this time")
                             .font(style.typeCaption)
                             .foregroundStyle(ChroniclesTheme.tertiaryText)
                             .frame(maxWidth: .infinity, alignment: .trailing)
+                            .padding(.top, 8)
                     }
                 }
             }
         }
     }
-
-    func onThisDayRow(entry: Entry) -> some View {
+    
+    // MARK: - Row
+    
+    func entryRow(entry: Entry) -> some View {
         HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(yearsAgoText(for: entry.createdAt))
-                    .font(style.typeCaption)
-                    .foregroundStyle(ChroniclesTheme.accentAmber)
-                Text(entryPreviewText(for: entry))
+            // Colored entry type icon — uses real accent color from theme
+            ZStack {
+                RoundedRectangle(cornerRadius: 7)
+                                    .fill(entry.type.accentColor(for: themeManager.current).opacity(0.25))
+                                    .frame(width: 28, height: 28)
+                                Image(systemName: entry.type.icon)
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(entry.type.accentColor(for: themeManager.current).opacity(0.9))
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(previewText(for: entry))
                     .font(style.typeBodySecondary)
                     .foregroundStyle(ChroniclesTheme.primaryText)
                     .lineLimit(2)
+                Text(entry.createdAt.formatted(.dateTime.month(.abbreviated).day().year()))
+                                    .font(style.typeCaption)
+                                    .foregroundStyle(Color.white.opacity(0.5))
             }
+            
             Spacer()
-            Image(systemName: entry.type.icon)
-                .font(.system(size: 12))
+            
+            Image(systemName: "chevron.right")
+                .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(ChroniclesTheme.tertiaryText)
         }
+        .padding(.vertical, 8)
     }
-
-    func yearsAgoText(for date: Date) -> String {
-        let years = Calendar.current.dateComponents([.year], from: date, to: Date()).year ?? 0
-        return years == 1 ? "1 year ago" : "\(years) years ago"
+    
+    // MARK: - Helpers
+    
+    func relativeDate(for date: Date) -> String {
+        let days = Calendar.current.dateComponents([.day], from: date, to: Date()).day ?? 0
+        if days == 0 { return "Today" }
+        if days == 1 { return "Yesterday" }
+        if days < 7  { return "\(days) days ago" }
+        let weeks = days / 7
+        return weeks == 1 ? "1 week ago" : "\(weeks) weeks ago"
     }
-
-    func entryPreviewText(for entry: Entry) -> String {
+    
+    func previewText(for entry: Entry) -> String {
         switch entry.type {
         case .location: return entry.locationName ?? "A place"
         case .link:     return entry.linkTitle ?? entry.url ?? "A link"
         case .media:    return entry.mediaTitle ?? "A media entry"
         case .music:    return entry.linkTitle ?? "A track"
+        case .sticky:   return entry.stickyTitle ?? "A list"
+        case .audio:    return entry.text.components(separatedBy: "\n").first
+                .flatMap { $0.isEmpty ? nil : $0 } ?? "A recording"
         default:
-            let text = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            let firstLine = entry.text.components(separatedBy: "\n").first ?? ""
+            let text = firstLine.trimmingCharacters(in: .whitespacesAndNewlines)
             return text.isEmpty ? entry.type.displayName : text
         }
     }
