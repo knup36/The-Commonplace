@@ -121,10 +121,11 @@ struct GameDetailSection: View {
 
     var statusSection: some View {
         let statuses: [(label: String, value: String, icon: String)] = [
-            ("Someday",  "wantTo",     "bookmark"),
-            ("Playing",  "inProgress", "gamecontroller"),
-            ("Finished", "finished",   "checkmark.circle")
-        ]
+                    ("To Play",  "wantTo",     "bookmark"),
+                    ("Playing",  "inProgress", "gamecontroller"),
+                    ("Done",     "finished",   "checkmark.circle"),
+                    ("Re-Play",  "replay",     "arrow.clockwise.circle")
+                ]
         return HStack(spacing: 0) {
             ForEach(statuses, id: \.value) { item in
                 let isSelected = localStatus == item.value
@@ -147,7 +148,7 @@ struct GameDetailSection: View {
                     .background(isSelected ? color.opacity(0.15) : Color.clear)
                 }
                 .buttonStyle(.plain)
-                if item.value != "finished" {
+                if item.value != "replay" {
                     Divider()
                         .frame(height: 16)
                         .overlay(style.tertiaryText.opacity(0.3))

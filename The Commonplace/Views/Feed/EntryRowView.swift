@@ -517,17 +517,21 @@ func mediaStatusColor(for status: String, theme: AppTheme) -> Color {
     switch theme {
     case .dusk:
         switch status {
-        case "wantTo":     return Color(hex: "#7A5855")
-        case "inProgress": return Color(hex: "#877662")
-        case "finished":   return Color(hex: "#526349")
-        default:           return Color.white.opacity(0.5)
-        }
+                case "wantTo":     return Color(hex: "#7A5855")
+                case "inProgress": return Color(hex: "#877662")
+                case "finished":   return Color(hex: "#526349")
+                case "rewatch":    return Color(hex: "#4A6070")
+                case "replay":     return Color(hex: "#4A6070")
+                default:           return Color.white.opacity(0.5)
+                }
     default:
         switch status {
-        case "wantTo":     return InkwellTheme.mediaAccent
-        case "inProgress": return InkwellTheme.stickyAccent
-        case "finished":   return InkwellTheme.locationAccent
-        default:           return InkwellTheme.inkSecondary
-        }
+                case "wantTo":     return InkwellTheme.mediaAccent
+                case "inProgress": return InkwellTheme.stickyAccent
+                case "finished":   return InkwellTheme.locationAccent
+                case "rewatch":    return InkwellTheme.audioAccent
+                case "replay":     return InkwellTheme.audioAccent
+                default:           return InkwellTheme.inkSecondary
+                }
     }
 }

@@ -2,15 +2,20 @@
 // Commonplace
 //
 // Chronicles card showing a chronological timeline of watched movies and TV shows.
-// Pulls from mediaLog entries across all .media entries.
-// Each log entry is stored as "ISO8601date::note text" in entry.mediaLog.
-// Empty state shown when no media entries have been logged yet.
+// Receives pre-filtered mediaEntries from ChroniclesView.
+// Uses a single static ISO8601DateFormatter rather than creating one per log item.
+//
+// Updated v2.4 — pre-filtered data, cached date formatter,
+//               charcoal card background.
 
 import SwiftUI
 
 struct WatchTimelineCard: View {
-    let entries: [Entry]
+    let mediaEntries: [Entry]
     var style: any AppThemeStyle
+
+    // Single formatter instance — not recreated on every render
+    private static let isoFormatter = ISO8601DateFormatter()
 
     struct WatchLogItem: Identifiable {
         let id = UUID()
@@ -20,17 +25,14 @@ struct WatchTimelineCard: View {
         let status: String?
     }
 
-    var mediaEntries: [Entry] {
-        entries.filter { $0.type == .media && !$0.mediaLog.isEmpty }
-    }
-
     var watchLogItems: [WatchLogItem] {
         var items: [WatchLogItem] = []
         for entry in mediaEntries {
             for logString in entry.mediaLog {
                 let parts = logString.components(separatedBy: "::")
                 guard parts.count == 2,
-                      let date = ISO8601DateFormatter().date(from: parts[0]) else { continue }
+                      let date = Self.isoFormatter.date(from: parts[0])
+                else { continue }
                 items.append(WatchLogItem(
                     title: entry.mediaTitle ?? "Unknown",
                     date: date,
@@ -43,18 +45,18 @@ struct WatchTimelineCard: View {
     }
 
     var body: some View {
-        ChroniclesCardContainer(title: "Watch Timeline", icon: "film.stack") {
+        ChroniclesCardContainer(title: "Watch Timeline", icon: "film.stack", background: .parchment) {
             if watchLogItems.isEmpty {
                 Text("Your watched movies and shows will appear here as you log them.")
                     .font(style.typeBodySecondary)
-                    .foregroundStyle(ChroniclesTheme.tertiaryText)
+                    .foregroundStyle(Color.white.opacity(0.4))
             } else {
                 VStack(spacing: 0) {
                     ForEach(watchLogItems.prefix(5)) { item in
                         watchLogRow(item: item)
                         if item.id != watchLogItems.prefix(5).last?.id {
                             Divider()
-                                .overlay(ChroniclesTheme.sectionDivider)
+                                .overlay(Color.white.opacity(0.1))
                                 .padding(.leading, 44)
                         }
                     }
@@ -65,27 +67,29 @@ struct WatchTimelineCard: View {
 
     func watchLogRow(item: WatchLogItem) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "film")
-                .font(.system(size: 14))
-                .foregroundStyle(ChroniclesTheme.accentAmber)
-                .frame(width: 28, height: 28)
-                .background(ChroniclesTheme.statBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+            ZStack {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.white.opacity(0.08))
+                    .frame(width: 28, height: 28)
+                Image(systemName: "film")
+                    .font(.system(size: 13))
+                    .foregroundStyle(ChroniclesTheme.accentAmber)
+            }
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.title)
                     .font(style.typeBodySecondary)
                     .fontWeight(.medium)
-                    .foregroundStyle(ChroniclesTheme.primaryText)
+                    .foregroundStyle(Color.white.opacity(0.85))
                     .lineLimit(1)
                 if !item.note.isEmpty {
                     Text(item.note)
                         .font(style.typeCaption)
-                        .foregroundStyle(ChroniclesTheme.secondaryText)
+                        .foregroundStyle(Color.white.opacity(0.5))
                         .lineLimit(2)
                 }
                 Text(item.date.formatted(.dateTime.month(.abbreviated).day().year()))
                     .font(style.typeCaption)
-                    .foregroundStyle(ChroniclesTheme.tertiaryText)
+                    .foregroundStyle(Color.white.opacity(0.3))
             }
         }
         .padding(.vertical, 8)

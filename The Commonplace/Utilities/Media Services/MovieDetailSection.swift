@@ -121,10 +121,10 @@ struct MovieDetailSection: View {
 
     var statusSection: some View {
         let statuses: [(label: String, value: String, icon: String)] = [
-            ("Watchlist",    "wantTo",     "bookmark"),
-            ("In Progress",  "inProgress", "play.circle"),
-            ("Finished",     "finished",   "checkmark.circle")
-        ]
+                    ("Watchlist", "wantTo",     "bookmark"),
+                    ("Watching",  "inProgress", "play.circle"),
+                    ("Watched",   "finished",   "checkmark.circle")
+                ]
         return HStack(spacing: 0) {
             ForEach(statuses, id: \.value) { item in
                 let isSelected = localStatus == item.value

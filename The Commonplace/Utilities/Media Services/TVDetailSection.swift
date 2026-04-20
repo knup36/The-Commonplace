@@ -119,10 +119,11 @@ struct TVDetailSection: View {
 
     var statusSection: some View {
         let statuses: [(label: String, value: String, icon: String)] = [
-            ("Watchlist",   "wantTo",     "bookmark"),
-            ("In Progress", "inProgress", "play.circle"),
-            ("Finished",    "finished",   "checkmark.circle")
-        ]
+                    ("Watchlist", "wantTo",   "bookmark"),
+                    ("Watching",  "inProgress", "play.circle"),
+                    ("Done",      "finished",   "checkmark.circle"),
+                    ("Re-Watch",  "rewatch",    "arrow.clockwise.circle")
+                ]
         return HStack(spacing: 0) {
             ForEach(statuses, id: \.value) { item in
                 let isSelected = localStatus == item.value
@@ -145,7 +146,7 @@ struct TVDetailSection: View {
                     .background(isSelected ? color.opacity(0.15) : Color.clear)
                 }
                 .buttonStyle(.plain)
-                if item.value != "finished" {
+                if item.value != "rewatch" {
                     Divider()
                         .frame(height: 16)
                         .overlay(style.tertiaryText.opacity(0.3))

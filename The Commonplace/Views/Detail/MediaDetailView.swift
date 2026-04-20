@@ -108,6 +108,7 @@ struct MediaDetailView: View {
             loadCoverImage()
             localRating = entry.mediaRating ?? 0
             localStatus = entry.mediaStatus ?? "wantTo"
+            // Podcasts have no status — localStatus unused for podcast entries
         }
         .confirmationDialog("Delete this entry?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
@@ -744,7 +745,7 @@ struct MediaDetailView: View {
                 entry.mediaType     = "podcast"
                 entry.mediaOverview = result.publisher
                 entry.mediaGenre    = result.genre
-                entry.mediaStatus   = "wantTo"
+                entry.mediaStatus   = nil
                 entry.url           = result.websiteURL
                 
                 if let data = artworkData {
