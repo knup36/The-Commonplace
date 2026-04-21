@@ -40,7 +40,7 @@ struct LibraryView: View {
     
     var isNonDefaultSort: Bool {
         if selectedTab == 0 { return currentSort != .custom }
-        if selectedTab == 1 { return currentTagSort != .name }
+        if selectedTab == 3 { return currentTagSort != .name }
         if selectedTab == 2 { return currentPersonSort != .name }
         return false
     }
@@ -60,19 +60,19 @@ struct LibraryView: View {
     }
     
     var displayedCollections: [Collection] {
-            switch currentSort {
-            case .custom:
-                return reorderedCollections.filter { !$0.isFolio }
-            case .name:
-                return allCollections.filter { !$0.isFolio }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-            case .entryCount:
-                return allCollections.filter { !$0.isFolio }.sorted { entryCount(for: $0) > entryCount(for: $1) }
-            case .dateCreated:
-                return allCollections.filter { !$0.isFolio }.sorted { $0.createdAt > $1.createdAt }
-            case .recentlyModified:
-                return allCollections.filter { !$0.isFolio }.sorted { latestEntry(for: $0) > latestEntry(for: $1) }
-            }
+        switch currentSort {
+        case .custom:
+            return reorderedCollections.filter { !$0.isFolio }
+        case .name:
+            return allCollections.filter { !$0.isFolio }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        case .entryCount:
+            return allCollections.filter { !$0.isFolio }.sorted { entryCount(for: $0) > entryCount(for: $1) }
+        case .dateCreated:
+            return allCollections.filter { !$0.isFolio }.sorted { $0.createdAt > $1.createdAt }
+        case .recentlyModified:
+            return allCollections.filter { !$0.isFolio }.sorted { latestEntry(for: $0) > latestEntry(for: $1) }
         }
+    }
     
     func entryCount(for collection: Collection) -> Int {
         allEntries.filter { collectionMatches(entry: $0, collection: collection) }.count
@@ -98,23 +98,23 @@ struct LibraryView: View {
     // MARK: - Tags logic
     
     var allTags: [(tag: String, count: Int)] {
-            let folioNames = Set(allTagObjects.filter { $0.isFolio }.map { $0.name })
-            // Hide tags that are the sole filter in a Folio's filterTags
-            let soloFolioTags = Set(allCollections.filter { collection in
-                guard collection.isFolio else { return false }
-                guard collection.filterTags.count == 1 else { return false }
-                // Only hide if no other filter rules are active
-                return collection.filterTypes.isEmpty &&
-                       collection.filterSearchText == nil &&
-                       collection.filterLocationLatitude == nil &&
-                       (DateFilterRange(rawValue: collection.filterDateRange) ?? .allTime) == .allTime
-            }.flatMap { $0.filterTags })
-            var tagCounts: [String: Int] = [:]
-            for entry in allEntries {
-                for tag in entry.tagNames where !tag.hasPrefix("@") && !folioNames.contains(tag) && !soloFolioTags.contains(tag) {
-                    tagCounts[tag, default: 0] += 1
-                }
+        let folioNames = Set(allTagObjects.filter { $0.isFolio }.map { $0.name })
+        // Hide tags that are the sole filter in a Folio's filterTags
+        let soloFolioTags = Set(allCollections.filter { collection in
+            guard collection.isFolio else { return false }
+            guard collection.filterTags.count == 1 else { return false }
+            // Only hide if no other filter rules are active
+            return collection.filterTypes.isEmpty &&
+            collection.filterSearchText == nil &&
+            collection.filterLocationLatitude == nil &&
+            (DateFilterRange(rawValue: collection.filterDateRange) ?? .allTime) == .allTime
+        }.flatMap { $0.filterTags })
+        var tagCounts: [String: Int] = [:]
+        for entry in allEntries {
+            for tag in entry.tagNames where !tag.hasPrefix("@") && !folioNames.contains(tag) && !soloFolioTags.contains(tag) {
+                tagCounts[tag, default: 0] += 1
             }
+        }
         let mapped = tagCounts.map { (tag: $0.key, count: $0.value) }
         switch currentTagSort {
         case .name:
@@ -139,16 +139,16 @@ struct LibraryView: View {
                 List {
                     // Header
                     VStack(alignment: .leading, spacing: 12) {
-                        Text(selectedTab == 0 ? "Collections" : selectedTab == 1 ? "Tags" : selectedTab == 2 ? "People" : "Folios")
+                        Text(selectedTab == 0 ? "Collections" : selectedTab == 1 ? "Folios" : selectedTab == 2 ? "People" : "Tags")
                             .font(style.typeLargeTitle)
                             .foregroundStyle(style.primaryText)
                             .padding(.leading, 8)
                         
                         Picker("", selection: $selectedTab) {
                             Text("Collections").tag(0)
-                            Text("Tags").tag(1)
+                            Text("Folios").tag(1)
                             Text("People").tag(2)
-                            Text("Folios").tag(3)
+                            Text("Tags").tag(3)
                         }
                         .pickerStyle(.segmented)
                     }
@@ -226,7 +226,7 @@ struct LibraryView: View {
                     }
                     
                     // MARK: Tags content
-                    if selectedTab == 1 {
+                                        if selectedTab == 3 {
                         if allTags.isEmpty {
                             VStack(spacing: 12) {
                                 Image(systemName: "tag.slash")
@@ -297,9 +297,9 @@ struct LibraryView: View {
                     }
                     
                     // Folios content
-                    if selectedTab == 3 {
-                        foliosContent
-                    }
+                                        if selectedTab == 1 {
+                                            foliosContent
+                                        }
                     
                 }
             }
@@ -336,21 +336,21 @@ struct LibraryView: View {
                                             .tag(sort)
                                     }
                                 }
-                            } else if selectedTab == 1 {
-                                Picker("Sort", selection: $currentTagSort) {
-                                    Label("Name", systemImage: "textformat.abc").tag(TagSort.name)
-                                    Label("Entry Count", systemImage: "number").tag(TagSort.entryCount)
-                                }
-                            } else if selectedTab == 2 {
+                            } else if selectedTab == 3 {
+                                                            Picker("Sort", selection: $currentTagSort) {
+                                                                Label("Name", systemImage: "textformat.abc").tag(TagSort.name)
+                                                                Label("Entry Count", systemImage: "number").tag(TagSort.entryCount)
+                                                            }
+                                                        } else if selectedTab == 2 {
                                 Picker("Sort", selection: $currentPersonSort) {
                                     Label("Name", systemImage: "textformat.abc").tag(TagSort.name)
                                     Label("Entry Count", systemImage: "number").tag(TagSort.entryCount)
                                 }
                             } else {
-                                                            Text("Sorted by Name")
-                                                                .foregroundStyle(style.accent)
-                                                        }
-                                                    } label: {
+                                Text("Sorted by Name")
+                                    .foregroundStyle(style.accent)
+                            }
+                        } label: {
                             Image(systemName: isNonDefaultSort ? "arrow.up.arrow.down.circle.fill" : "arrow.up.arrow.down")
                                 .foregroundStyle(style.accent)
                         }
@@ -388,10 +388,10 @@ struct LibraryView: View {
     // MARK: - Folios Content
     
     var allFolios: [Collection] {
-            allCollections
-                .filter { $0.isFolio }
-                .sorted { $0.name < $1.name }
-        }
+        allCollections
+            .filter { $0.isFolio }
+            .sorted { $0.name < $1.name }
+    }
     
     @ViewBuilder
     var foliosContent: some View {
@@ -435,37 +435,37 @@ struct LibraryView: View {
     }
     
     func folioGridCell(folio: Collection) -> some View {
-            ZStack {
-                Capsule()
-                    .strokeBorder(
-                        LinearGradient(
-                            colors: [
-                                Color(white: 0.85),
-                                Color(white: 0.6),
-                                Color(white: 0.85),
-                                Color(white: 0.5),
-                                Color(white: 0.85)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1.5
-                    )
-                    .background(Color(hex: folio.colorHex).opacity(0.2))
-                    .clipShape(Capsule())
-                    .frame(height: 64)
-                VStack(spacing: 3) {
-                    Text(folio.folioEmoji ?? "◆")
-                        .font(.system(size: 24))
-                    Text(folio.name)
-                        .font(style.typeCaption)
-                        .fontWeight(.medium)
-                        .foregroundStyle(style.primaryText)
-                        .lineLimit(1)
-                }
-                .padding(.horizontal, 12)
+        ZStack {
+            Capsule()
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [
+                            Color(white: 0.85),
+                            Color(white: 0.6),
+                            Color(white: 0.85),
+                            Color(white: 0.5),
+                            Color(white: 0.85)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                )
+                .background(Color(hex: folio.colorHex).opacity(0.2))
+                .clipShape(Capsule())
+                .frame(height: 64)
+            VStack(spacing: 3) {
+                Text(folio.folioEmoji ?? "◆")
+                    .font(.system(size: 24))
+                Text(folio.name)
+                    .font(style.typeCaption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(style.primaryText)
+                    .lineLimit(1)
             }
+            .padding(.horizontal, 12)
         }
+    }
     
     // MARK: - People Content
     
