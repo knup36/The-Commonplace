@@ -220,7 +220,7 @@ struct EntryRowView: View {
                     Text(titleLine)
                         .font(style.typeTitle3)
                         .fontWeight(.semibold)
-                        .lineLimit(2)
+                        .lineLimit(3)
                         .foregroundStyle(style.cardPrimaryText)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     if !bodyLines.isEmpty {
