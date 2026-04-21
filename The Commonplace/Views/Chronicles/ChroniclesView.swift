@@ -117,7 +117,12 @@ struct ChroniclesView: View {
         journalEntries = entries.filter { $0.type == .journal }
 
         // Media entries with logs
-        mediaEntries = entries.filter { $0.type == .media && !$0.mediaLog.isEmpty }
+        mediaEntries = entries.filter {
+                    $0.type == .media && (
+                        !$0.mediaLog.isEmpty ||
+                        ["inProgress", "rewatch", "replay"].contains($0.mediaStatus)
+                    )
+                }
 
         // Stickies with unchecked items
         stickyEntries = entries.filter { entry in

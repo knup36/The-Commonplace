@@ -325,118 +325,94 @@ struct EntryRowView: View {
     @ViewBuilder
     var tagsRow: some View {
         HStack(alignment: .bottom, spacing: 8) {
-            HStack(alignment: .center, spacing: 6) {
-                // People avatars
-                let personTags = entry.tagNames.filter { $0.hasPrefix("@") }
-                if !personTags.isEmpty {
-                    HStack(spacing: 4) {
-                        ForEach(personTags.prefix(3), id: \.self) { tag in
-                            let name = String(tag.dropFirst())
-                            let personTag = allPersonTags.first { $0.name == name && $0.isPerson }
-                            ZStack {
-                                Circle()
-                                    .strokeBorder(SharedTheme.goldRingGradient, lineWidth: 1)
-                                    .frame(width: 22, height: 22)
-                                if let path = personTag?.profilePhotoPath,
-                                   let data = MediaFileManager.load(path: path),
-                                   let uiImage = UIImage(data: data) {
-                                    Image(uiImage: uiImage)
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 20, height: 20)
-                                        .clipShape(Circle())
-                                } else {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .center, spacing: 6) {
+                    // People avatars
+                    let personTags = entry.tagNames.filter { $0.hasPrefix("@") }
+                    if !personTags.isEmpty {
+                        HStack(spacing: 4) {
+                            ForEach(personTags.prefix(3), id: \.self) { tag in
+                                let name = String(tag.dropFirst())
+                                let personTag = allPersonTags.first { $0.name == name && $0.isPerson }
+                                ZStack {
                                     Circle()
-                                        .fill(style.personAvatarBackground)
-                                        .frame(width: 20, height: 20)
-                                        .overlay(
-                                            Text(String(name.prefix(1)).uppercased())
-                                                .font(.system(size: 9, weight: .medium))
-                                                .foregroundStyle(style.personAvatarForeground)
-                                        )
+                                        .strokeBorder(SharedTheme.goldRingGradient, lineWidth: 1)
+                                        .frame(width: 22, height: 22)
+                                    if let path = personTag?.profilePhotoPath,
+                                       let data = MediaFileManager.load(path: path),
+                                       let uiImage = UIImage(data: data) {
+                                        Image(uiImage: uiImage)
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 20, height: 20)
+                                            .clipShape(Circle())
+                                    } else {
+                                        Circle()
+                                            .fill(style.personAvatarBackground)
+                                            .frame(width: 20, height: 20)
+                                            .overlay(
+                                                Text(String(name.prefix(1)).uppercased())
+                                                    .font(.system(size: 9, weight: .medium))
+                                                    .foregroundStyle(style.personAvatarForeground)
+                                            )
+                                    }
                                 }
                             }
-                        }
-                        if personTags.count > 3 {
-                            Text("+\(personTags.count - 3)")
-                                .font(style.typeCaption)
-                                .foregroundStyle(style.cardMetadataText)
+                            if personTags.count > 3 {
+                                Text("+\(personTags.count - 3)")
+                                    .font(style.typeCaption)
+                                    .foregroundStyle(style.cardMetadataText)
+                            }
                         }
                     }
-                }
-                // Tag pills
-                let visibleTags = entry.tagNames.filter { !$0.hasPrefix("@") }
-                if !visibleTags.isEmpty {
-                    HStack(spacing: 4) {
-                        ForEach(visibleTags.prefix(3), id: \.self) { tag in
-                            let folioTag = allTagObjects.first { $0.name == tag && $0.isFolio }
-                                                        let folioCollection = allCollections.first { $0.isFolio && $0.filterTags.contains(tag) && $0.filterTags.count == 1 }
-                            if let folio = folioTag {
-                                // Old Tag-based Folio
-                                HStack(spacing: 3) {
-                                    if let emoji = folio.subjectEmoji {
-                                        Text(emoji).font(.system(size: 10))
+                    // Tag pills
+                    let visibleTags = entry.tagNames.filter { !$0.hasPrefix("@") }
+                    if !visibleTags.isEmpty {
+                        HStack(spacing: 4) {
+                            ForEach(visibleTags.prefix(3), id: \.self) { tag in
+                                let folioCollection = allCollections.first { $0.isFolio && $0.filterTags.contains(tag) && $0.filterTags.count == 1 }
+                                                            if let folio = folioCollection {
+                                    // New Collection-based Folio
+                                    HStack(spacing: 3) {
+                                        if let emoji = folio.folioEmoji {
+                                            Text(emoji).font(.system(size: 10))
+                                        }
+                                        Text(folio.name)
+                                            .font(style.typeCaption)
                                     }
-                                    Text(folio.folioDisplayName)
-                                        .font(style.typeCaption)
-                                }
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color(hex: folio.colorHex ?? "#888780").opacity(0.2))
-                                .foregroundStyle(style.cardPrimaryText)
-                                .clipShape(Capsule())
-                                .overlay(
-                                    Capsule().strokeBorder(
-                                        LinearGradient(
-                                            colors: [Color(white: 0.85), Color(white: 0.6), Color(white: 0.85), Color(white: 0.5), Color(white: 0.85)],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        ),
-                                        lineWidth: 1.5
-                                    )
-                                )
-                            } else if let folio = folioCollection {
-                                // New Collection-based Folio
-                                HStack(spacing: 3) {
-                                    if let emoji = folio.folioEmoji {
-                                        Text(emoji).font(.system(size: 10))
-                                    }
-                                    Text(folio.name)
-                                        .font(style.typeCaption)
-                                }
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color(hex: folio.colorHex).opacity(0.2))
-                                .foregroundStyle(style.cardPrimaryText)
-                                .clipShape(Capsule())
-                                .overlay(
-                                    Capsule().strokeBorder(
-                                        LinearGradient(
-                                            colors: [Color(white: 0.85), Color(white: 0.6), Color(white: 0.85), Color(white: 0.5), Color(white: 0.85)],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        ),
-                                        lineWidth: 1.5
-                                    )
-                                )
-                            } else {
-                                Text(tag)
-                                    .font(style.typeCaption)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 4)
-                                    .background(labelColor.opacity(0.2))
-                                    .foregroundStyle(labelColor)
+                                    .background(Color(hex: folio.colorHex).opacity(0.2))
+                                    .foregroundStyle(style.cardPrimaryText)
                                     .clipShape(Capsule())
+                                    .overlay(
+                                        Capsule().strokeBorder(
+                                            LinearGradient(
+                                                colors: [Color(white: 0.85), Color(white: 0.6), Color(white: 0.85), Color(white: 0.5), Color(white: 0.85)],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ),
+                                            lineWidth: 1.5
+                                        )
+                                    )
+                                } else {
+                                    Text(tag)
+                                        .font(style.typeCaption)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(labelColor.opacity(0.2))
+                                        .foregroundStyle(labelColor)
+                                        .clipShape(Capsule())
+                                }
                             }
-                        }
-                        if visibleTags.count > 3 {
-                            Text("+\(visibleTags.count - 3)")
-                                .font(style.typeCaption)
-                                .foregroundStyle(style.cardMetadataText)
+                            if visibleTags.count > 3 {
+                                Text("+\(visibleTags.count - 3)")
+                                    .font(style.typeCaption)
+                                    .foregroundStyle(style.cardMetadataText)
+                            }
                         }
                     }
                 }
-                Spacer()
             }
             metadataColumn
         }
@@ -517,21 +493,21 @@ func mediaStatusColor(for status: String, theme: AppTheme) -> Color {
     switch theme {
     case .dusk:
         switch status {
-                case "wantTo":     return Color(hex: "#7A5855")
-                case "inProgress": return Color(hex: "#877662")
-                case "finished":   return Color(hex: "#526349")
-                case "rewatch":    return Color(hex: "#4A6070")
-                case "replay":     return Color(hex: "#4A6070")
-                default:           return Color.white.opacity(0.5)
-                }
+        case "wantTo":     return Color(hex: "#7A5855")
+        case "inProgress": return Color(hex: "#877662")
+        case "finished":   return Color(hex: "#526349")
+        case "rewatch":    return Color(hex: "#4A6070")
+        case "replay":     return Color(hex: "#4A6070")
+        default:           return Color.white.opacity(0.5)
+        }
     default:
         switch status {
-                case "wantTo":     return InkwellTheme.mediaAccent
-                case "inProgress": return InkwellTheme.stickyAccent
-                case "finished":   return InkwellTheme.locationAccent
-                case "rewatch":    return InkwellTheme.audioAccent
-                case "replay":     return InkwellTheme.audioAccent
-                default:           return InkwellTheme.inkSecondary
-                }
+        case "wantTo":     return InkwellTheme.mediaAccent
+        case "inProgress": return InkwellTheme.stickyAccent
+        case "finished":   return InkwellTheme.locationAccent
+        case "rewatch":    return InkwellTheme.audioAccent
+        case "replay":     return InkwellTheme.audioAccent
+        default:           return InkwellTheme.inkSecondary
+        }
     }
 }
