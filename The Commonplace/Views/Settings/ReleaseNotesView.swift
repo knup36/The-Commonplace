@@ -21,6 +21,34 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.5",
+            title: "Prydain Chronicles",
+            notes: [
+                "Chronicles tab fully redesigned — charcoal/silver card theme with physical bevel and drop shadow",
+                "On This Day renamed to One Month Ago with a 30-day window and entry type accent colors",
+                "Dog-Ears card rebuilt with compact card strips, separate Lists and Later sections, and peek affordance",
+                "Stats card gains colored entry type breakdown with accent color icons",
+                "Mood Timeline replaced with a 7-day line graph with color-coded mood dots",
+                "Habit Patterns adds a sliding window picker — 7 days, 4 weeks, 3 months — persisted between launches",
+                "Watch Timeline rebuilt as a contribution graph — tap any square to see cover art, tap the eyeball to spotlight a single title across the full year",
+                "Chronicles performance pass — all card filtering pre-computed once on tab appear instead of on every render",
+                "Movie and TV detail views redesigned — centered poster hero with accent color glow, overview text, metadata as free-floating text",
+                "Status strip hidden in view mode and replaced with a colored inline icon and label",
+                "TV gains Re-Watch and Games gain Re-Play as a fourth status",
+                "Movie status simplified to Watchlist and Watched — Watching removed",
+                "Podcast status removed entirely — notes and bookmarking only",
+                "Journal entries can now have a photo added or changed from the Feed detail view after the day is over",
+                "Audio entries now support a title field, split from body notes using the same pattern as note entries",
+                "Audio player card is now themed to the entry accent color with border and shadow",
+                "Library tab reordered — Collections, Folios, People, Tags",
+                "Feed tag row now scrolls horizontally instead of wrapping to two lines",
+                "Note titles in the feed now show up to 3 lines",
+                "EntryTagRow extracted as a shared component across detail views",
+                "AudioEntryView fully theme-aware, replacing all hardcoded orange",
+                "Legacy tag-based folio rendering removed from feed cards"
+            ]
+        ),
+        Release(
             version: "2.4",
             title: "Dog Day Afternoon",
             notes: [

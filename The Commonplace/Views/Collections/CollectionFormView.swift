@@ -223,6 +223,7 @@ struct CollectionFormView: View {
                             ForEach(suggestions, id: \.self) { tag in
                                 Button {
                                     selectedTags.insert(tag)
+                                    newTagFilter = ""
                                 } label: {
                                     Text(tag)
                                         .font(.caption)
