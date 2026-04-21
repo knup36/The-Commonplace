@@ -128,8 +128,8 @@ class ReadwiseSyncCoordinator {
         // Identity
         entry.readwiseSourceID = doc.id
         
-        // Dates — use Reader's saved_at / created_at, fall back to now
-        entry.createdAt = parseDate(doc.createdAt) ?? Date()
+        // Dates — always use now; createdAt must reflect when the entry was created in Commonplace
+        entry.createdAt = Date()
         entry.modifiedAt = Date()
         
         // Link fields — source_url is the real article URL; url is the Reader wrapper URL
