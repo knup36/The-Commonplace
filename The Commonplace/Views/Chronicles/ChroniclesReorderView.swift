@@ -21,7 +21,8 @@ struct ChroniclesReorderView: View {
         "mood":          (title: "Mood Timeline",  icon: "chart.line.uptrend.xyaxis"),
         "stats":         (title: "Stats",          icon: "number"),
         "watchTimeline": (title: "Watch Timeline", icon: "film.stack"),
-        "habitPatterns": (title: "Habit Patterns", icon: "checkmark.circle")
+        "habitPatterns": (title: "Habit Patterns", icon: "checkmark.circle"),
+        "rewind":        (title: "Rewind",         icon: "backward.fill")
     ]
 
     var body: some View {

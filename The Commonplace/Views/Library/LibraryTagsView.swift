@@ -35,6 +35,7 @@ struct LibraryTagsView: View {
     @State private var groupToDelete: String? = nil
     @State private var showingDeleteConfirm = false
     @State private var expandedGroups: Set<String> = []
+    @Binding var isEditingGroups: Bool
     
     // MARK: - Derived data
     
@@ -87,72 +88,106 @@ struct LibraryTagsView: View {
     
     @ViewBuilder
     var groupedContent: some View {
-        // Named groups
-        ForEach(groupService.groupOrder, id: \.self) { groupName in
+        
+        // Edit groups mode — flat reorderable list
+        if isEditingGroups {
             Section {
-                DisclosureGroup(
-                    isExpanded: Binding(
-                        get: { expandedGroups.contains(groupName) },
-                        set: { if $0 { expandedGroups.insert(groupName) } else { expandedGroups.remove(groupName) } }
-                    )
-                ) {
-                    let tags = tagsInGroup(groupName)
-                    ForEach(tags, id: \.tag) { item in
-                        tagRow(item: item)
-                    }
-                    .onMove { from, to in
-                        groupService.moveTags(in: groupName, from: from, to: to)
-                    }
-                } label: {
-                    HStack {
+                ForEach(groupService.groupOrder, id: \.self) { groupName in
+                    HStack(spacing: 10) {
+                        Image(systemName: "line.3.horizontal")
+                            .font(.system(size: 14))
+                            .foregroundStyle(style.tertiaryText)
                         Text(groupName)
                             .font(style.typeBody)
                             .fontWeight(.semibold)
                             .foregroundStyle(style.primaryText)
-                            .textCase(nil)
-                            .onLongPressGesture {
-                                groupToRename = groupName
-                                renameGroupText = groupName
-                                showingRenameAlert = true
-                            }
                     }
+                    .padding(.vertical, 4)
+                    .listRowBackground(Color.clear)
                 }
-                .listRowBackground(Color.clear)
+                .onMove { from, to in
+                    groupService.moveGroups(from: from, to: to)
+                }
             }
-        }
-        
-        // Ungrouped section
-        if !ungroupedTags.isEmpty {
+        } else {
+            
+            // Normal grouped view
+            ForEach(groupService.groupOrder, id: \.self) { groupName in
+                Section {
+                    DisclosureGroup(
+                        isExpanded: Binding(
+                            get: { expandedGroups.contains(groupName) },
+                            set: { if $0 { expandedGroups.insert(groupName) } else { expandedGroups.remove(groupName) } }
+                        )
+                    ) {
+                        let tags = tagsInGroup(groupName)
+                        ForEach(tags, id: \.tag) { item in
+                            tagRow(item: item)
+                        }
+                        .onMove { from, to in
+                            groupService.moveTags(in: groupName, from: from, to: to)
+                        }
+                    } label: {
+                        HStack {
+                            Text(groupName)
+                                .font(style.typeBody)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(style.primaryText)
+                                .textCase(nil)
+                                .contextMenu {
+                                    Button {
+                                        groupToRename = groupName
+                                        renameGroupText = groupName
+                                        showingRenameAlert = true
+                                    } label: {
+                                        Label("Rename", systemImage: "pencil")
+                                    }
+                                    Button(role: .destructive) {
+                                        groupToDelete = groupName
+                                        showingDeleteConfirm = true
+                                    } label: {
+                                        Label("Delete Group", systemImage: "trash")
+                                    }
+                                }
+                        }
+                    }
+                    .listRowBackground(Color.clear)
+                }
+            }
+            
+            // Ungrouped section
+            if !ungroupedTags.isEmpty {
+                Section {
+                    ForEach(ungroupedTags, id: \.tag) { item in
+                        tagRow(item: item)
+                    }
+                } header: {
+                    Text("Ungrouped")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(style.tertiaryText)
+                        .textCase(nil)
+                }
+            }
+            
+            // + New Group row
             Section {
-                ForEach(ungroupedTags, id: \.tag) { item in
-                    tagRow(item: item)
+                Button {
+                    newGroupName = ""
+                    showingNewGroupAlert = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundStyle(style.accent)
+                        Text("New Group")
+                            .font(style.typeBody)
+                            .foregroundStyle(style.accent)
+                    }
+                    .padding(.vertical, 4)
                 }
-            } header: {
-                Text("Ungrouped")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(style.tertiaryText)
-                    .textCase(nil)
+                .buttonStyle(.plain)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
             }
-        }
-        
-        // + New Group row
-        Section {
-            Button {
-                newGroupName = ""
-                showingNewGroupAlert = true
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "plus.circle.fill")
-                        .foregroundStyle(style.accent)
-                    Text("New Group")
-                        .font(style.typeBody)
-                        .foregroundStyle(style.accent)
-                }
-                .padding(.vertical, 4)
-            }
-            .buttonStyle(.plain)
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
         }
         
         // Sheets and alerts

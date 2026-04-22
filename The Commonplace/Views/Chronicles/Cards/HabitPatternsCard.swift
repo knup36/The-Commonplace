@@ -77,14 +77,14 @@ struct HabitPatternsCard: View {
                     )
 
                 // Sliding pill
-                RoundedRectangle(cornerRadius: 6)
+                RoundedRectangle(cornerRadius: 8)
                     .fill(Color.white.opacity(0.12))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 6)
+                        RoundedRectangle(cornerRadius: 8)
                             .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
                     )
-                    .frame(width: segmentWidth - 4)
-                    .offset(x: CGFloat(selectedWindow) * segmentWidth + 2)
+                    .frame(width: segmentWidth)
+                                        .offset(x: CGFloat(selectedWindow) * segmentWidth)
                     .animation(.spring(response: 0.3, dampingFraction: 0.75), value: selectedWindow)
 
                 // Labels

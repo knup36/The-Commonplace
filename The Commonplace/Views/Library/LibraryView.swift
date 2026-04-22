@@ -35,6 +35,8 @@ struct LibraryView: View {
     @State private var currentPersonSort: TagSort = .name
     @State private var collectionToEdit: Collection? = nil
     @State private var reorderedCollections: [Collection] = []
+    @State private var isEditingGroups = false
+    @StateObject private var groupService = TagGroupService.shared
     
     var style: any AppThemeStyle { themeManager.style }
     
@@ -226,13 +228,14 @@ struct LibraryView: View {
                     }
                     
                     // MARK: Tags content
-                                        if selectedTab == 3 {
-                                            LibraryTagsView(
-                                                allTags: allTags,
-                                                allTagObjects: allTagObjects,
-                                                style: style
-                                            )
-                                        }
+                    if selectedTab == 3 {
+                        LibraryTagsView(
+                            allTags: allTags,
+                            allTagObjects: allTagObjects,
+                            style: style,
+                            isEditingGroups: $isEditingGroups
+                        )
+                    }
                     
                     // People content
                     if selectedTab == 2 {
@@ -240,9 +243,9 @@ struct LibraryView: View {
                     }
                     
                     // Folios content
-                                        if selectedTab == 1 {
-                                            foliosContent
-                                        }
+                    if selectedTab == 1 {
+                        foliosContent
+                    }
                     
                 }
             }
@@ -271,31 +274,28 @@ struct LibraryView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 16) {
-                        Menu {
-                            if selectedTab == 0 {
-                                Picker("Sort", selection: $currentSort) {
-                                    ForEach(CollectionSort.allCases, id: \.self) { sort in
-                                        Label(sort.rawValue, systemImage: iconForSort(sort))
-                                            .tag(sort)
+                        if selectedTab != 3 {
+                            Menu {
+                                if selectedTab == 0 {
+                                    Picker("Sort", selection: $currentSort) {
+                                        ForEach(CollectionSort.allCases, id: \.self) { sort in
+                                            Label(sort.rawValue, systemImage: iconForSort(sort))
+                                                .tag(sort)
+                                        }
                                     }
+                                } else if selectedTab == 2 {
+                                    Picker("Sort", selection: $currentPersonSort) {
+                                        Label("Name", systemImage: "textformat.abc").tag(TagSort.name)
+                                        Label("Entry Count", systemImage: "number").tag(TagSort.entryCount)
+                                    }
+                                } else {
+                                    Text("Sorted by Name")
+                                        .foregroundStyle(style.accent)
                                 }
-                            } else if selectedTab == 3 {
-                                                            Picker("Sort", selection: $currentTagSort) {
-                                                                Label("Name", systemImage: "textformat.abc").tag(TagSort.name)
-                                                                Label("Entry Count", systemImage: "number").tag(TagSort.entryCount)
-                                                            }
-                                                        } else if selectedTab == 2 {
-                                Picker("Sort", selection: $currentPersonSort) {
-                                    Label("Name", systemImage: "textformat.abc").tag(TagSort.name)
-                                    Label("Entry Count", systemImage: "number").tag(TagSort.entryCount)
-                                }
-                            } else {
-                                Text("Sorted by Name")
+                            } label: {
+                                Image(systemName: isNonDefaultSort ? "arrow.up.arrow.down.circle.fill" : "arrow.up.arrow.down")
                                     .foregroundStyle(style.accent)
                             }
-                        } label: {
-                            Image(systemName: isNonDefaultSort ? "arrow.up.arrow.down.circle.fill" : "arrow.up.arrow.down")
-                                .foregroundStyle(style.accent)
                         }
                         if selectedTab == 0 {
                             Button {
@@ -304,6 +304,12 @@ struct LibraryView: View {
                                 Image(systemName: "plus")
                                     .foregroundStyle(style.accent)
                             }
+                        }
+                        if selectedTab == 3 && !groupService.groupOrder.isEmpty {
+                            Button(isEditingGroups ? "Done" : "Edit") {
+                                isEditingGroups.toggle()
+                            }
+                            .foregroundStyle(style.accent)
                         }
                     }
                 }
