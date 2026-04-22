@@ -22,7 +22,7 @@ struct DogEarsCard: View {
     var body: some View {
         if !hasContent { return AnyView(EmptyView()) }
         return AnyView(
-            ChroniclesCardContainer(title: "Dog-Ears", icon: "bookmark.fill", background: .parchment) {
+            ChroniclesCardContainer(title: "Dog-Ears", icon: "bookmark.fill", cardID: "dogEars", background: .parchment) {
                 VStack(alignment: .leading, spacing: 0) {
 
                     if !stickyEntries.isEmpty {

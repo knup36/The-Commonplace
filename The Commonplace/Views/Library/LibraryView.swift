@@ -227,69 +227,12 @@ struct LibraryView: View {
                     
                     // MARK: Tags content
                                         if selectedTab == 3 {
-                        if allTags.isEmpty {
-                            VStack(spacing: 12) {
-                                Image(systemName: "tag.slash")
-                                    .font(.system(size: 48))
-                                    .foregroundStyle(style.tertiaryText)
-                                Text("No Tags Yet")
-                                    .font(style.typeTitle3)
-                                    .foregroundStyle(style.secondaryText)
-                                Text("Add tags to your entries to see them here")
-                                    .font(style.typeCaption)
-                                    .foregroundStyle(style.tertiaryText)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 80)
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.clear)
-                        }
-                        ForEach(allTags, id: \.tag) { item in
-                            ZStack {
-                                NavigationLink(destination: TagFeedView(tag: item.tag)) {
-                                    EmptyView()
-                                }
-                                .opacity(0)
-                                HStack {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "number")
-                                            .font(.caption)
-                                            .foregroundStyle(style.accent)
-                                        Text(item.tag)
-                                            .font(style.typeBody)
-                                            .foregroundStyle(style.primaryText)
-                                    }
-                                    Spacer()
-                                    Text("\(item.count)")
-                                        .font(style.typeBodySecondary)
-                                        .fontWeight(.semibold)
-                                        .foregroundStyle(style.accent)
-                                        .padding(.trailing, -12)
-                                }
-                                .padding(.vertical, 4)
-                                .padding(.horizontal, 10)
-                            }
-                            .listRowBackground(Color.clear)
-                            .listRowInsets(EdgeInsets(top: 3, leading: 16, bottom: 3, trailing: 24))
-                            .listRowSeparator(.visible)
-                            .buttonStyle(.plain)
-                            .swipeActions(edge: .leading) {
-                                Button {
-                                    if let tag = allTagObjects.first(where: { $0.name == item.tag }) {
-                                        tag.isPinned.toggle()
-                                    }
-                                } label: {
-                                    let isPinned = allTagObjects.first(where: { $0.name == item.tag })?.isPinned == true
-                                    Label(
-                                        isPinned ? "Unbookmark" : "Bookmark",
-                                        systemImage: isPinned ? "bookmark.slash.fill" : "bookmark.fill"
-                                    )
-                                }
-                                .tint(.orange)
-                            }
-                        }
-                    }
+                                            LibraryTagsView(
+                                                allTags: allTags,
+                                                allTagObjects: allTagObjects,
+                                                style: style
+                                            )
+                                        }
                     
                     // People content
                     if selectedTab == 2 {

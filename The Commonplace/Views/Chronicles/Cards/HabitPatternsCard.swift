@@ -36,7 +36,7 @@ struct HabitPatternsCard: View {
     }
 
     var body: some View {
-        ChroniclesCardContainer(title: "Habit Patterns", icon: "checkmark.circle", background: .parchment) {
+        ChroniclesCardContainer(title: "Habit Patterns", icon: "checkmark.circle", cardID: "habitPatterns", background: .parchment) {
             if habits.isEmpty || journalEntries.isEmpty {
                 Text("Complete habits in your daily journal to see your patterns here.")
                     .font(style.typeBodySecondary)

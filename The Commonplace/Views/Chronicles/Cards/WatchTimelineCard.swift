@@ -102,7 +102,7 @@ struct WatchTimelineCard: View {
     // MARK: - Body
     
     var body: some View {
-        ChroniclesCardContainer(title: "Watch Timeline", icon: "film.stack", background: .parchment) {
+        ChroniclesCardContainer(title: "Watch Timeline", icon: "film.stack", cardID: "watchTimeline", background: .parchment) {
             VStack(alignment: .leading, spacing: 10) {
                 
                 // Spotlight badge

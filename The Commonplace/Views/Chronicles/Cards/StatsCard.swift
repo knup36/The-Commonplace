@@ -18,7 +18,7 @@ struct StatsCard: View {
     let themeManager: ThemeManager
 
     var body: some View {
-        ChroniclesCardContainer(title: "Your Archive", icon: "archivebox", background: .parchment) {
+        ChroniclesCardContainer(title: "Your Archive", icon: "archivebox", cardID: "stats", background: .parchment) {
             VStack(spacing: 12) {
                 HStack(spacing: 10) {
                     statCell(value: "\(totalEntries)", label: "Total")

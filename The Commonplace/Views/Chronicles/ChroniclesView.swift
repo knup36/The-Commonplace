@@ -20,7 +20,19 @@ struct ChroniclesView: View {
 
     var style: any AppThemeStyle { themeManager.style }
 
-    // MARK: - Pre-computed data
+        // MARK: - Card order
+
+        // Stored as comma-separated string since AppStorage doesn't support [String]
+        @AppStorage("chronicles_card_order") private var cardOrderString: String =
+            "dogEars,onThisDay,mood,stats,watchTimeline,habitPatterns"
+
+        @State private var showingReorder = false
+
+        var cardOrder: [String] {
+            get { cardOrderString.components(separatedBy: ",") }
+        }
+
+        // MARK: - Pre-computed data
 
     @State private var journalEntries: [Entry] = []
     @State private var mediaEntries: [Entry] = []
@@ -37,41 +49,53 @@ struct ChroniclesView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                LazyVStack(spacing: 16) {
-                    chroniclesHeader
-                    DogEarsCard(
-                        stickyEntries: stickyEntries,
-                        laterEntries: laterEntries,
-                        style: style
-                    )
-                    OnThisDayCard(
-                        oneMonthAgoEntries: oneMonthAgoEntries,
-                        style: style,
-                        themeManager: themeManager
-                    )
-                    MoodTimelineCard(
-                        journalEntries: journalEntries,
-                        style: style
-                    )
-                    StatsCard(
-                        totalEntries: totalEntries,
-                        entriesThisWeek: entriesThisWeek,
-                        entriesThisMonth: entriesThisMonth,
-                        entryCountsByType: entryCountsByType,
-                        style: style,
-                        themeManager: themeManager
-                    )
-                    WatchTimelineCard(
-                        mediaEntries: mediaEntries,
-                        style: style
-                    )
-                    HabitPatternsCard(
-                        journalEntries: journalEntries,
-                        habits: habits,
-                        style: style
-                    )
-                    Spacer().frame(height: 80)
-                }
+                VStack(spacing: 16) {
+                                    chroniclesHeader
+                                    ForEach(cardOrder, id: \.self) { cardID in
+                                        switch cardID {
+                                        case "dogEars":
+                                            DogEarsCard(
+                                                stickyEntries: stickyEntries,
+                                                laterEntries: laterEntries,
+                                                style: style
+                                            )
+                                        case "onThisDay":
+                                            OnThisDayCard(
+                                                oneMonthAgoEntries: oneMonthAgoEntries,
+                                                style: style,
+                                                themeManager: themeManager
+                                            )
+                                        case "mood":
+                                            MoodTimelineCard(
+                                                journalEntries: journalEntries,
+                                                style: style
+                                            )
+                                        case "stats":
+                                            StatsCard(
+                                                totalEntries: totalEntries,
+                                                entriesThisWeek: entriesThisWeek,
+                                                entriesThisMonth: entriesThisMonth,
+                                                entryCountsByType: entryCountsByType,
+                                                style: style,
+                                                themeManager: themeManager
+                                            )
+                                        case "watchTimeline":
+                                            WatchTimelineCard(
+                                                mediaEntries: mediaEntries,
+                                                style: style
+                                            )
+                                        case "habitPatterns":
+                                            HabitPatternsCard(
+                                                journalEntries: journalEntries,
+                                                habits: habits,
+                                                style: style
+                                            )
+                                        default:
+                                            EmptyView()
+                                        }
+                                    }
+                                    Spacer().frame(height: 80)
+                                }
                 .padding(.horizontal, 16)
             }
             .background(style.background.ignoresSafeArea())
@@ -89,23 +113,34 @@ struct ChroniclesView: View {
     // MARK: - Header
 
     var chroniclesHeader: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Chronicles")
-                    .font(style.typeLargeTitle)
-                    .foregroundStyle(style.primaryText)
-                Text(Date().formatted(.dateTime.weekday(.wide).month(.wide).day()))
-                    .font(style.typeBodySecondary)
-                    .foregroundStyle(ChroniclesTheme.secondaryText)
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Chronicles")
+                        .font(style.typeLargeTitle)
+                        .foregroundStyle(style.primaryText)
+                    Text(Date().formatted(.dateTime.weekday(.wide).month(.wide).day()))
+                        .font(style.typeBodySecondary)
+                        .foregroundStyle(ChroniclesTheme.secondaryText)
+                }
+                Spacer()
+                Button {
+                    showingReorder = true
+                } label: {
+                    Image(systemName: "line.3.horizontal")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(style.secondaryText)
+                }
+                .buttonStyle(.plain)
             }
-            Spacer()
-            Text(ChroniclesTheme.headerSymbol)
-                .font(.system(size: 20))
-                .foregroundStyle(ChroniclesTheme.accentAmber)
+            .padding(.top, 8)
+            .padding(.bottom, 4)
+            .sheet(isPresented: $showingReorder) {
+                ChroniclesReorderView(cardOrder: Binding(
+                    get: { cardOrder },
+                    set: { cardOrderString = $0.joined(separator: ",") }
+                ))
+            }
         }
-        .padding(.top, 8)
-        .padding(.bottom, 4)
-    }
 
     // MARK: - Pre-computation
 
@@ -136,13 +171,13 @@ struct ChroniclesView: View {
         // Later-tagged entries
         laterEntries = entries.filter { $0.tagNames.contains("later") }
 
-        // One month ago window (28-35 days)
-        if let windowStart = calendar.date(byAdding: .day, value: -35, to: now),
-           let windowEnd   = calendar.date(byAdding: .day, value: -28, to: now) {
-            oneMonthAgoEntries = entries.filter {
-                $0.createdAt >= windowStart && $0.createdAt <= windowEnd
-            }
-        }
+        // One month ago window (30-32 days)
+                if let windowStart = calendar.date(byAdding: .day, value: -32, to: now),
+                   let windowEnd   = calendar.date(byAdding: .day, value: -30, to: now) {
+                    oneMonthAgoEntries = entries.filter {
+                        $0.createdAt >= windowStart && $0.createdAt <= windowEnd
+                    }
+                }
 
         // Stats
         totalEntries = entries.count

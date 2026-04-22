@@ -48,7 +48,7 @@ struct MoodTimelineCard: View {
     }
 
     var body: some View {
-        ChroniclesCardContainer(title: "Mood", icon: "waveform.path.ecg", background: .parchment) {
+        ChroniclesCardContainer(title: "Mood", icon: "waveform.path.ecg", cardID: "mood", background: .parchment) {
             if moodCount < 2 {
                 Text("Start journaling to see your mood patterns over time.")
                     .font(style.typeBodySecondary)
