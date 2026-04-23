@@ -61,7 +61,7 @@ struct EntryDetailView: View {
     var entryAccent: Color { entry.type.detailAccentColor(for: themeManager.current) }
     
     var body: some View {
-        ScrollView {
+        ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 16) {
                 PhotoDetailSection(entry: entry, style: style, accentColor: entryAccent)
                 AudioDetailSection(
@@ -90,8 +90,9 @@ struct EntryDetailView: View {
                 EntryMetadataFooter(entry: entry, style: style, accentColor: entryAccent)
             }
             .padding()
-        }
-        .environmentObject(editMode)
+                        .frame(maxWidth: .infinity)
+                    }
+                    .environmentObject(editMode)
         .background(entry.type.cardColor(for: themeManager.current).ignoresSafeArea())
         .scrollDismissesKeyboard(.interactively)
         .keyboardAvoiding()
@@ -290,12 +291,10 @@ struct EntryDetailView: View {
                         }
                     }
                     Text(displayText)
-                        .font(style.typeBody)
-                        .foregroundStyle(style.cardPrimaryText)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .lineLimit(nil)
-                        .truncationMode(.tail)
+                                            .font(style.typeBody)
+                                            .foregroundStyle(style.cardPrimaryText)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .lineLimit(nil)
                 }
             }
         }

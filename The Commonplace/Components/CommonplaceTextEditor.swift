@@ -46,38 +46,38 @@ extension Notification.Name {
 
 struct CommonplaceTextEditor<Toolbar: View>: UIViewRepresentable {
     @Binding var text: String
-            var placeholder: String = ""
-            var usesSerifFont: Bool = false
-            var fontSize: CGFloat? = nil        // nil = use system body size
-            var fontWeight: UIFont.Weight = .regular
-            var minHeight: CGFloat = 32
-            var focusOnAppear: Bool = false
-            var onSubmit: (() -> Void)? = nil
-            var toolbar: Toolbar
+    var placeholder: String = ""
+    var usesSerifFont: Bool = false
+    var fontSize: CGFloat? = nil        // nil = use system body size
+    var fontWeight: UIFont.Weight = .regular
+    var minHeight: CGFloat = 32
+    var focusOnAppear: Bool = false
+    var onSubmit: (() -> Void)? = nil
+    var toolbar: Toolbar
     
     private let debounceInterval: TimeInterval = 0.3
     
     // Convenience init without toolbar
-            init(
-                text: Binding<String>,
-                placeholder: String = "",
-                usesSerifFont: Bool = false,
-                fontSize: CGFloat? = nil,
-                fontWeight: UIFont.Weight = .regular,
-                minHeight: CGFloat = 32,
-                focusOnAppear: Bool = false,
-                onSubmit: (() -> Void)? = nil
-            ) where Toolbar == EmptyView {
-                self._text = text
-                self.placeholder = placeholder
-                self.usesSerifFont = usesSerifFont
-                self.fontSize = fontSize
-                self.fontWeight = fontWeight
-                self.minHeight = minHeight
-                self.focusOnAppear = focusOnAppear
-                self.onSubmit = onSubmit
-                self.toolbar = EmptyView()
-            }
+    init(
+        text: Binding<String>,
+        placeholder: String = "",
+        usesSerifFont: Bool = false,
+        fontSize: CGFloat? = nil,
+        fontWeight: UIFont.Weight = .regular,
+        minHeight: CGFloat = 32,
+        focusOnAppear: Bool = false,
+        onSubmit: (() -> Void)? = nil
+    ) where Toolbar == EmptyView {
+        self._text = text
+        self.placeholder = placeholder
+        self.usesSerifFont = usesSerifFont
+        self.fontSize = fontSize
+        self.fontWeight = fontWeight
+        self.minHeight = minHeight
+        self.focusOnAppear = focusOnAppear
+        self.onSubmit = onSubmit
+        self.toolbar = EmptyView()
+    }
     
     // Full init with toolbar
     init(
@@ -110,21 +110,29 @@ struct CommonplaceTextEditor<Toolbar: View>: UIViewRepresentable {
         textView.minHeight = minHeight
         textView.text = text
                 updatePlaceholder(textView, context: context)
-                if focusOnAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                        textView.becomeFirstResponder()
-                    }
+                // Force height recalculation after layout pass
+                DispatchQueue.main.async {
+                    textView.invalidateIntrinsicContentSize()
                 }
-                return textView
+                if focusOnAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                textView.becomeFirstResponder()
+            }
+        }
+        return textView
     }
     
     func updateUIView(_ textView: GrowingTextView, context: Context) {
         // Only update text if change came from outside (not user typing)
         if textView.text != text && !context.coordinator.isEditing {
-            textView.text = text
-            textView.invalidateIntrinsicContentSize()
-            updatePlaceholder(textView, context: context)
-        }
+                    textView.text = text
+                    textView.invalidateIntrinsicContentSize()
+                    updatePlaceholder(textView, context: context)
+                }
+                // Ensure full height is measured whenever view updates
+                DispatchQueue.main.async {
+                    textView.invalidateIntrinsicContentSize()
+                }
         // Always keep font in sync (e.g. theme changes)
         textView.font = resolvedUIFont
         textView.minHeight = minHeight
@@ -142,26 +150,26 @@ struct CommonplaceTextEditor<Toolbar: View>: UIViewRepresentable {
     // for standard text styles.
     
     var resolvedUIFont: UIFont {
-            let size = fontSize ?? UIFont.preferredFont(forTextStyle: .body).pointSize
-            if usesSerifFont {
-                let baseDescriptor = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .body)
-                if let serifDescriptor = baseDescriptor.withDesign(.serif) {
-                    let weightedDescriptor = serifDescriptor.addingAttributes([
-                        .traits: [UIFontDescriptor.TraitKey.weight: fontWeight]
-                    ])
-                    return UIFont(descriptor: weightedDescriptor, size: size)
-                }
-            }
-            // SF Rounded
+        let size = fontSize ?? UIFont.preferredFont(forTextStyle: .body).pointSize
+        if usesSerifFont {
             let baseDescriptor = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .body)
-            if let roundedDescriptor = baseDescriptor.withDesign(.rounded) {
-                let weightedDescriptor = roundedDescriptor.addingAttributes([
+            if let serifDescriptor = baseDescriptor.withDesign(.serif) {
+                let weightedDescriptor = serifDescriptor.addingAttributes([
                     .traits: [UIFontDescriptor.TraitKey.weight: fontWeight]
                 ])
                 return UIFont(descriptor: weightedDescriptor, size: size)
             }
-            return UIFont.systemFont(ofSize: size, weight: fontWeight)
         }
+        // SF Rounded
+        let baseDescriptor = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .body)
+        if let roundedDescriptor = baseDescriptor.withDesign(.rounded) {
+            let weightedDescriptor = roundedDescriptor.addingAttributes([
+                .traits: [UIFontDescriptor.TraitKey.weight: fontWeight]
+            ])
+            return UIFont(descriptor: weightedDescriptor, size: size)
+        }
+        return UIFont.systemFont(ofSize: size, weight: fontWeight)
+    }
     
     // MARK: - Coordinator
     
@@ -175,8 +183,11 @@ struct CommonplaceTextEditor<Toolbar: View>: UIViewRepresentable {
         }
         
         func textViewDidBeginEditing(_ textView: UITextView) {
-            isEditing = true
-            hidePlaceholder(textView)
+                    isEditing = true
+                    hidePlaceholder(textView)
+                    // Move cursor to end of text
+                    let end = textView.endOfDocument
+                    textView.selectedTextRange = textView.textRange(from: end, to: end)
             
             // Post focus notification so ScrollView can scroll to keep this visible
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
@@ -271,14 +282,14 @@ struct CommonplaceTextEditor<Toolbar: View>: UIViewRepresentable {
     // MARK: - Helpers
     
     private func updatePlaceholder(_ textView: GrowingTextView, context: Context) {
-            if text.isEmpty && !placeholder.isEmpty {
-                context.coordinator.addPlaceholder(to: textView, font: resolvedUIFont)
-            } else {
-                textView.subviews
-                    .first(where: { $0.accessibilityIdentifier == "placeholder" })?
-                    .removeFromSuperview()
-            }
+        if text.isEmpty && !placeholder.isEmpty {
+            context.coordinator.addPlaceholder(to: textView, font: resolvedUIFont)
+        } else {
+            textView.subviews
+                .first(where: { $0.accessibilityIdentifier == "placeholder" })?
+                .removeFromSuperview()
         }
+    }
 }
 
 // MARK: - KeyboardAvoidingModifier
@@ -296,8 +307,8 @@ struct KeyboardAvoidingModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .safeAreaInset(edge: .bottom) {
-                Color.clear.frame(height: keyboardHeight > 0 ? 16 : 0)
-            }
+                            Color.clear.frame(height: keyboardHeight > 0 ? 76 : 0)
+                        }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
                 guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
                 keyboardHeight = frame.height

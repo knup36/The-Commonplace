@@ -536,14 +536,14 @@ struct MediaDetailView: View {
                 .padding(.horizontal, 20)
             
             if editMode.isEditing {
-                CommonplaceTextEditor(
-                    text: Binding(
-                        get: { entry.text },
-                        set: { entry.text = $0; try? modelContext.save() }
-                    ),
-                    placeholder: "Add notes about this title...",
-                    usesSerifFont: false
-                )
+                            CommonplaceTextEditor(
+                                text: Binding(
+                                    get: { entry.text },
+                                    set: { entry.text = $0 }
+                                ),
+                                placeholder: "Add notes about this title...",
+                                usesSerifFont: false
+                            )
                 .padding(.horizontal, 20)
             } else if !entry.text.isEmpty {
                 Text(entry.text)

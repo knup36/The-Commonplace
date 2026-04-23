@@ -21,6 +21,25 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.6",
+            title: "Be Kind, Please Rewind",
+            notes: [
+                "Rewind — new Chronicles card; pick any date range to browse everything captured in that period with photo grid on top and slim entry rows below",
+                "Chronicles cards now collapse to their header row — tap anywhere on the amber title to expand or collapse; state persists across launches",
+                "Drag-to-reorder Chronicles cards via the ≡ button in the header",
+                "One Month Ago redesigned — tightened to a 30–32 day window, photo grid on top, slim entry rows below, tappable overflow expands inline",
+                "Tag Groups in Library — organise tags into named, collapsible groups",
+                "Swipe left on any tag to move it to a group",
+                "Tap Edit in the Tags toolbar to drag-reorder your groups",
+                "New Group button at the bottom of the Tags list",
+                "Tags segment extracted to LibraryTagsView for maintainability",
+                "Sort button removed from the Tags tab — manual group order replaces sorting",
+                "Fix: Habit Patterns sliding segment pill now reaches both edges cleanly",
+                "Fix: Tag filter input now clears after tapping a suggestion in the Collection form",
+                "Fix: Readwise entries now use today's date for createdAt instead of the Reader saved date"
+            ]
+        ),
+        Release(
             version: "2.5",
             title: "Prydain Chronicles",
             notes: [

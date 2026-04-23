@@ -52,6 +52,7 @@ struct CollectionFormView: View {
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @State private var headerImage: UIImage? = nil
     @State private var headerImageData: Data? = nil
+        @State private var imageToCrop: UIImage? = nil
     
     var isEditing: Bool { collection != nil }
     var canSave: Bool { !name.isEmpty }
@@ -129,17 +130,15 @@ struct CollectionFormView: View {
             }
             .photosPicker(isPresented: $showingEmojiPicker, selection: $selectedPhotoItem, matching: .images)
             .onChange(of: selectedPhotoItem) { _, newItem in
-                Task {
-                    guard let newItem,
-                          let rawData = try? await newItem.loadTransferable(type: Data.self),
-                          let uiImage = UIImage(data: rawData),
-                          let processed = ImageProcessor.resizeAndCompress(image: uiImage) else { return }
-                    await MainActor.run {
-                        headerImageData = processed
-                        headerImage = UIImage(data: processed)
-                    }
-                }
-            }
+                            Task {
+                                guard let newItem,
+                                      let rawData = try? await newItem.loadTransferable(type: Data.self),
+                                      let uiImage = UIImage(data: rawData) else { return }
+                                await MainActor.run {
+                                    imageToCrop = uiImage
+                                }
+                            }
+                        }
         }
     }
     
@@ -420,33 +419,40 @@ struct CollectionFormView: View {
             }
             
             Section("Header Image") {
-                if let image = headerImage {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 160)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .clipped()
-                    
-                    Button("Change Image") {
-                        showingEmojiPicker = true
-                    }
-                    .foregroundStyle(Color(hex: selectedColorHex))
-                    
-                    Button("Remove Image", role: .destructive) {
-                        headerImage = nil
-                        headerImageData = nil
-                    }
-                } else {
-                    Button {
-                        showingEmojiPicker = true
-                    } label: {
-                        Label("Add Header Image", systemImage: "photo")
-                            .foregroundStyle(Color(hex: selectedColorHex))
-                    }
-                }
-            }
+                            if let image = headerImage {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 160)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                    .clipped()
+
+                                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                                    Text("Change Image")
+                                        .foregroundStyle(Color(hex: selectedColorHex))
+                                }
+
+                                Button("Remove Image", role: .destructive) {
+                                    headerImage = nil
+                                    headerImageData = nil
+                                }
+                            } else {
+                                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                                    Label("Add Header Image", systemImage: "photo")
+                                        .foregroundStyle(Color(hex: selectedColorHex))
+                                }
+                            }
+                        }
+                        .sheet(item: $imageToCrop) { image in
+                            FolioHeaderCropView(image: image) { cropped in
+                                                headerImage = cropped
+                                                headerImageData = ImageProcessor.resizeAndCompress(image: cropped)
+                                                imageToCrop = nil
+                            } onCancel: {
+                                imageToCrop = nil
+                            }
+                        }
             
             Section("Filter Rules") {
                 Text("Filter rules still apply — entries matching your collection filters are automatically included in this Folio.")
@@ -561,4 +567,8 @@ struct CollectionFormView: View {
         headerImage = uiImage
         headerImageData = data
     }
+}
+
+extension UIImage: @retroactive Identifiable {
+    public var id: ObjectIdentifier { ObjectIdentifier(self) }
 }

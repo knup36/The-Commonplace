@@ -45,14 +45,15 @@ struct TodayView: View {
                             )
                         }
                         JournalBlockView()
+                        NowPlayingBlock()
                         capturedTodayBlock
                         emptyTodayBlock
                     }
                     .padding(.vertical)
                 }
-            .scrollDismissesKeyboard(.interactively)
-            .keyboardAvoiding()
-            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+                .scrollDismissesKeyboard(.interactively)
+                .keyboardAvoiding()
+                .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
                 keyboardVisible = true
             }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in

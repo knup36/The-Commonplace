@@ -146,12 +146,15 @@ struct LinkDetailSection: View {
             // Full-bleed hero image
             Group {
                 if let image = heroImage {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 220)
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                    GeometryReader { geo in
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: geo.size.width, height: 220)
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
+                            .clipped()
+                    }
+                    .frame(height: 220)
                 } else {
                     Rectangle()
                         .fill(accentColor.opacity(0.08))
@@ -175,12 +178,12 @@ struct LinkDetailSection: View {
             // Title
             VStack(alignment: .leading, spacing: 8) {
                 if let title = entry.linkTitle, !title.isEmpty {
-                    Text(title)
-                        .font(style.typeTitle2)
-                        .fontWeight(.bold)
-                        .foregroundStyle(style.cardPrimaryText)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                                    Text(title)
+                                        .font(style.typeTitle2)
+                                        .fontWeight(.bold)
+                                        .foregroundStyle(style.cardPrimaryText)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
                 
                 // Domain + favicon
                 HStack(spacing: 4) {
@@ -246,10 +249,11 @@ struct LinkDetailSection: View {
                 }
             }
             .padding(.horizontal, 4)
-            .padding(.top, 16)
-            .padding(.bottom, 8)
-        }
-    }
+                    .padding(.top, 16)
+                    .padding(.bottom, 8)
+                    }
+                    .padding(.horizontal, 16)
+                }
     
     // MARK: - Content Type Selector
     
