@@ -81,7 +81,7 @@ struct WeeklyReviewFlowView: View {
     }
     
     var weekMedia: [Entry] {
-            weekEntries.filter { entry in
+            allEntries.filter { entry in
                 guard entry.type == .media else { return false }
                 return entry.mediaLog.contains { log in
                     let parts = log.components(separatedBy: "::")
