@@ -1,12 +1,18 @@
 // MoodTimelineCard.swift
 // Commonplace
 //
-// Chronicles card showing a 7-day mood sentiment line graph.
-// Receives pre-filtered journalEntries from ChroniclesView —
-// no filtering performed at render time.
+// Chronicles card showing a mood sentiment line graph as a horizontally
+// scrollable timeline. Each day occupies a fixed-width column; the strip
+// is capped to a rolling window (default 6 months) for performance.
 //
-// Updated v2.4 — pre-filtered data, 7-day window, larger dots,
-//               line graph replacing emoji stems.
+// Interaction: drag left/right to move through time. Most recent day is
+// anchored at the right edge on first appearance. Tapping a dot navigates
+// to that journal entry. A "Load Earlier" button at the left edge expands
+// the window by 6 months at a time, only shown when older data exists.
+//
+// Updated v2.6 — replaced 7-day paged window + arrow buttons with a
+//               continuous horizontal scroll; 6-month default window
+//               with on-demand backdating in 6-month increments.
 
 import SwiftUI
 
@@ -15,36 +21,48 @@ struct MoodTimelineCard: View {
     var style: any AppThemeStyle
 
     @EnvironmentObject var themeManager: ThemeManager
-    @State private var offset: Int = 0
 
+    // How many months back the current window extends
+    @State private var loadedMonths: Int = 6
+
+    // Fixed column width — ~14 columns visible on a standard screen
+    private let colWidth: CGFloat = 28
     private let chartHeight: CGFloat = 140
     private let minScore: CGFloat = 1
     private let maxScore: CGFloat = 10
     private let dowLabels = ["S","M","T","W","T","F","S"]
 
-    var windowDates: [Date] {
+    // All mood entries sorted oldest → newest
+    var moodEntries: [(date: Date, entry: Entry)] {
+        journalEntries
+            .filter { !$0.moodEmoji.isEmpty }
+            .sorted { $0.createdAt < $1.createdAt }
+            .map { (Calendar.current.startOfDay(for: $0.createdAt), $0) }
+    }
+
+    var moodCount: Int { moodEntries.count }
+
+    // The earliest date in the current window
+    var windowStart: Date {
         let today = Calendar.current.startOfDay(for: Date())
-        return (0..<7).reversed().map { i in
-            Calendar.current.date(byAdding: .day, value: -(i + offset * 7), to: today)!
-        }
+        return Calendar.current.date(byAdding: .month, value: -loadedMonths, to: today)!
     }
 
-    var windowEntries: [Entry?] {
-        windowDates.map { date in
-            journalEntries.first {
-                Calendar.current.isDate($0.createdAt, inSameDayAs: date) &&
-                !$0.moodEmoji.isEmpty
-            }
-        }
+    // Whether there are mood entries older than the current window
+    var hasEarlierData: Bool {
+        moodEntries.first.map { $0.date < windowStart } ?? false
     }
 
-    var moodCount: Int { windowEntries.compactMap { $0 }.count }
-
-    var dateRangeLabel: String {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "MMM d"
-        guard let first = windowDates.first, let last = windowDates.last else { return "" }
-        return "\(fmt.string(from: first)) — \(fmt.string(from: last))"
+    // Days within the current window, oldest → newest
+    var allDays: [Date] {
+        let today = Calendar.current.startOfDay(for: Date())
+        var days: [Date] = []
+        var cursor = windowStart
+        while cursor <= today {
+            days.append(cursor)
+            cursor = Calendar.current.date(byAdding: .day, value: 1, to: cursor)!
+        }
+        return days
     }
 
     var body: some View {
@@ -54,85 +72,110 @@ struct MoodTimelineCard: View {
                     .font(style.typeBodySecondary)
                     .foregroundStyle(Color.white.opacity(0.4))
             } else {
-                VStack(spacing: 8) {
-                    HStack {
-                        Text(dateRangeLabel)
-                            .font(style.typeCaption)
-                            .foregroundStyle(Color.white.opacity(0.4))
-                        Spacer()
-                        HStack(spacing: 6) {
-                            Button { withAnimation { offset += 1 } } label: {
-                                Image(systemName: "chevron.left")
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundStyle(Color.white.opacity(0.5))
-                                    .frame(width: 24, height: 24)
-                                    .overlay(RoundedRectangle(cornerRadius: 6)
-                                        .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5))
-                            }
-                            .buttonStyle(.plain)
-                            if offset > 0 {
-                                Button { withAnimation { offset = max(0, offset - 1) } } label: {
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 11, weight: .medium))
-                                        .foregroundStyle(Color.white.opacity(0.5))
-                                        .frame(width: 24, height: 24)
-                                        .overlay(RoundedRectangle(cornerRadius: 6)
-                                            .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5))
+                let buttonWidth: CGFloat = hasEarlierData ? 80 : 0
+                let chartWidth = colWidth * CGFloat(allDays.count)
+                let totalWidth = buttonWidth + chartWidth
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 4) {
+
+                        // Chart row — Load Earlier button sits to the left of the timeline
+                        HStack(alignment: .top, spacing: 0) {
+                            if hasEarlierData {
+                                Button {
+                                    loadedMonths += 6
+                                } label: {
+                                    VStack(spacing: 4) {
+                                        Image(systemName: "chevron.left.2")
+                                            .font(.system(size: 11, weight: .medium))
+                                            .foregroundStyle(Color.white.opacity(0.5))
+                                        Text("Load\nEarlier")
+                                            .font(.system(size: 9, weight: .medium))
+                                            .foregroundStyle(Color.white.opacity(0.4))
+                                            .multilineTextAlignment(.center)
+                                    }
+                                    .frame(width: buttonWidth, height: chartHeight)
+                                    .overlay(
+                                        Rectangle()
+                                            .fill(Color.white.opacity(0.04))
+                                            .frame(width: 1),
+                                        alignment: .trailing
+                                    )
                                 }
                                 .buttonStyle(.plain)
                             }
+
+                            lineChart(totalWidth: chartWidth)
+                                .frame(width: chartWidth, height: chartHeight)
+                        }
+
+                        // Day-of-week labels aligned under the chart only
+                        HStack(spacing: 0) {
+                            if hasEarlierData {
+                                Spacer().frame(width: buttonWidth)
+                            }
+                            HStack(spacing: 0) {
+                                ForEach(Array(allDays.enumerated()), id: \.offset) { _, date in
+                                    let dow = Calendar.current.component(.weekday, from: date) - 1
+                                    Text(dowLabels[dow])
+                                        .font(.system(size: 9, weight: .medium))
+                                        .foregroundStyle(
+                                            isToday(date)
+                                            ? Color.white.opacity(0.8)
+                                            : Color.white.opacity(0.3)
+                                        )
+                                        .frame(width: colWidth)
+                                }
+                            }
                         }
                     }
-
-                    GeometryReader { geo in
-                        let colWidth = geo.size.width / 7
-                        lineChart(geo: geo, colWidth: colWidth)
-                    }
-                    .frame(height: chartHeight)
-
-                    HStack(spacing: 0) {
-                        ForEach(Array(windowDates.enumerated()), id: \.offset) { i, date in
-                            let dow = Calendar.current.component(.weekday, from: date) - 1
-                            Text(dowLabels[dow])
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundStyle(Color.white.opacity(0.3))
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
+                    .frame(width: totalWidth)
                 }
+                .defaultScrollAnchor(.trailing)
             }
         }
     }
 
-    func scoreToY(_ score: CGFloat, height: CGFloat) -> CGFloat {
-        let padding: CGFloat = 8
-        let normalized = (score - minScore) / (maxScore - minScore)
-        return padding + (1 - normalized) * (height - padding * 2)
-    }
+    // MARK: - Line Chart
 
     @ViewBuilder
-    func lineChart(geo: GeometryProxy, colWidth: CGFloat) -> some View {
+    func lineChart(totalWidth: CGFloat) -> some View {
         let height = chartHeight
-        let points: [(index: Int, x: CGFloat, y: CGFloat, entry: Entry)] = windowEntries
+
+        let points: [(index: Int, x: CGFloat, y: CGFloat, entry: Entry)] = allDays
             .enumerated()
-            .compactMap { i, entry in
-                guard let entry,
-                      let score = MoodOption.score(for: entry.moodEmoji)
+            .compactMap { i, date in
+                guard let match = moodEntries.first(where: {
+                    Calendar.current.isDate($0.date, inSameDayAs: date)
+                }),
+                let score = MoodOption.score(for: match.entry.moodEmoji)
                 else { return nil }
                 let x = colWidth * CGFloat(i) + colWidth / 2
                 let y = scoreToY(CGFloat(score), height: height)
-                return (i, x, y, entry)
+                return (i, x, y, match.entry)
             }
 
         ZStack {
+            // Midline
             Path { path in
                 let midY = scoreToY(5, height: height)
                 path.move(to: CGPoint(x: 0, y: midY))
-                path.addLine(to: CGPoint(x: geo.size.width, y: midY))
+                path.addLine(to: CGPoint(x: totalWidth, y: midY))
             }
             .stroke(style: StrokeStyle(lineWidth: 0.5, dash: [3, 4]))
             .foregroundStyle(Color.white.opacity(0.12))
 
+            // Today marker
+            if let todayIndex = allDays.firstIndex(where: { isToday($0) }) {
+                let x = colWidth * CGFloat(todayIndex) + colWidth / 2
+                Path { path in
+                    path.move(to: CGPoint(x: x, y: 0))
+                    path.addLine(to: CGPoint(x: x, y: height))
+                }
+                .stroke(Color.white.opacity(0.15), style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
+            }
+
+            // Connecting curve
             if points.count >= 2 {
                 Path { path in
                     for (i, point) in points.enumerated() {
@@ -158,6 +201,7 @@ struct MoodTimelineCard: View {
                         style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
             }
 
+            // Mood dots
             ForEach(points, id: \.index) { point in
                 NavigationLink(value: point.entry) {
                     Circle()
@@ -170,6 +214,18 @@ struct MoodTimelineCard: View {
                 .position(x: point.x, y: point.y)
             }
         }
+    }
+
+    // MARK: - Helpers
+
+    func scoreToY(_ score: CGFloat, height: CGFloat) -> CGFloat {
+        let padding: CGFloat = 8
+        let normalized = (score - minScore) / (maxScore - minScore)
+        return padding + (1 - normalized) * (height - padding * 2)
+    }
+
+    func isToday(_ date: Date) -> Bool {
+        Calendar.current.isDateInToday(date)
     }
 
     func moodColor(for emoji: String) -> Color {

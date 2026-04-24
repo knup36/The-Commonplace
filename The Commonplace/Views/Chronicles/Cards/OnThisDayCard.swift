@@ -114,7 +114,8 @@ struct OnThisDayCard: View {
                 .foregroundStyle(ChroniclesTheme.tertiaryText)
         }
         .padding(.vertical, 8)
-    }
+                .contentShape(Rectangle())
+            }
 
     func photoThumb(entry: Entry) -> some View {
             GeometryReader { geo in
