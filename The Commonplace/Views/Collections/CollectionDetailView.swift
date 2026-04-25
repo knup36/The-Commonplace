@@ -288,9 +288,9 @@ struct CollectionDetailView: View {
                     filterChip(icon: "star.fill", label: "Favorites")
                 }
                 if !collection.filterMediaStatus.isEmpty {
-                    ForEach(collection.filterMediaStatus, id: \.self) { status in
-                        filterChip(icon: "film.fill", label: mediaStatusLabel(for: status))
-                    }
+                                    ForEach(collection.filterMediaStatus, id: \.self) { status in
+                                        filterChip(icon: mediaStatusIcon(for: status), label: mediaStatusLabel(for: status))
+                                    }
                 }
                 if !collection.filterLocationStatus.isEmpty {
                     ForEach(collection.filterLocationStatus, id: \.self) { status in
@@ -301,7 +301,25 @@ struct CollectionDetailView: View {
         }
     }
     
-    func filterChip(icon: String?, label: String) -> some View {
+    func mediaStatusIcon(for status: String) -> String {
+            switch status {
+            case "wantTo":     return "bookmark"
+            case "inProgress": return "play.circle"
+            case "finished":   return "checkmark.circle"
+            default:           return "film.fill"
+            }
+        }
+
+        func mediaStatusLabel(for status: String) -> String {
+            switch status {
+            case "wantTo":     return "Want to Watch"
+            case "inProgress": return "In Progress"
+            case "finished":   return "Finished"
+            default:           return status.capitalized
+            }
+        }
+
+        func filterChip(icon: String?, label: String) -> some View {
         HStack(spacing: 3) {
             if let icon { Image(systemName: icon).font(.caption) }
             Text(label).font(.caption)
