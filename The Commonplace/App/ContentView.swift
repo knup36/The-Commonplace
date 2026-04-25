@@ -7,7 +7,13 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var selectedTab = 1
-    @State private var previousTab = 0
+        @State private var previousTab = 0
+        @State private var showingAddEntry = false
+        @State private var showingTemplatePicker = false
+
+        private var isIPad: Bool {
+            UIDevice.current.userInterfaceIdiom == .pad
+        }
     
     @Environment(\.modelContext) var modelContext
     @EnvironmentObject var themeManager: ThemeManager
@@ -37,7 +43,14 @@ struct ContentView: View {
     }
     
     var body: some View {
-        TabView(selection: $selectedTab) {
+            if isIPad {
+                iPadRootView(
+                    selectedTab: $selectedTab,
+                    showingAddEntry: $showingAddEntry,
+                    showingTemplatePicker: $showingTemplatePicker
+                )
+            } else {
+                TabView(selection: $selectedTab) {
             HomeDashboardView()
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
@@ -78,11 +91,12 @@ struct ContentView: View {
         }
         .fontDesign(themeManager.current == .inkwell ? .serif : .rounded)
         .overlay(alignment: .bottom) {
-            VStack {
-                Spacer()
-                MiniSoundPlayerBar()
-                    .padding(.bottom, 57)
+                    VStack {
+                        Spacer()
+                        MiniSoundPlayerBar()
+                            .padding(.bottom, 57)
+                    }
+                }
+                } // end else (iPhone)
             }
         }
-    }
-}

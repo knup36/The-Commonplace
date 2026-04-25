@@ -17,7 +17,9 @@
 //   - × cancel resets everything including tags
 //
 // Parameters:
+// Parameters:
 //   showFullBar           — when false, hides search and add buttons (CollectionDetailView mode)
+//   isInSidebar           — when true, search opens as a sheet instead of NavigationLink push (iPad sidebar mode)
 //   showingAddEntry       — binding to FeedView's add entry card toggle
 //   showingTemplatePicker — binding to FeedView's template picker toggle
 //   contextTags           — tags pinned to front of suggestions (e.g. collection's filterTags)
@@ -31,9 +33,12 @@ struct ThoughtCaptureBar: View {
     @EnvironmentObject var themeManager: ThemeManager
 
     var showFullBar: Bool = true
-    @Binding var showingAddEntry: Bool
-    @Binding var showingTemplatePicker: Bool
-    var contextTags: [String] = []
+        var isInSidebar: Bool = false
+        @Binding var showingAddEntry: Bool
+        @Binding var showingTemplatePicker: Bool
+        var contextTags: [String] = []
+
+        @State private var showingSearch: Bool = false
 
     @Query var allEntries: [Entry]
     @StateObject private var locationManager = LocationManager()
@@ -141,22 +146,45 @@ struct ThoughtCaptureBar: View {
             HStack(spacing: 12) {
 
                 // Search button — full bar only, hidden while capturing
-                if showFullBar && !isCapturingThought {
-                    NavigationLink(destination: SearchView()) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.primary.opacity(0.001))
-                                .frame(width: 44, height: 44)
-                                .glassEffect(.regular.interactive(), in: Circle())
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundStyle(style.accent)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .contentShape(Circle())
-                    .transition(.scale.combined(with: .opacity))
-                }
+                                if showFullBar && !isCapturingThought {
+                                    Group {
+                                        if isInSidebar {
+                                            Button {
+                                                showingSearch = true
+                                            } label: {
+                                                ZStack {
+                                                    Circle()
+                                                        .fill(Color.primary.opacity(0.001))
+                                                        .frame(width: 44, height: 44)
+                                                        .glassEffect(.regular.interactive(), in: Circle())
+                                                    Image(systemName: "magnifyingglass")
+                                                        .font(.system(size: 16, weight: .medium))
+                                                        .foregroundStyle(style.accent)
+                                                }
+                                            }
+                                            .buttonStyle(.plain)
+                                            .contentShape(Circle())
+                                        } else {
+                                            NavigationLink(destination: SearchView()) {
+                                                ZStack {
+                                                    Circle()
+                                                        .fill(Color.primary.opacity(0.001))
+                                                        .frame(width: 44, height: 44)
+                                                        .glassEffect(.regular.interactive(), in: Circle())
+                                                    Image(systemName: "magnifyingglass")
+                                                        .font(.system(size: 16, weight: .medium))
+                                                        .foregroundStyle(style.accent)
+                                                }
+                                            }
+                                            .buttonStyle(.plain)
+                                            .contentShape(Circle())
+                                        }
+                                    }
+                                    .transition(.scale.combined(with: .opacity))
+                                    .sheet(isPresented: $showingSearch) {
+                                        SearchView()
+                                    }
+                                }
 
                 // Thought capture field
                 VStack(alignment: .leading, spacing: 6) {

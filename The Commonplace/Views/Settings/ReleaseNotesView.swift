@@ -21,6 +21,22 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.7",
+            title: "Watch This",
+            notes: [
+                "Tag pills in detail views are now tappable — navigates to the tag feed or Folio",
+                "Person avatars in detail views are now tappable — navigates to the person profile",
+                "Mood Timeline rebuilt as a continuous horizontal scroll — drag through your history like a film strip; 6-month default window with Load Earlier button for older data",
+                "Watch Timeline week now runs Monday–Sunday; day labels (M,T,W,Th,F,Sa,Su) added to the right edge",
+                "Fix: Readwise hero images no longer overflow the screen edges",
+                "Fix: Readwise highlight text no longer overflows the screen edges",
+                "Fix: Weekly review now correctly includes media logged during the week regardless of when the entry was created",
+                "Fix: Weekly review media list no longer capped at 5 items",
+                "Fix: Media status subfilter chips in Collections now show the correct icon instead of always showing a film strip",
+                "Fix: One Month Ago entry rows are now fully tappable"
+            ]
+        ),
+        Release(
             version: "2.6",
             title: "Be Kind, Please Rewind",
             notes: [
