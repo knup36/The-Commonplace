@@ -92,9 +92,14 @@ struct WatchTimelineCard: View {
     var weeks: [[Date]] {
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
+        // Find the most recent Monday (weekday 2 in Calendar, where 1=Sun)
+        let weekday = cal.component(.weekday, from: today)
+        let daysSinceMonday = (weekday + 5) % 7 // Sun=6, Mon=0, Tue=1...Sat=5
+        let thisSunday = cal.date(byAdding: .day, value: 6 - daysSinceMonday, to: today)!
         return (0..<52).reversed().map { w in
+            // d=0 → Monday (top row), d=6 → Sunday (bottom row)
             (0..<7).compactMap { d in
-                cal.date(byAdding: .day, value: -(w * 7 + (6 - d)), to: today)
+                cal.date(byAdding: .day, value: -(w * 7) + d - daysSinceMonday, to: today)
             }
         }
     }
@@ -145,7 +150,6 @@ struct WatchTimelineCard: View {
                         VStack(alignment: .leading, spacing: 3) {
                             monthLabelRow
                             HStack(alignment: .top, spacing: cellSpacing) {
-                                dayOfWeekLabels
                                 HStack(spacing: cellSpacing) {
                                     ForEach(Array(weeks.enumerated()), id: \.offset) { wi, week in
                                         VStack(spacing: cellSpacing) {
@@ -174,6 +178,7 @@ struct WatchTimelineCard: View {
                                         .id("week-\(wi)")
                                     }
                                 }
+                                dayOfWeekLabels
                             }
                         }
                         .padding(.bottom, 2)
@@ -209,7 +214,6 @@ struct WatchTimelineCard: View {
     
     var monthLabelRow: some View {
         HStack(spacing: cellSpacing) {
-            Color.clear.frame(width: 18, height: 12)
             HStack(spacing: cellSpacing) {
                 ForEach(Array(weeks.enumerated()), id: \.offset) { wi, week in
                     let firstDay = week.first ?? Date()
@@ -228,11 +232,11 @@ struct WatchTimelineCard: View {
     
     var dayOfWeekLabels: some View {
         VStack(spacing: cellSpacing) {
-            ForEach(["", "M", "", "W", "", "F", ""], id: \.self) { label in
+            ForEach(["M","T","W","Th","F","Sa","Su"], id: \.self) { label in
                 Text(label)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(Color.white.opacity(0.25))
-                    .frame(width: 14, height: cellSize)
+                    .frame(width: 16, height: cellSize)
             }
         }
     }
