@@ -93,7 +93,29 @@ struct MediaFileManager {
         return "media/\(folderName(for: type))/\(filename)"
     }
     
-    // MARK: - Load
+    // MARK: - Save by copying file (large files — avoids loading into memory)
+
+        /// Copies a file directly on disk into the media directory.
+        /// Use this instead of save(_:type:id:) for large files like video exports.
+        /// Returns the relative path string for storage in SwiftData.
+        @discardableResult
+        static func copyFile(from sourceURL: URL, type: MediaType, id: String) throws -> String {
+            let directory = type.directory
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+
+            let ext = sourceURL.pathExtension.lowercased()
+            let filename = "\(id).\(ext)"
+            let destinationURL = directory.appendingPathComponent(filename)
+
+            if FileManager.default.fileExists(atPath: destinationURL.path) {
+                try FileManager.default.removeItem(at: destinationURL)
+            }
+            try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+
+            return "media/\(folderName(for: type))/\(filename)"
+        }
+
+        // MARK: - Load
     
     /// Loads data from a relative path string stored in SwiftData.
     static func load(path: String) -> Data? {

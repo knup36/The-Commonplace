@@ -121,8 +121,13 @@ class DataExporter {
         // v2.0
         var linkedEntryIDs: [String]?
         // v2.0.1
-        var isScreenshot: Bool?
-    }
+                var isScreenshot: Bool?
+                // v2.8 — Attachment
+                var attachmentFile: String?
+                var attachmentType: String?
+                var attachmentFilename: String?
+                var attachmentFileSize: Int?
+            }
     
     struct CollectionDTO: Codable {
         var id: String
@@ -394,8 +399,21 @@ class DataExporter {
                 dto.journalImageFile = filename
                 mediaFileCount += 1
             }
-            // Media cover art
-            if entry.type == .media,
+            // Attachment file
+                        if entry.type == .attachment,
+                           let path = entry.attachmentPath,
+                           let data = MediaFileManager.load(path: path) {
+                            let ext = (entry.attachmentFilename as? NSString)?.pathExtension ?? "bin"
+                            let filename = "entry_\(entry.id.uuidString)_attachment.\(ext)"
+                            try data.write(to: mediaDir.appendingPathComponent(filename))
+                            dto.attachmentFile = filename
+                            dto.attachmentType = entry.attachmentType
+                            dto.attachmentFilename = entry.attachmentFilename
+                            dto.attachmentFileSize = entry.attachmentFileSize
+                            mediaFileCount += 1
+                        }
+                        // Media cover art
+                        if entry.type == .media,
                let path = entry.mediaCoverPath,
                let data = MediaFileManager.load(path: path) {
                 let filename = "entry_\(entry.id.uuidString)_cover.jpg"
@@ -495,16 +513,17 @@ class DataExporter {
     /// Used by the iCloud sync check to know which files to inspect.
     private static func mediaPaths(for entry: Entry) -> [String] {
         [
-            entry.imagePath,
-            entry.audioPath,
-            entry.previewImagePath,
-            entry.faviconPath,
-            entry.musicArtworkPath,
-            entry.mediaCoverPath,
-            entry.journalImagePath,
-            entry.videoPath,
-            entry.videoThumbnailPath
-        ].compactMap { $0 }
+                    entry.imagePath,
+                    entry.audioPath,
+                    entry.previewImagePath,
+                    entry.faviconPath,
+                    entry.musicArtworkPath,
+                    entry.mediaCoverPath,
+                    entry.journalImagePath,
+                    entry.videoPath,
+                    entry.videoThumbnailPath,
+                    entry.attachmentPath
+                ].compactMap { $0 }
         // Note: journalImageData is stored in SwiftData directly, not as a file path,
         // so it is always available and does not need an iCloud download check
     }

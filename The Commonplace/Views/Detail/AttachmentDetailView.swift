@@ -2,15 +2,16 @@
 // Commonplace
 //
 // Detail view for .attachment entries (PDFs and videos).
-// On first open (no file attached yet), shows a prominent file picker button.
-// Once a file is attached, shows a preview appropriate to the subtype:
-//   - PDF: inline PDFKit viewer
-//   - Video: VideoPlayerView (reuses existing component)
-// Notes field and tag row sit below the preview, matching other detail views.
+// Follows the same EditModeManager pattern as EntryDetailView.
 //
-// File picking uses UIDocumentPickerViewController via DocumentPicker helper.
+// States:
+//   - No file + editing: shows inline file picker button (matches PhotoDetailSection style)
+//   - File exists: shows preview (PDF inline via PDFKit, video via VideoPlayerView)
+//   - Editing: shows "Replace File" button below preview, notes field active
+//
+// File picking uses DocumentPicker (UIDocumentPickerViewController).
 // Accepted types: PDF, MP4, MOV, M4V, AVI.
-// Files are copied into MediaFileManager's attachments directory on pick.
+// Files are copied into MediaFileManager's attachments directory via copyFile().
 
 import SwiftUI
 import SwiftData
@@ -25,63 +26,25 @@ struct AttachmentDetailView: View {
     @EnvironmentObject var themeManager: ThemeManager
 
     @StateObject private var editMode = EditModeManager()
-        @State private var showingFilePicker = false
+    @State private var showingFilePicker = false
     @State private var showingDeleteConfirmation = false
     @State private var editText = ""
-    @State private var isEditingNotes = false
     @FocusState private var notesFocused: Bool
 
     var style: any AppThemeStyle { themeManager.style }
     var entryAccent: Color { entry.type.detailAccentColor(for: themeManager.current) }
     var cardColor: Color { entry.type.cardColor(for: themeManager.current) }
-
     var hasFile: Bool { entry.attachmentPath != nil }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
 
-                // MARK: - File preview or picker prompt
-                if hasFile {
-                    filePreview
-                } else {
-                    filePickerPrompt
-                }
+                // MARK: - File section
+                fileSection
 
                 // MARK: - Notes
-                Divider().overlay(style.cardDivider)
-
-                if isEditingNotes {
-                    CommonplaceTextEditor(
-                        text: $editText,
-                        placeholder: "Add notes...",
-                        usesSerifFont: false,
-                        minHeight: 32
-                    )
-                    .focused($notesFocused)
-                    .foregroundStyle(style.primaryText)
-                    .onChange(of: editText) { _, newValue in
-                        entry.text = newValue
-                        entry.touch()
-                    }
-                } else {
-                    if !entry.text.isEmpty {
-                        Text(entry.text)
-                            .font(style.typeBody)
-                            .foregroundStyle(style.cardPrimaryText)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    } else {
-                        Text("Add notes...")
-                            .font(style.typeBody)
-                            .foregroundStyle(style.tertiaryText)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .onTapGesture {
-                                editText = entry.text
-                                isEditingNotes = true
-                                notesFocused = true
-                            }
-                    }
-                }
+                textContentSection
 
                 // MARK: - Tags + metadata
                 EntryTagRow(
@@ -97,36 +60,25 @@ struct AttachmentDetailView: View {
             .frame(maxWidth: .infinity)
         }
         .environmentObject(editMode)
-                .background(cardColor.ignoresSafeArea())
+        .background(cardColor.ignoresSafeArea())
         .scrollDismissesKeyboard(.interactively)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                if isEditingNotes {
+                if editMode.isEditing {
                     Button("Done") {
                         notesFocused = false
-                        isEditingNotes = false
                         entry.touch()
+                        editMode.exit()
                     }
                     .bold()
                     .foregroundStyle(entryAccent)
                 } else {
                     Menu {
-                        if hasFile {
-                            Button {
-                                showingFilePicker = true
-                            } label: {
-                                Label("Replace File", systemImage: "arrow.triangle.2.circlepath")
-                            }
-                        }
                         Button {
-                            editText = entry.text
-                            isEditingNotes = true
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                notesFocused = true
-                            }
+                            editMode.enter()
                         } label: {
-                            Label("Edit Notes", systemImage: "rectangle.and.pencil.and.ellipsis")
+                            Label("Edit", systemImage: "rectangle.and.pencil.and.ellipsis")
                         }
                         Divider()
                         Button {
@@ -157,6 +109,13 @@ struct AttachmentDetailView: View {
                 importFile(from: url)
             }
         }
+        .onAppear {
+            editText = entry.text
+            // Auto-enter edit mode for new entries
+            if Date().timeIntervalSince(entry.createdAt) < 10 {
+                editMode.enter()
+            }
+        }
         .onDisappear {
             SearchIndex.shared.index(entry: entry)
         }
@@ -174,75 +133,100 @@ struct AttachmentDetailView: View {
         }
     }
 
-    // MARK: - File Picker Prompt
-
-    var filePickerPrompt: some View {
-        Button {
-            showingFilePicker = true
-        } label: {
-            VStack(spacing: 16) {
-                Image(systemName: "paperclip")
-                    .font(.system(size: 48, weight: .light))
-                    .foregroundStyle(entryAccent)
-                Text("Choose a File")
-                    .font(style.typeTitle3)
-                    .fontWeight(.medium)
-                    .foregroundStyle(entryAccent)
-                Text("PDF, MP4, MOV, M4V, AVI")
-                    .font(style.typeCaption)
-                    .foregroundStyle(style.tertiaryText)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 48)
-            .background(entryAccent.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(entryAccent.opacity(0.2), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - File Preview
+    // MARK: - File Section
 
     @ViewBuilder
-    var filePreview: some View {
-        VStack(alignment: .leading, spacing: 12) {
-
-            // Filename + size header
-            HStack(spacing: 12) {
-                Image(systemName: entry.attachmentType == "pdf" ? "doc.fill" : "video.fill")
-                    .font(.system(size: 28))
-                    .foregroundStyle(entryAccent)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(entry.attachmentFilename ?? "Attachment")
-                        .font(style.typeBodySecondary)
-                        .fontWeight(.medium)
-                        .foregroundStyle(style.primaryText)
-                        .lineLimit(2)
-                    if let size = entry.attachmentFileSize {
-                        Text(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
-                            .font(style.typeCaption)
-                            .foregroundStyle(style.tertiaryText)
-                    }
-                }
-                Spacer()
-            }
-
-            // Preview
-            if entry.attachmentType == "pdf" {
-                PDFPreviewView(entry: entry)
-                    .frame(height: 480)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            } else {
-                            if let path = entry.attachmentPath {
-                                let url = MediaFileManager.containerURL.appendingPathComponent(path)
-                                VideoPlayerView(player: AVPlayer(url: url))
-                                    .aspectRatio(16/9, contentMode: .fit)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                            }
+    var fileSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if hasFile {
+                // Filename + size header
+                HStack(spacing: 12) {
+                    Image(systemName: entry.attachmentType == "pdf" ? "doc.fill" : "video.fill")
+                        .font(.system(size: 28))
+                        .foregroundStyle(entryAccent)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(entry.attachmentFilename ?? "Attachment")
+                            .font(style.typeBodySecondary)
+                            .fontWeight(.medium)
+                            .foregroundStyle(style.primaryText)
+                            .lineLimit(2)
+                        if let size = entry.attachmentFileSize {
+                            Text(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
+                                .font(style.typeCaption)
+                                .foregroundStyle(style.tertiaryText)
                         }
+                    }
+                    Spacer()
+                }
+
+                // Preview
+                if entry.attachmentType == "pdf" {
+                    PDFPreviewView(entry: entry)
+                        .frame(height: 480)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                } else if let path = entry.attachmentPath {
+                    let url = MediaFileManager.containerURL.appendingPathComponent(path)
+                    VideoPlayerView(player: AVPlayer(url: url))
+                        .aspectRatio(16/9, contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+
+                // Replace button — only in edit mode
+                if editMode.isEditing {
+                    Button {
+                        showingFilePicker = true
+                    } label: {
+                        Label("Replace File", systemImage: "arrow.triangle.2.circlepath")
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.cardSecondaryText)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+            } else {
+                // No file yet — show picker button in edit mode style
+                if editMode.isEditing {
+                    Button {
+                        showingFilePicker = true
+                    } label: {
+                        Label("Choose File", systemImage: "paperclip")
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(style.cardDivider)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .foregroundStyle(style.cardPrimaryText)
+                    }
+                    .buttonStyle(.plain)
+
+                    Text("PDF, MP4, MOV, M4V, AVI")
+                        .font(style.typeCaption)
+                        .foregroundStyle(style.tertiaryText)
+                }
+            }
+        }
+    }
+
+    // MARK: - Text Content Section
+
+    @ViewBuilder
+    var textContentSection: some View {
+        if editMode.isEditing {
+            CommonplaceTextEditor(
+                text: $editText,
+                placeholder: "Add notes...",
+                usesSerifFont: false,
+                minHeight: 32
+            )
+            .focused($notesFocused)
+            .foregroundStyle(style.primaryText)
+            .onChange(of: editText) { _, newValue in
+                entry.text = newValue
+            }
+        } else if !entry.text.isEmpty {
+            Text(entry.text)
+                .font(style.typeBody)
+                .foregroundStyle(style.cardPrimaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -257,16 +241,17 @@ struct AttachmentDetailView: View {
         let attachmentType = ext == "pdf" ? "pdf" : "video"
 
         do {
-            let data = try Data(contentsOf: url)
-            let path = try MediaFileManager.save(
-                data,
+            let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+            let fileSize = attributes[.size] as? Int ?? 0
+            let path = try MediaFileManager.copyFile(
+                from: url,
                 type: .attachment(extension: ext),
                 id: entry.id.uuidString
             )
             entry.attachmentPath = path
             entry.attachmentType = attachmentType
             entry.attachmentFilename = filename
-            entry.attachmentFileSize = data.count
+            entry.attachmentFileSize = fileSize
             entry.touch()
             try? modelContext.save()
         } catch {
