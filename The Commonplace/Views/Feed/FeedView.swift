@@ -214,8 +214,11 @@ struct FeedView: View {
                     TemplatePickerView(navigationPath: $navigationPath)
                 }
                 .navigationDestination(for: Entry.self) { entry in
-                    NavigationRouter.destination(for: entry)
-                }
+                                    NavigationRouter.destination(for: entry)
+                                }
+                                .navigationDestination(for: Tag.self) { tag in
+                                    NavigationRouter.destination(for: tag)
+                                }
                 .overlay(alignment: .topTrailing) {
                     if showingAddEntry {
                         RadialGradient(

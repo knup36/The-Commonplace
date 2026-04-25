@@ -29,13 +29,13 @@ struct TagInputView: View {
     @Query var allCollections: [Collection]
     
     var allExistingTags: [String] {
-            let allNames = entries.flatMap { $0.tagNames }.filter { !$0.hasPrefix("@") }
-            let counts = Dictionary(allNames.map { ($0, 1) }, uniquingKeysWith: +)
-            return counts
-                .filter { !tags.contains($0.key) }
-                .sorted { $0.value > $1.value }
-                .map { $0.key }
-        }
+        let allNames = entries.flatMap { $0.tagNames }.filter { !$0.hasPrefix("@") }
+        let counts = Dictionary(allNames.map { ($0, 1) }, uniquingKeysWith: +)
+        return counts
+            .filter { !tags.contains($0.key) }
+            .sorted { $0.value > $1.value }
+            .map { $0.key }
+    }
     
     var suggestions: [String] {
         if inputText.isEmpty { return allExistingTags }
@@ -182,8 +182,9 @@ struct TagInputView: View {
         let folioTag = allTagObjects.first { $0.name == tag && $0.isFolio }
         let folioCollection = allCollections.first { $0.isFolio && $0.filterTags.contains(tag) && $0.filterTags.count == 1 && $0.isFolio }
         let isFolioStyle = folioTag != nil || folioCollection != nil
+        let tagObject = allTagObjects.first { $0.name == tag }
         
-        return HStack(spacing: 4) {
+        let pillContent = HStack(spacing: 4) {
             if let folio = folioTag, let emoji = folio.subjectEmoji {
                 Text(emoji).font(.caption)
                 Text(folio.folioDisplayName)
@@ -208,26 +209,46 @@ struct TagInputView: View {
                 }
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
-        .background(
-            folioCollection != nil ? Color(hex: folioCollection!.colorHex).opacity(0.2) :
-                folioTag != nil ? Color(hex: folioTag?.colorHex ?? "#888780").opacity(0.2) :
-                accentColor.opacity(0.2)
-        )
-        .foregroundStyle(accentColor)
-        .clipShape(Capsule())
-        .overlay(
-            isFolioStyle ?
-            Capsule().strokeBorder(
-                LinearGradient(
-                    colors: [Color(white: 0.85), Color(white: 0.6), Color(white: 0.85), Color(white: 0.5), Color(white: 0.85)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
-                lineWidth: 1.5
-            ) : nil
-        )
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(
+                folioCollection != nil ? Color(hex: folioCollection!.colorHex).opacity(0.2) :
+                    folioTag != nil ? Color(hex: folioTag?.colorHex ?? "#888780").opacity(0.2) :
+                    accentColor.opacity(0.2)
+            )
+            .foregroundStyle(accentColor)
+            .clipShape(Capsule())
+            .overlay(
+                isFolioStyle ?
+                Capsule().strokeBorder(
+                    LinearGradient(
+                        colors: [Color(white: 0.85), Color(white: 0.6), Color(white: 0.85), Color(white: 0.5), Color(white: 0.85)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                ) : nil
+            )
+        
+        return Group {
+                    if !editMode.isEditing {
+                        if let folioCollection {
+                            NavigationLink(destination: CollectionDetailView(collection: folioCollection)) {
+                                pillContent
+                            }
+                            .buttonStyle(.plain)
+                        } else if let tagObject {
+                            NavigationLink(destination: NavigationRouter.destination(for: tagObject)) {
+                                pillContent
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            pillContent
+                        }
+                    } else {
+                        pillContent
+                    }
+                }
     }
     
     func addTag(_ text: String) {

@@ -181,19 +181,30 @@ struct PersonInputView: View {
     // MARK: - Person Chip
     
     func personChip(name: String) -> some View {
-        let person = allPersons.first { $0.name == name }
-        return ZStack {
-            Circle()
-                .strokeBorder(SharedTheme.goldRingGradient, lineWidth: 1.5)
-                .frame(width: 28, height: 28)
-            personAvatar(name: name, photoPath: person?.profilePhotoPath, size: 26)
-        }
-        .onLongPressGesture {
-            if editMode.isEditing {
-                tags.removeAll { $0 == "@\(name)" }
+            let person = allPersons.first { $0.name == name }
+            let chipView = ZStack {
+                Circle()
+                    .strokeBorder(SharedTheme.goldRingGradient, lineWidth: 1.5)
+                    .frame(width: 28, height: 28)
+                personAvatar(name: name, photoPath: person?.profilePhotoPath, size: 26)
+            }
+            .onLongPressGesture {
+                if editMode.isEditing {
+                    tags.removeAll { $0 == "@\(name)" }
+                }
+            }
+
+            return Group {
+                if !editMode.isEditing, let person {
+                    NavigationLink(destination: PersonDetailView(tag: person)) {
+                        chipView
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    chipView
+                }
             }
         }
-    }
     
     // MARK: - Person Avatar
     
