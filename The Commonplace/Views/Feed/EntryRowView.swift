@@ -305,11 +305,31 @@ struct EntryRowView: View {
                 Spacer()
             }
         case .sticky:
-            StickyEntryView(entry: entry, isPreview: true)
-        }
-    }
-    
-    // MARK: - Note Text
+                    StickyEntryView(entry: entry, isPreview: true)
+                case .attachment:
+                    HStack(spacing: 10) {
+                        Image(systemName: entry.attachmentType == "pdf" ? "doc.fill" : "video.fill")
+                            .font(.system(size: 24))
+                            .foregroundStyle(labelColor)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(entry.attachmentFilename ?? "Attachment")
+                                .font(style.typeTitle3)
+                                .fontWeight(.medium)
+                                .foregroundStyle(style.cardPrimaryText)
+                                .lineLimit(2)
+                            if let size = entry.attachmentFileSize {
+                                Text(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
+                                    .font(style.typeCaption)
+                                    .foregroundStyle(style.cardMetadataText)
+                            }
+                        }
+                        Spacer()
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+
+            // MARK: - Note Text
     
     func noteText(italic: Bool) -> some View {
         Text(entry.text)

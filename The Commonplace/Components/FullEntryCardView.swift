@@ -232,6 +232,30 @@ struct FullEntryCardView: View {
             }
         case .sticky:
             StickyEntryView(entry: entry, isPreview: true)
+        case .attachment:
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 10) {
+                    Image(systemName: entry.attachmentType == "pdf" ? "doc.fill" : "video.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(labelColor)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(entry.attachmentFilename ?? "Attachment")
+                            .font(style.typeBodySecondary)
+                            .fontWeight(.medium)
+                            .foregroundStyle(style.cardPrimaryText)
+                            .lineLimit(2)
+                        if let size = entry.attachmentFileSize {
+                            Text(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
+                                .font(style.typeCaption)
+                                .foregroundStyle(style.cardMetadataText)
+                        }
+                    }
+                    Spacer()
+                }
+                if !entry.text.isEmpty {
+                    noteText(italic: true)
+                }
+            }
         }
     }
     
@@ -287,8 +311,8 @@ struct FullEntryCardView: View {
                 if !visibleTags.isEmpty {
                     FlowLayout(spacing: 4, maxRows: .max) {
                         ForEach(visibleTags.prefix(3), id: \.self) { tag in
-                                                    let folioTag = allTagObjects.first { $0.name == tag && $0.isFolio }
-                                                    let folioCollection = allCollections.first { $0.isFolio && $0.filterTags.contains(tag) && $0.filterTags.count == 1 }
+                            let folioTag = allTagObjects.first { $0.name == tag && $0.isFolio }
+                            let folioCollection = allCollections.first { $0.isFolio && $0.filterTags.contains(tag) && $0.filterTags.count == 1 }
                             if let folio = folioTag {
                                 // Old Tag-based Folio
                                 HStack(spacing: 3) {

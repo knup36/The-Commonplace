@@ -187,7 +187,8 @@ struct DuskTheme {
     static let placeColor    = Color(hex: "#526349")
     static let stickyColor   = Color(hex: "#877662")
     static let musicColor    = Color(hex: "#7E505D")
-    static let mediaColor    = Color(hex: "#7A5855")
+    static let mediaColor       = Color(hex: "#7A5855")
+        static let attachmentColor  = Color(hex: "#4A4538")
 
     // Derived border — base color lightened
     static func borderColor(for base: Color) -> Color {
@@ -204,11 +205,12 @@ struct DuskTheme {
         case .location: return placeColor
         case .sticky:   return stickyColor
         case .music:    return musicColor
-        case .media:    return mediaColor
-        }
-    }
+        case .media:       return mediaColor
+                case .attachment:  return attachmentColor
+                }
+            }
 
-    static func accentColor(for type: EntryType) -> Color {
+            static func accentColor(for type: EntryType) -> Color {
             cardBackground(for: type)
         }
 
@@ -224,9 +226,10 @@ struct DuskTheme {
             case .location: return Color(hex: "#8AA882")
             case .sticky:   return Color(hex: "#C8B898")
             case .music:    return Color(hex: "#C8909A")
-            case .media:    return Color(hex: "#C89890")
-            }
-        }
+            case .media:       return Color(hex: "#C89890")
+                        case .attachment:  return Color(hex: "#C8C0A8")
+                        }
+                    }
 }
 
 // MARK: - Dusk Style
@@ -297,7 +300,10 @@ struct InkwellTheme {
     static let locationAccent = Color(hex: "#58A870")
     static let stickyAccent   = Color(hex: "#B8A030")
     static let musicAccent    = Color(hex: "#C07880")
-    static let mediaAccent    = Color(hex: "#C85850")
+    static let mediaAccent      = Color(hex: "#C85850")
+        static let attachmentAccent = Color(hex: "#C8C0A0")
+        static let attachmentCard   = Color(hex: "#28261E")
+        static let attachmentBorder = Color(hex: "#383428")
     static let textCard       = Color(hex: "#262626")
     static let photoCard      = Color(hex: "#182830")
     static let audioCard      = Color(hex: "#2E2518")
@@ -327,9 +333,10 @@ struct InkwellTheme {
         case .location: return locationCard
         case .sticky:   return stickyCard
         case .music:    return musicCard
-        case .media:    return mediaCard
-        }
-    }
+        case .media:       return mediaCard
+                case .attachment:  return attachmentCard
+                }
+            }
 
     static func cardBorderColor(for type: EntryType) -> Color {
         switch type {
@@ -341,9 +348,10 @@ struct InkwellTheme {
         case .location: return locationBorder
         case .sticky:   return stickyBorder
         case .music:    return musicBorder
-        case .media:    return mediaBorder
-        }
-    }
+        case .media:       return mediaBorder
+                case .attachment:  return attachmentBorder
+                }
+            }
 
     static func accentColor(for type: EntryType) -> Color {
         switch type {
@@ -355,9 +363,10 @@ struct InkwellTheme {
         case .location: return locationAccent
         case .sticky:   return stickyAccent
         case .music:    return musicAccent
-        case .media:    return mediaAccent
-        }
-    }
+        case .media:       return mediaAccent
+                case .attachment:  return attachmentAccent
+                }
+            }
 
     static func collectionCardBackground(for hex: String) -> Color {
         switch hex.uppercased() {

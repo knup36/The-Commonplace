@@ -5,8 +5,8 @@
 // All entry types share this one model, differentiated by the `type` field.
 //
 // ============================================================
-// SCHEMA VERSION: 10
-// Last updated: v2.3
+// SCHEMA VERSION: 11
+// Last updated: v2.8
 //
 // Schema change policy:
 //   - Adding optional fields: safe, no migration needed
@@ -49,6 +49,7 @@
 //   v2.0    — linkedEntryIDs
 //   v2.0.1  — isScreenshot
 //   v2.3    — mediaPlatform
+//   v2.8    — attachmentPath, attachmentType, attachmentFilename, attachmentFileSize
 //
 // Deprecated fields (do not remove yet):
 //   journalImageData — deprecated v1.9.1, replaced by journalImagePath
@@ -173,8 +174,8 @@ class Entry {
     var mediaLog: [String] = []
     var tmdbID: Int? = nil
     var mediaRuntime: Int? = nil  // minutes — movies only
-        var mediaSeasons: Int? = nil  // season count — TV only
-        var mediaPlatform: String? = nil  // platform(s) — games only
+    var mediaSeasons: Int? = nil  // season count — TV only
+    var mediaPlatform: String? = nil  // platform(s) — games only
     
     // Weekly Review (v1.12.1)
     // Dedicated fields replacing key:value encoding in entry.text
@@ -209,6 +210,16 @@ class Entry {
     // Detection: absence of camera EXIF fields (FNumber, ExposureTime) indicates screenshot
     var isScreenshot: Bool = false
     
+    // Attachment (v2.8)
+    // attachmentType: "pdf" or "video" — subtype picker on capture
+    // attachmentFilename: original filename shown in UI (e.g. "Final_Cut_Export.mp4")
+    // attachmentFileSize: bytes — displayed as formatted string in detail view
+    // attachmentPath: relative path in MediaFileManager, same pattern as imagePath/audioPath
+    var attachmentPath: String? = nil
+    var attachmentType: String? = nil
+    var attachmentFilename: String? = nil
+    var attachmentFileSize: Int? = nil
+    
     init(type: EntryType = .text, text: String = "", tags: [String] = []) {
         self.id = UUID()
         self.createdAt = Date()
@@ -240,6 +251,7 @@ enum EntryType: String, Codable, CaseIterable {
     case sticky
     case music
     case media
+    case attachment
     
     var icon: String {
         switch self {
@@ -251,7 +263,8 @@ enum EntryType: String, Codable, CaseIterable {
         case .location: return "mappin.circle.fill"
         case .sticky:   return "checklist"
         case .music:    return "music.note"
-        case .media:    return "film.fill"
+        case .media:       return "film.fill"
+        case .attachment:  return "paperclip"
         }
     }
     
@@ -265,7 +278,8 @@ enum EntryType: String, Codable, CaseIterable {
         case .location: return "Place"
         case .sticky:   return "List"
         case .music:    return "Music"
-        case .media:    return "Media"
+        case .media:       return "Media"
+        case .attachment:  return "Attachment"
         }
     }
     
@@ -279,7 +293,8 @@ enum EntryType: String, Codable, CaseIterable {
         case .location: return InkwellTheme.locationAccent
         case .sticky:   return InkwellTheme.stickyAccent
         case .music:    return InkwellTheme.musicAccent
-        case .media:    return InkwellTheme.mediaAccent
+        case .media:       return InkwellTheme.mediaAccent
+        case .attachment:  return InkwellTheme.attachmentAccent
         }
     }
     
@@ -289,26 +304,26 @@ enum EntryType: String, Codable, CaseIterable {
     
     // Theme-aware versions — use these in all new and updated views
     func accentColor(for theme: AppTheme) -> Color {
-        switch theme {
-        case .dusk:    return DuskTheme.accentColor(for: self)
-        case .inkwell: return accentColor
-        case .system:  return accentColor
+            switch theme {
+            case .dusk:    return DuskTheme.accentColor(for: self)
+            case .inkwell: return accentColor
+            case .system:  return accentColor
+            }
         }
-    }
-    
-    func cardColor(for theme: AppTheme) -> Color {
-        switch theme {
-        case .dusk:    return DuskTheme.cardBackground(for: self)
-        case .inkwell: return cardColor
-        case .system:  return cardColor
+
+        func cardColor(for theme: AppTheme) -> Color {
+            switch theme {
+            case .dusk:    return DuskTheme.cardBackground(for: self)
+            case .inkwell: return cardColor
+            case .system:  return cardColor
+            }
         }
-    }
-    
-    func detailAccentColor(for theme: AppTheme) -> Color {
-        switch theme {
-        case .dusk:    return DuskTheme.detailAccentColor(for: self)
-        case .inkwell: return accentColor
-        case .system:  return accentColor
+
+        func detailAccentColor(for theme: AppTheme) -> Color {
+            switch theme {
+            case .dusk:    return DuskTheme.detailAccentColor(for: self)
+            case .inkwell: return accentColor
+            case .system:  return accentColor
+            }
         }
-    }
 }

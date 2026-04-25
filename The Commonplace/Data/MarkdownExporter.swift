@@ -470,8 +470,28 @@ struct MarkdownExporter {
             if let album = entry.musicAlbum { lines.append(album) }
             if let url = entry.url { lines.append(url) }
             
-        case .media:
-            let typeLabel: String
+        case .attachment:
+                    let attachmentIcon = entry.attachmentType == "pdf" ? "📄" : "🎬"
+                    let attachmentLabel = entry.attachmentType == "pdf" ? "PDF" : "Video"
+                    lines.append("### \(attachmentIcon) Attachment · \(attachmentLabel) — \(time)")
+                    if let filename = entry.attachmentFilename {
+                        lines.append("**\(filename)**")
+                    }
+                    if let path = entry.attachmentPath,
+                       let data = MediaFileManager.load(path: path) {
+                        let ext = (entry.attachmentFilename as? NSString)?.pathExtension ?? (entry.attachmentType == "pdf" ? "pdf" : "mp4")
+                        let filename = "\(entry.id.uuidString)_attachment.\(ext)"
+                        try data.write(to: mediaURL.appendingPathComponent(filename))
+                        mediaFileCount += 1
+                        lines.append("[Attachment](media/\(filename))")
+                    }
+                    if !entry.text.isEmpty {
+                        lines.append("")
+                        lines.append(entry.text)
+                    }
+
+                case .media:
+                    let typeLabel: String
             switch entry.mediaType {
             case "tv":      typeLabel = "TV Show"
             case "podcast": typeLabel = "Podcast"

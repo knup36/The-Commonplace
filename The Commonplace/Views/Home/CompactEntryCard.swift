@@ -77,9 +77,11 @@ struct CompactEntryCard: View {
         case .music:
             musicCard
         case .media:
-            mediaCard
-        }
-    }
+                    mediaCard
+                case .attachment:
+                    attachmentCard
+                }
+            }
     
     // MARK: - Text Card
     
@@ -305,7 +307,24 @@ struct CompactEntryCard: View {
             }
         }
     }
-    // MARK: - Media Card
+    // MARK: - Attachment Card
+
+        var attachmentCard: some View {
+            VStack(alignment: .leading, spacing: 4) {
+                Image(systemName: entry.attachmentType == "pdf" ? "doc.fill" : "video.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(entryAccent)
+                Spacer()
+                Text(entry.attachmentFilename ?? "Attachment")
+                    .font(style.typeCaption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(style.cardPrimaryText)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+
+        // MARK: - Media Card
     
     var mediaCard: some View {
         ZStack(alignment: .bottomLeading) {

@@ -28,7 +28,7 @@
 import SwiftUI
 
 enum NavigationRouter {
-
+    
     /// Returns the appropriate detail view for a given entry.
     /// Handles special cases (weekly review) before falling through to type-based routing.
     @ViewBuilder
@@ -37,22 +37,23 @@ enum NavigationRouter {
             WeeklyReviewDetailView(entry: entry)
         } else {
             switch entry.type {
-            case .location: LocationDetailView(entry: entry)
-            case .sticky:   StickyDetailView(entry: entry)
-            case .media:    MediaDetailView(entry: entry)
-            default:        EntryDetailView(entry: entry)
+            case .location:   LocationDetailView(entry: entry)
+            case .sticky:     StickyDetailView(entry: entry)
+            case .media:      MediaDetailView(entry: entry)
+            case .attachment: AttachmentDetailView(entry: entry)
+            default:          EntryDetailView(entry: entry)
             }
         }
     }
     /// Returns the appropriate detail view for a given Tag.
-        /// Persons route to PersonDetailView, plain tags route to TagFeedView.
-        /// Folios are now Collections — use CollectionDetailView directly.
-        @ViewBuilder
-        static func destination(for tag: Tag) -> some View {
-            if tag.isPerson {
-                PersonDetailView(tag: tag)
-            } else {
-                TagFeedView(tag: tag.name)
-            }
+    /// Persons route to PersonDetailView, plain tags route to TagFeedView.
+    /// Folios are now Collections — use CollectionDetailView directly.
+    @ViewBuilder
+    static func destination(for tag: Tag) -> some View {
+        if tag.isPerson {
+            PersonDetailView(tag: tag)
+        } else {
+            TagFeedView(tag: tag.name)
         }
     }
+}

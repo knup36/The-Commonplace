@@ -21,12 +21,13 @@ struct FeedView: View {
     @State private var deletedEntry: Entry? = nil
     @State private var showingUndoToast = false
     @State private var filterType: EntryType? = nil
+    @State private var showingAttachmentPicker = false
     @State private var filteredEntries: [Entry] = []
     @State private var visibleCount: Int = 50
     @State private var currentPrompt: String = ""
     @AppStorage("feedScrapbookMode") private var isScrapbookMode: Bool = false
-        @AppStorage("feedSlimMode") private var isSlimMode: Bool = false
-        @AppStorage("feedFullMode") private var isFullMode: Bool = false
+    @AppStorage("feedSlimMode") private var isSlimMode: Bool = false
+    @AppStorage("feedFullMode") private var isFullMode: Bool = false
     @AppStorage("feedShuffleSeed") private var shuffleSeed: Int = 0
     @State private var isShuffleMode: Bool = false
     
@@ -40,7 +41,8 @@ struct FeedView: View {
         (.sticky,   "List",   "checklist",          Color(hex: "#FFD60A")),
         (.location, "Place",  "mappin.circle.fill", .green),
         (.music,    "Music",  "music.note",         .red),
-        (.media, "Media", "film.fill", .red),
+        (.media,       "Media",      "film.fill", .red),
+        (.attachment,  "Attachment", "paperclip",  Color(hex: "#C8C0A0")),
     ]
     
     var style: any AppThemeStyle { themeManager.style }
@@ -69,81 +71,81 @@ struct FeedView: View {
             }
             Spacer()
             HStack(spacing: 0) {
-                                        // Full
-                                        Button {
-                                            withAnimation(.easeInOut(duration: 0.3)) {
-                                                isFullMode = true
-                                                isScrapbookMode = false
-                                                isSlimMode = false
-                                                isShuffleMode = false
-                                                shuffleSeed = 0
-                                                updateFilter()
-                                            }
-                                        } label: {
-                                            Image(systemName: "text.rectangle.page")
-                                                .font(.system(size: 18, weight: .medium))
-                                                .foregroundStyle(isFullMode ? style.accent : style.secondaryText.opacity(0.4))
-                                                .padding(.horizontal, 10)
-                                                .padding(.vertical, 8)
-                                        }
-                                        .buttonStyle(.plain)
-
-                                        // Standard
-                                        Button {
-                                            withAnimation(.easeInOut(duration: 0.3)) {
-                                                isFullMode = false
-                                                isScrapbookMode = false
-                                                isSlimMode = false
-                                                isShuffleMode = false
-                                                shuffleSeed = 0
-                                                updateFilter()
-                                            }
-                                        } label: {
-                                            Image(systemName: "rectangle.grid.1x2")
-                                                .font(.system(size: 18, weight: .medium))
-                                                .foregroundStyle(!isFullMode && !isScrapbookMode && !isSlimMode ? style.accent : style.secondaryText.opacity(0.4))
-                                                .padding(.horizontal, 10)
-                                                .padding(.vertical, 8)
-                                        }
-                                        .buttonStyle(.plain)
-
-                                        // Slim
-                                        Button {
-                                            withAnimation(.easeInOut(duration: 0.3)) {
-                                                isFullMode = false
-                                                isScrapbookMode = false
-                                                isSlimMode = true
-                                                isShuffleMode = false
-                                                shuffleSeed = 0
-                                                updateFilter()
-                                            }
-                                        } label: {
-                                            Image(systemName: "text.justify")
-                                                .font(.system(size: 18, weight: .medium))
-                                                .foregroundStyle(isSlimMode ? style.accent : style.secondaryText.opacity(0.4))
-                                                .padding(.horizontal, 10)
-                                                .padding(.vertical, 8)
-                                        }
-                                        .buttonStyle(.plain)
-
-                                        // Scrapbook
-                                        Button {
-                                            withAnimation(.easeInOut(duration: 0.3)) {
-                                                isFullMode = false
-                                                isScrapbookMode = true
-                                                isSlimMode = false
-                                            }
-                                        } label: {
-                                            Image(systemName: "rectangle.3.group.fill")
-                                                .font(.system(size: 18, weight: .medium))
-                                                .foregroundStyle(isScrapbookMode ? Color(red: 0.5, green: 0.35, blue: 0.15) : style.secondaryText.opacity(0.4))
-                                                .padding(.horizontal, 10)
-                                                .padding(.vertical, 8)
-                                        }
-                                        .buttonStyle(.plain)
-                                    }
-                                    .background(isScrapbookMode ? Color(red: 0.91, green: 0.86, blue: 0.76).opacity(0.3) : style.surface.opacity(0.5))
-                                    .clipShape(Capsule())
+                // Full
+                Button {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        isFullMode = true
+                        isScrapbookMode = false
+                        isSlimMode = false
+                        isShuffleMode = false
+                        shuffleSeed = 0
+                        updateFilter()
+                    }
+                } label: {
+                    Image(systemName: "text.rectangle.page")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(isFullMode ? style.accent : style.secondaryText.opacity(0.4))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                }
+                .buttonStyle(.plain)
+                
+                // Standard
+                Button {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        isFullMode = false
+                        isScrapbookMode = false
+                        isSlimMode = false
+                        isShuffleMode = false
+                        shuffleSeed = 0
+                        updateFilter()
+                    }
+                } label: {
+                    Image(systemName: "rectangle.grid.1x2")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(!isFullMode && !isScrapbookMode && !isSlimMode ? style.accent : style.secondaryText.opacity(0.4))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                }
+                .buttonStyle(.plain)
+                
+                // Slim
+                Button {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        isFullMode = false
+                        isScrapbookMode = false
+                        isSlimMode = true
+                        isShuffleMode = false
+                        shuffleSeed = 0
+                        updateFilter()
+                    }
+                } label: {
+                    Image(systemName: "text.justify")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(isSlimMode ? style.accent : style.secondaryText.opacity(0.4))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                }
+                .buttonStyle(.plain)
+                
+                // Scrapbook
+                Button {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        isFullMode = false
+                        isScrapbookMode = true
+                        isSlimMode = false
+                    }
+                } label: {
+                    Image(systemName: "rectangle.3.group.fill")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(isScrapbookMode ? Color(red: 0.5, green: 0.35, blue: 0.15) : style.secondaryText.opacity(0.4))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                }
+                .buttonStyle(.plain)
+            }
+            .background(isScrapbookMode ? Color(red: 0.91, green: 0.86, blue: 0.76).opacity(0.3) : style.surface.opacity(0.5))
+            .clipShape(Capsule())
         }
         .padding(.leading, 24)
         .padding(.trailing, 16)
@@ -156,20 +158,20 @@ struct FeedView: View {
     @ViewBuilder
     var entryRows: some View {
         ForEach(filteredEntries) { entry in
-                    NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                        if isScrapbookMode {
-                            scrapbookCard(for: entry)
-                        } else if isFullMode {
-                            FullEntryCardView(entry: entry)
-                        } else {
-                            EntryRowView(entry: entry)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, isScrapbookMode ? 0 : 16)
-                    .padding(.vertical, isScrapbookMode ? -8 : 4)
-                    .frame(maxWidth: .infinity)
+            NavigationLink(destination: NavigationRouter.destination(for: entry)) {
+                if isScrapbookMode {
+                    scrapbookCard(for: entry)
+                } else if isFullMode {
+                    FullEntryCardView(entry: entry)
+                } else {
+                    EntryRowView(entry: entry)
                 }
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, isScrapbookMode ? 0 : 16)
+            .padding(.vertical, isScrapbookMode ? -8 : 4)
+            .frame(maxWidth: .infinity)
+        }
         let totalCount = entries.filter { $0.id != deletedEntry?.id }.count
         if visibleCount < totalCount {
             Button {
@@ -214,11 +216,11 @@ struct FeedView: View {
                     TemplatePickerView(navigationPath: $navigationPath)
                 }
                 .navigationDestination(for: Entry.self) { entry in
-                                    NavigationRouter.destination(for: entry)
-                                }
-                                .navigationDestination(for: Tag.self) { tag in
-                                    NavigationRouter.destination(for: tag)
-                                }
+                    NavigationRouter.destination(for: entry)
+                }
+                .navigationDestination(for: Tag.self) { tag in
+                    NavigationRouter.destination(for: tag)
+                }
                 .overlay(alignment: .topTrailing) {
                     if showingAddEntry {
                         RadialGradient(
@@ -259,11 +261,11 @@ struct FeedView: View {
                 .onChange(of: deletedEntry) { _, _ in updateFilter() }
                 .safeAreaInset(edge: .bottom) {
                     ThoughtCaptureBar(
-                                            showFullBar: true,
-                                            showingAddEntry: $showingAddEntry,
-                                            showingTemplatePicker: $showingTemplatePicker
-                                        )
-                                }
+                        showFullBar: true,
+                        showingAddEntry: $showingAddEntry,
+                        showingTemplatePicker: $showingTemplatePicker
+                    )
+                }
             }
             
             // Undo toast
@@ -361,6 +363,8 @@ struct FeedView: View {
             ScrapbookMediaCard(entry: entry)
         case .journal:
             ScrapbookJournalCard(entry: entry)
+        case .attachment:
+            ScrapbookAttachmentCard(entry: entry)
         }
     }
     

@@ -164,6 +164,8 @@ struct iPadSidebarView: View {
             let formatter = DateFormatter()
             formatter.dateFormat = "MMMM d"
             return formatter.string(from: entry.createdAt)
+        case .attachment:
+            return entry.attachmentFilename ?? "Attachment"
         }
     }
 }

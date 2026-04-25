@@ -221,9 +221,9 @@ struct ShareExtensionIngestor {
                     }
                 }
                 
-            case .text, .audio, .journal, .sticky, .media:
-                break
-            }
+            case .text, .audio, .journal, .sticky, .media, .attachment:
+                            break
+                        }
             
             context.insert(entry)
             
