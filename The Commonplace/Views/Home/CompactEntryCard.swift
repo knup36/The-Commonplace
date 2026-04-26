@@ -309,18 +309,38 @@ struct CompactEntryCard: View {
     }
     // MARK: - Attachment Card
 
-        var attachmentCard: some View {
-            VStack(alignment: .leading, spacing: 4) {
-                Image(systemName: entry.attachmentType == "pdf" ? "doc.fill" : "video.fill")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(entryAccent)
-                Spacer()
-                Text(entry.attachmentFilename ?? "Attachment")
-                    .font(style.typeCaption)
-                    .fontWeight(.medium)
-                    .foregroundStyle(style.cardPrimaryText)
-                    .lineLimit(2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+    var attachmentCard: some View {
+            Group {
+                if entry.attachmentType == "video",
+                   let thumbPath = entry.attachmentThumbnailPath,
+                   let data = MediaFileManager.load(path: thumbPath),
+                   let uiImage = UIImage(data: data) {
+                    ZStack(alignment: .bottomLeading) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 160, height: 80)
+                            .clipped()
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundStyle(.white.opacity(0.9))
+                            .padding(8)
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Image(systemName: entry.attachmentType == "pdf" ? "doc.fill" : "video.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(entryAccent)
+                        Spacer()
+                        Text(entry.attachmentFilename ?? "Attachment")
+                            .font(style.typeCaption)
+                            .fontWeight(.medium)
+                            .foregroundStyle(style.cardPrimaryText)
+                            .lineLimit(2)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
             }
         }
 

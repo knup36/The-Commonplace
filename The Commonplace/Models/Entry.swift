@@ -49,7 +49,7 @@
 //   v2.0    — linkedEntryIDs
 //   v2.0.1  — isScreenshot
 //   v2.3    — mediaPlatform
-//   v2.8    — attachmentPath, attachmentType, attachmentFilename, attachmentFileSize
+//   v2.8    — attachmentPath, attachmentType, attachmentFilename, attachmentFileSize, attachmentThumbnailPath
 //
 // Deprecated fields (do not remove yet):
 //   journalImageData — deprecated v1.9.1, replaced by journalImagePath
@@ -216,9 +216,10 @@ class Entry {
     // attachmentFileSize: bytes — displayed as formatted string in detail view
     // attachmentPath: relative path in MediaFileManager, same pattern as imagePath/audioPath
     var attachmentPath: String? = nil
-    var attachmentType: String? = nil
-    var attachmentFilename: String? = nil
-    var attachmentFileSize: Int? = nil
+        var attachmentType: String? = nil
+        var attachmentFilename: String? = nil
+        var attachmentFileSize: Int? = nil
+        var attachmentThumbnailPath: String? = nil
     
     init(type: EntryType = .text, text: String = "", tags: [String] = []) {
         self.id = UUID()

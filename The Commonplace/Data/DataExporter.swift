@@ -121,13 +121,14 @@ class DataExporter {
         // v2.0
         var linkedEntryIDs: [String]?
         // v2.0.1
-                var isScreenshot: Bool?
-                // v2.8 — Attachment
-                var attachmentFile: String?
-                var attachmentType: String?
-                var attachmentFilename: String?
-                var attachmentFileSize: Int?
-            }
+        var isScreenshot: Bool?
+        // v2.8 — Attachment
+        var attachmentFile: String?
+        var attachmentThumbnailFile: String?
+        var attachmentType: String?
+        var attachmentFilename: String?
+        var attachmentFileSize: Int?
+    }
     
     struct CollectionDTO: Codable {
         var id: String
@@ -149,9 +150,9 @@ class DataExporter {
         var filterLocationRadius: Double?
         var filterMediaStatus: [String]
         // Folio fields (v2.4)
-                var collectionType: String?
-                var folioEmoji: String?
-                var folioHeaderImageFile: String?
+        var collectionType: String?
+        var folioEmoji: String?
+        var folioHeaderImageFile: String?
     }
     
     struct HabitDTO: Codable {
@@ -400,20 +401,28 @@ class DataExporter {
                 mediaFileCount += 1
             }
             // Attachment file
-                        if entry.type == .attachment,
-                           let path = entry.attachmentPath,
-                           let data = MediaFileManager.load(path: path) {
-                            let ext = (entry.attachmentFilename as? NSString)?.pathExtension ?? "bin"
-                            let filename = "entry_\(entry.id.uuidString)_attachment.\(ext)"
-                            try data.write(to: mediaDir.appendingPathComponent(filename))
-                            dto.attachmentFile = filename
-                            dto.attachmentType = entry.attachmentType
-                            dto.attachmentFilename = entry.attachmentFilename
-                            dto.attachmentFileSize = entry.attachmentFileSize
-                            mediaFileCount += 1
-                        }
-                        // Media cover art
-                        if entry.type == .media,
+            if entry.type == .attachment,
+               let path = entry.attachmentPath,
+               let data = MediaFileManager.load(path: path) {
+                let ext = (entry.attachmentFilename as? NSString)?.pathExtension ?? "bin"
+                let filename = "entry_\(entry.id.uuidString)_attachment.\(ext)"
+                try data.write(to: mediaDir.appendingPathComponent(filename))
+                dto.attachmentFile = filename
+                dto.attachmentType = entry.attachmentType
+                dto.attachmentFilename = entry.attachmentFilename
+                dto.attachmentFileSize = entry.attachmentFileSize
+                mediaFileCount += 1
+            }
+            if entry.type == .attachment,
+               let path = entry.attachmentThumbnailPath,
+               let data = MediaFileManager.load(path: path) {
+                let filename = "entry_\(entry.id.uuidString)_attachment_thumb.jpg"
+                try data.write(to: mediaDir.appendingPathComponent(filename))
+                dto.attachmentThumbnailFile = filename
+                mediaFileCount += 1
+            }
+            // Media cover art
+            if entry.type == .media,
                let path = entry.mediaCoverPath,
                let data = MediaFileManager.load(path: path) {
                 let filename = "entry_\(entry.id.uuidString)_cover.jpg"
@@ -448,8 +457,8 @@ class DataExporter {
                 filterLocationRadius: c.filterLocationRadius,
                 filterMediaStatus: c.filterMediaStatus,
                 collectionType: c.collectionType,
-                                folioEmoji: c.folioEmoji,
-                                folioHeaderImageFile: nil
+                folioEmoji: c.folioEmoji,
+                folioHeaderImageFile: nil
             )
             // Export Folio header image
             if let path = c.folioHeaderImagePath,
@@ -513,17 +522,18 @@ class DataExporter {
     /// Used by the iCloud sync check to know which files to inspect.
     private static func mediaPaths(for entry: Entry) -> [String] {
         [
-                    entry.imagePath,
-                    entry.audioPath,
-                    entry.previewImagePath,
-                    entry.faviconPath,
-                    entry.musicArtworkPath,
-                    entry.mediaCoverPath,
-                    entry.journalImagePath,
-                    entry.videoPath,
-                    entry.videoThumbnailPath,
-                    entry.attachmentPath
-                ].compactMap { $0 }
+            entry.imagePath,
+            entry.audioPath,
+            entry.previewImagePath,
+            entry.faviconPath,
+            entry.musicArtworkPath,
+            entry.mediaCoverPath,
+            entry.journalImagePath,
+            entry.videoPath,
+            entry.videoThumbnailPath,
+            entry.attachmentPath,
+            entry.attachmentThumbnailPath
+        ].compactMap { $0 }
         // Note: journalImageData is stored in SwiftData directly, not as a file path,
         // so it is always available and does not need an iCloud download check
     }

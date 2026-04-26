@@ -79,7 +79,7 @@ class DataImporter {
             collection.filterLocationRadius = dto.filterLocationRadius
             collection.filterMediaStatus = dto.filterMediaStatus
             collection.collectionType = dto.collectionType
-                        collection.folioEmoji = dto.folioEmoji
+            collection.folioEmoji = dto.folioEmoji
             if let filename = dto.folioHeaderImageFile,
                let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
                 collection.folioHeaderImagePath = try? MediaFileManager.save(
@@ -173,11 +173,11 @@ class DataImporter {
             // v2.0
             entry.linkedEntryIDs = dto.linkedEntryIDs ?? []
             // v2.0.1
-                        entry.isScreenshot = dto.isScreenshot ?? false
-                        // v2.8 — Attachment metadata (non-file fields)
-                        entry.attachmentType = dto.attachmentType
-                        entry.attachmentFilename = dto.attachmentFilename
-                        entry.attachmentFileSize = dto.attachmentFileSize
+            entry.isScreenshot = dto.isScreenshot ?? false
+            // v2.8 — Attachment metadata (non-file fields)
+            entry.attachmentType = dto.attachmentType
+            entry.attachmentFilename = dto.attachmentFilename
+            entry.attachmentFileSize = dto.attachmentFileSize
             
             // Media files
             if let filename = dto.imageFile,
@@ -222,18 +222,26 @@ class DataImporter {
                 )
             }
             if let filename = dto.mediaCoverFile,
-                           let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
-                            entry.mediaCoverPath = try? MediaFileManager.save(data, type: .image, id: "\(entry.id.uuidString)_cover")
-                        }
-                        if let filename = dto.attachmentFile,
-                           let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
-                            let ext = (filename as NSString).pathExtension
-                            entry.attachmentPath = try? MediaFileManager.save(
-                                data,
-                                type: .attachment(extension: ext),
-                                id: entry.id.uuidString
-                            )
-                        }
+               let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
+                entry.mediaCoverPath = try? MediaFileManager.save(data, type: .image, id: "\(entry.id.uuidString)_cover")
+            }
+            if let filename = dto.attachmentFile,
+               let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
+                let ext = (filename as NSString).pathExtension
+                entry.attachmentPath = try? MediaFileManager.save(
+                    data,
+                    type: .attachment(extension: ext),
+                    id: entry.id.uuidString
+                )
+            }
+            if let filename = dto.attachmentThumbnailFile,
+               let data = try? Data(contentsOf: mediaDir.appendingPathComponent(filename)) {
+                entry.attachmentThumbnailPath = try? MediaFileManager.save(
+                    data,
+                    type: .thumbnail,
+                    id: "\(entry.id.uuidString)_attachment_thumb"
+                )
+            }
             
             modelContext.insert(entry)
             entriesImported += 1

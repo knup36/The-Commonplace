@@ -33,8 +33,9 @@ struct SearchView: View {
     var style: any AppThemeStyle { themeManager.style }
     
     @State private var query = ""
-    @State private var recentSearches: [String] = []
-    @State private var searchTask: Task<Void, Never>? = nil
+        @State private var recentSearches: [String] = []
+        @State private var searchTask: Task<Void, Never>? = nil
+        @State private var searchFieldIsFocused = false
     
     // Result sets
     @State private var matchingEntries: [Entry] = []
@@ -82,7 +83,7 @@ struct SearchView: View {
                 }
             }
             .scrollDismissesKeyboard(.interactively)
-            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search entries, people, tags...")
+            .searchable(text: $query, isPresented: $searchFieldIsFocused, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search entries, people, tags...")
             .onChange(of: query) { _, newValue in
                 scheduleSearch(newValue)
             }
@@ -94,8 +95,11 @@ struct SearchView: View {
             .animation(.easeOut(duration: 0.15), value: matchingEntries.count)
         }
         .onAppear {
-            loadRecentSearches()
-        }
+                    loadRecentSearches()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        searchFieldIsFocused = true
+                    }
+                }
     }
     
     

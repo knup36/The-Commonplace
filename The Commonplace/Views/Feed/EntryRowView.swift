@@ -305,31 +305,42 @@ struct EntryRowView: View {
                 Spacer()
             }
         case .sticky:
-                    StickyEntryView(entry: entry, isPreview: true)
-                case .attachment:
+            StickyEntryView(entry: entry, isPreview: true)
+        case .attachment:
                     HStack(spacing: 10) {
-                        Image(systemName: entry.attachmentType == "pdf" ? "doc.fill" : "video.fill")
-                            .font(.system(size: 24))
-                            .foregroundStyle(labelColor)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(entry.attachmentFilename ?? "Attachment")
-                                .font(style.typeTitle3)
-                                .fontWeight(.medium)
-                                .foregroundStyle(style.cardPrimaryText)
-                                .lineLimit(2)
-                            if let size = entry.attachmentFileSize {
-                                Text(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
-                                    .font(style.typeCaption)
-                                    .foregroundStyle(style.cardMetadataText)
-                            }
+                        if entry.attachmentType == "video",
+                           let thumbPath = entry.attachmentThumbnailPath,
+                           let data = MediaFileManager.load(path: thumbPath),
+                           let uiImage = UIImage(data: data) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 50, height: 50)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                        } else {
+                            Image(systemName: entry.attachmentType == "pdf" ? "doc.fill" : "video.fill")
+                                .font(.system(size: 24))
+                                .foregroundStyle(labelColor)
                         }
-                        Spacer()
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(entry.attachmentFilename ?? "Attachment")
+                        .font(style.typeTitle3)
+                        .fontWeight(.medium)
+                        .foregroundStyle(style.cardPrimaryText)
+                        .lineLimit(2)
+                    if let size = entry.attachmentFileSize {
+                        Text(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.cardMetadataText)
                     }
-                    .padding(.vertical, 4)
                 }
+                Spacer()
             }
-
-            // MARK: - Note Text
+            .padding(.vertical, 4)
+        }
+    }
+    
+    // MARK: - Note Text
     
     func noteText(italic: Bool) -> some View {
         Text(entry.text)
@@ -391,7 +402,7 @@ struct EntryRowView: View {
                         HStack(spacing: 4) {
                             ForEach(visibleTags.prefix(3), id: \.self) { tag in
                                 let folioCollection = allCollections.first { $0.isFolio && $0.filterTags.contains(tag) && $0.filterTags.count == 1 }
-                                                            if let folio = folioCollection {
+                                if let folio = folioCollection {
                                     // New Collection-based Folio
                                     HStack(spacing: 3) {
                                         if let emoji = folio.folioEmoji {

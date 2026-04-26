@@ -39,7 +39,7 @@ class SearchIndex {
     }
     
     // Bump this any time columns are added or removed from entry_search
-    private let schemaVersion = 8
+    private let schemaVersion = 9
     
     private func setup() {
         do {
@@ -87,6 +87,8 @@ class SearchIndex {
                     t.column("media_genre")
                     t.column("media_overview")
                     t.column("media_log")
+                    // Attachment
+                    t.column("attachment_filename")
                 }
             }
             UserDefaults.standard.set(schemaVersion, forKey: "searchIndexSchemaVersion")
@@ -99,28 +101,28 @@ class SearchIndex {
     
     func index(entry: Entry) {
         guard let db else { return }
-
+        
         // Parse sticky items — strip the "id::" prefix so item text is searchable
-                let parsedStickyItems = entry.stickyItems
-                    .compactMap { item -> String? in
-                        let parts = item.components(separatedBy: "::")
-                        return parts.count == 2 ? parts[1] : item
-                    }
-                    .joined(separator: " ")
-
-                // Parse media log — strip the "ISO8601date::" prefix so note text is searchable
-                let parsedMediaLog = entry.mediaLog
-                    .compactMap { item -> String? in
-                        let parts = item.components(separatedBy: "::")
-                        return parts.count == 2 ? parts[1] : item
-                    }
-                    .joined(separator: " ")
-
+        let parsedStickyItems = entry.stickyItems
+            .compactMap { item -> String? in
+                let parts = item.components(separatedBy: "::")
+                return parts.count == 2 ? parts[1] : item
+            }
+            .joined(separator: " ")
+        
+        // Parse media log — strip the "ISO8601date::" prefix so note text is searchable
+        let parsedMediaLog = entry.mediaLog
+            .compactMap { item -> String? in
+                let parts = item.components(separatedBy: "::")
+                return parts.count == 2 ? parts[1] : item
+            }
+            .joined(separator: " ")
+        
         // Journal emojis — combine weather, mood, vibe into one searchable field
         let journalEmojis = [entry.weatherEmoji, entry.moodEmoji, entry.vibeEmoji]
             .filter { !$0.isEmpty }
             .joined(separator: " ")
-
+        
         do {
             try db.write { db in
                 try db.execute(
@@ -129,17 +131,18 @@ class SearchIndex {
                 )
                 try db.execute(
                     sql: """
-                        INSERT INTO entry_search
-                        (entry_id, text, tags, capture_location_name,
-                         extracted_text, transcript,
-                         link_title, markdown_content, url,
-                         habit_snapshots, journal_emojis,
-                         location_name, location_address,
-                         sticky_title, sticky_items,
-                         music_artist, music_album,
-                         media_title, media_genre, media_overview, media_log)
-                                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """,
+                                            INSERT INTO entry_search
+                                            (entry_id, text, tags, capture_location_name,
+                                             extracted_text, transcript,
+                                             link_title, markdown_content, url,
+                                             habit_snapshots, journal_emojis,
+                                             location_name, location_address,
+                                             sticky_title, sticky_items,
+                                             music_artist, music_album,
+                                             media_title, media_genre, media_overview, media_log,
+                                             attachment_filename)
+                                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                            """,
                     arguments: [
                         entry.id.uuidString,
                         // Universal
@@ -170,7 +173,9 @@ class SearchIndex {
                         entry.mediaTitle ?? "",
                         entry.mediaGenre ?? "",
                         entry.mediaOverview ?? "",
-                        parsedMediaLog
+                        parsedMediaLog,
+                        // Attachment
+                        entry.attachmentFilename ?? ""
                     ]
                 )
             }
@@ -219,21 +224,21 @@ class SearchIndex {
     
     // MARK: - Backfill
     func debugEntry(id: UUID) {
-            guard let db else { return }
-            do {
-                let rows = try db.read { db in
-                    try Row.fetchAll(db,
-                        sql: "SELECT tags FROM entry_search WHERE entry_id = ?",
-                        arguments: [id.uuidString]
-                    )
-                }
-                for row in rows {
-                    print("DEBUG tags field: \(row["tags"] as? String ?? "nil")")
-                }
-            } catch {
-                print("Debug failed: \(error)")
+        guard let db else { return }
+        do {
+            let rows = try db.read { db in
+                try Row.fetchAll(db,
+                                 sql: "SELECT tags FROM entry_search WHERE entry_id = ?",
+                                 arguments: [id.uuidString]
+                )
             }
+            for row in rows {
+                print("DEBUG tags field: \(row["tags"] as? String ?? "nil")")
+            }
+        } catch {
+            print("Debug failed: \(error)")
         }
+    }
     
     func backfillIfNeeded(entries: [Entry]) {
         guard let db else { return }
@@ -260,7 +265,7 @@ class SearchIndex {
                 print("SearchIndex: re-indexing \(recent.count) recent entries to catch async metadata")
                 for entry in recent { index(entry: entry) }
             }
-
+            
             let total = Set(missing + recent).count
             if total == 0 {
                 print("SearchIndex: all \(entries.count) entries already indexed and up to date")
