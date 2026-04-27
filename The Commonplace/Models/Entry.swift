@@ -5,8 +5,8 @@
 // All entry types share this one model, differentiated by the `type` field.
 //
 // ============================================================
-// SCHEMA VERSION: 11
-// Last updated: v2.8
+// SCHEMA VERSION: 12
+// Last updated: v2.9
 //
 // Schema change policy:
 //   - Adding optional fields: safe, no migration needed
@@ -50,6 +50,7 @@
 //   v2.0.1  — isScreenshot
 //   v2.3    — mediaPlatform
 //   v2.8    — attachmentPath, attachmentType, attachmentFilename, attachmentFileSize, attachmentThumbnailPath
+//   v2.9    — imagePaths (photo/shot — multi-image support, up to 4)
 //
 // Deprecated fields (do not remove yet):
 //   journalImageData — deprecated v1.9.1, replaced by journalImagePath
@@ -95,7 +96,10 @@ class Entry {
     var isPinned: Bool = false
     
     // Photo / Shot (v1.12 — extended to support video clips)
+    // imagePath — DEPRECATED v2.9 for multi-image shots. Retained as hero/first image
+    //             for backwards compatibility. All new code should use allImagePaths.
     var imagePath: String? = nil
+    var imagePaths: [String] = []  // v2.9 — additional images 2-4 for multi-image shots
     var extractedText: String? = nil
     var visionTags: [String] = []
     var videoPath: String? = nil
@@ -230,6 +234,13 @@ class Entry {
         self.tagNames = tags
         self.isFavorited = false
         self.visionTags = []
+    }
+    
+    /// All image paths for this Shot entry in display order.
+    /// Combines imagePath (hero/first) with imagePaths (additional 2-4).
+    /// Use this in all new multi-image code instead of reading imagePath directly.
+    var allImagePaths: [String] {
+        ([imagePath] + imagePaths).compactMap { $0 }
     }
     
     /// Call whenever meaningful content on the entry changes.

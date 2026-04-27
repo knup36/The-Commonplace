@@ -90,9 +90,9 @@ struct EntryDetailView: View {
                 EntryMetadataFooter(entry: entry, style: style, accentColor: entryAccent)
             }
             .padding()
-                        .frame(maxWidth: .infinity)
-                    }
-                    .environmentObject(editMode)
+            .frame(maxWidth: .infinity)
+        }
+        .environmentObject(editMode)
         .background(entry.type.cardColor(for: themeManager.current).ignoresSafeArea())
         .scrollDismissesKeyboard(.interactively)
         .keyboardAvoiding()
@@ -145,6 +145,9 @@ struct EntryDetailView: View {
             }
         }
         .onAppear {
+            print("DEBUG imagePath: \(entry.imagePath ?? "nil")")
+            print("DEBUG imagePaths: \(entry.imagePaths)")
+            print("DEBUG allImagePaths count: \(entry.allImagePaths.count)")
             let isNewEntry = Date().timeIntervalSince(entry.createdAt) < 10
             if entry.type == .audio {
                 loadAudioParts()
@@ -291,10 +294,10 @@ struct EntryDetailView: View {
                         }
                     }
                     Text(displayText)
-                                            .font(style.typeBody)
-                                            .foregroundStyle(style.cardPrimaryText)
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                            .lineLimit(nil)
+                        .font(style.typeBody)
+                        .foregroundStyle(style.cardPrimaryText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .lineLimit(nil)
                 }
             }
         }

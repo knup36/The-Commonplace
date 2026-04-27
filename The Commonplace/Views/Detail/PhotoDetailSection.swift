@@ -25,11 +25,12 @@ struct PhotoDetailSection: View {
     
     @EnvironmentObject var editMode: EditModeManager
     
-    @State private var selectedPhotoItem: PhotosPickerItem? = nil
+    @State private var selectedPhotoItems: [PhotosPickerItem] = []
     @State private var isAnalyzing = false
     @State private var isProcessingVideo = false
     @State private var showingExtractedText = false
     @State private var showingFullScreenImage = false
+    @State private var fullScreenImageIndex = 0
     @State private var player: AVPlayer? = nil
     @State private var videoTempURL: URL? = nil
     @State private var videoSize: CGSize = CGSize(width: 9, height: 16)
@@ -99,6 +100,9 @@ struct PhotoDetailSection: View {
             }
             .onAppear {
                 setupVideoPlayer()
+                print("DEBUG imagePath: \(entry.imagePath ?? "nil")")
+                print("DEBUG imagePaths: \(entry.imagePaths)")
+                print("DEBUG allImagePaths count: \(entry.allImagePaths.count)")
             }
             .onChange(of: entry.videoPath) { _, _ in
                 player = nil
@@ -114,32 +118,19 @@ struct PhotoDetailSection: View {
     
     var photoSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let path = entry.imagePath,
-               let imageData = MediaFileManager.load(path: path) {
-                AnimatedImageView(
-                    data: imageData,
-                    isAnimated: AnimatedImageView.isGIF(data: imageData),
-                    crop: false
+            if !entry.allImagePaths.isEmpty {
+                PhotoStripView(
+                    paths: entry.allImagePaths,
+                    onTap: { index in
+                        fullScreenImageIndex = index
+                        showingFullScreenImage = true
+                    }
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .onTapGesture { showingFullScreenImage = true }
                 .fullScreenCover(isPresented: $showingFullScreenImage) {
-                    if let path = entry.imagePath,
-                       let imageData = MediaFileManager.load(path: path) {
+                    if let imageData = MediaFileManager.load(path: entry.allImagePaths[fullScreenImageIndex]) {
                         FullScreenImageView(data: imageData)
                     }
                 }
-            }
-            if editMode.isEditing {
-                mediaPicker(label: "Change Shot", icon: "photo")
-                // Photo / Screenshot manual override
-                // Allows correcting auto-detection and handling edge cases
-                Picker("", selection: $entry.isScreenshot) {
-                    Text("Photo").tag(false)
-                    Text("Screenshot").tag(true)
-                }
-                .pickerStyle(.segmented)
-                .padding(.top, 4)
             }
         }
     }
@@ -205,22 +196,24 @@ struct PhotoDetailSection: View {
         if editMode.isEditing {
             VStack(spacing: 12) {
                 PhotosPicker(
-                    selection: $selectedPhotoItem,
+                    selection: $selectedPhotoItems,
+                    maxSelectionCount: 4,
                     matching: .images
                 ) {
-                    Label("Choose Photo", systemImage: "photo")
+                    Label("Select Photos (up to 4)", systemImage: "photo.on.rectangle.angled")
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(style.cardDivider)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .foregroundStyle(style.cardPrimaryText)
                 }
-                .onChange(of: selectedPhotoItem) { _, newItem in
-                    Task { await savePhoto(from: newItem) }
+                .onChange(of: selectedPhotoItems) { _, newItems in
+                    Task { await savePhotos(from: newItems) }
                 }
                 
                 PhotosPicker(
-                    selection: $selectedPhotoItem,
+                    selection: $selectedPhotoItems,
+                    maxSelectionCount: 1,
                     matching: .videos
                 ) {
                     Label("Choose Video", systemImage: "video")
@@ -230,8 +223,8 @@ struct PhotoDetailSection: View {
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .foregroundStyle(style.cardPrimaryText)
                 }
-                .onChange(of: selectedPhotoItem) { _, newItem in
-                    Task { await saveVideo(from: newItem) }
+                .onChange(of: selectedPhotoItems) { _, newItems in
+                    Task { await saveVideo(from: newItems.first) }
                 }
             }
         }
@@ -241,51 +234,62 @@ struct PhotoDetailSection: View {
     
     func mediaPicker(label: String, icon: String) -> some View {
         PhotosPicker(
-            selection: $selectedPhotoItem,
-            matching: icon == "video" ? .videos : .images
+            selection: $selectedPhotoItems,
+            maxSelectionCount: 1,
+            matching: .videos
         ) {
             Label(label, systemImage: icon)
                 .font(style.typeCaption)
                 .foregroundStyle(style.cardSecondaryText)
         }
-        .onChange(of: selectedPhotoItem) { _, newItem in
-            Task {
-                if icon == "video" {
-                    await saveVideo(from: newItem)
-                } else {
-                    await savePhoto(from: newItem)
-                }
-            }
+        .onChange(of: selectedPhotoItems) { _, newItems in
+            Task { await saveVideo(from: newItems.first) }
         }
     }
     
     // MARK: - Save Photo
     
-    private func savePhoto(from item: PhotosPickerItem?) async {
-        guard let item,
-              let rawData = try? await item.loadTransferable(type: Data.self),
-              let uiImage = UIImage(data: rawData),
-              let processedData = ImageProcessor.resizeAndCompress(image: uiImage)
-        else { return }
+    private func savePhotos(from items: [PhotosPickerItem]) async {
+        guard !items.isEmpty else { return }
         
-        // Clear video fields if switching from video to photo
+        // Clear video fields if switching from video to photos
         entry.videoPath = nil
         entry.videoDuration = nil
         entry.videoThumbnailPath = nil
         
-        entry.imagePath = try? MediaFileManager.save(
-            processedData,
-            type: .image,
-            id: entry.id.uuidString
-        )
-        
-        // Screenshot detection — use original imageData before compression for accurate EXIF reading
-        entry.isScreenshot = ImageProcessor.isScreenshot(data: rawData)
+        // Clear existing images
+        entry.imagePath = nil
+        entry.imagePaths = []
         
         isAnalyzing = true
-        let result = await VisionService.analyze(imageData: processedData)
-        entry.extractedText = result.extractedText.isEmpty ? nil : result.extractedText
-        entry.visionTags = result.tags
+        
+        for (index, item) in items.enumerated() {
+            guard let rawData = try? await item.loadTransferable(type: Data.self),
+                  let uiImage = UIImage(data: rawData),
+                  let processedData = ImageProcessor.resizeAndCompress(image: uiImage)
+            else { continue }
+            
+            let imageID = "\(entry.id.uuidString)_\(index)"
+            guard let savedPath = try? MediaFileManager.save(
+                processedData,
+                type: .image,
+                id: imageID
+            ) else { continue }
+            
+            if index == 0 {
+                // First image is the hero
+                entry.imagePath = savedPath
+                // Screenshot detection on hero image only
+                entry.isScreenshot = ImageProcessor.isScreenshot(data: rawData)
+                // Run OCR on hero image only
+                let result = await VisionService.analyze(imageData: processedData)
+                entry.extractedText = result.extractedText.isEmpty ? nil : result.extractedText
+                entry.visionTags = result.tags
+            } else {
+                entry.imagePaths.append(savedPath)
+            }
+        }
+        
         isAnalyzing = false
         entry.touch()
     }
@@ -420,5 +424,73 @@ struct PhotoDetailSection: View {
         let mins = Int(duration) / 60
         let secs = Int(duration) % 60
         return String(format: "%d:%02d", mins, secs)
+    }
+    // MARK: - Photo Strip
+    
+    struct PhotoStripView: View {
+        let paths: [String]
+        let onTap: (Int) -> Void
+        
+        @State private var loadedImages: [(id: Int, image: UIImage)] = []
+        
+        var body: some View {
+            GeometryReader { geo in
+                let spacing: CGFloat = 6
+                let totalSpacing = spacing * CGFloat(max(loadedImages.count - 1, 0))
+                let totalAspect = loadedImages.reduce(0.0) { $0 + ($1.image.size.width / $1.image.size.height) }
+                let rowHeight = totalAspect > 0 ? (geo.size.width - totalSpacing) / totalAspect : 200
+                
+                HStack(spacing: spacing) {
+                    ForEach(loadedImages, id: \.id) { item in
+                        Image(uiImage: item.image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: rowHeight * (item.image.size.width / item.image.size.height), height: rowHeight)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .contentShape(Rectangle())
+                            .onTapGesture { onTap(item.id) }
+                    }
+                }
+            }
+            .frame(height: calculateHeight())
+            .animation(nil, value: loadedImages.count)
+            .onAppear {
+                loadImagesAsync()
+            }
+            .onChange(of: paths) { _, _ in
+                loadImagesAsync()
+            }
+            
+        }
+        
+        func loadImagesAsync() {
+            Task.detached(priority: .userInitiated) {
+                var result: [(id: Int, image: UIImage)] = []
+                for (index, path) in paths.enumerated() {
+                    guard let data = MediaFileManager.load(path: path),
+                          let uiImage = UIImage(data: data) else { continue }
+                    // Downsample to display size — no need for full res in the strip
+                    let targetSize = paths.count == 1
+                    ? CGSize(width: 1200, height: 1200)
+                    : CGSize(width: 600, height: 600)
+                    let thumbnail = await uiImage.byPreparingThumbnail(ofSize: targetSize) ?? uiImage
+                    result.append((id: index, image: thumbnail))
+                }
+                await MainActor.run {
+                    loadedImages = result
+                }
+            }
+        }
+        
+        func calculateHeight() -> CGFloat {
+            let availableWidth = UIScreen.main.bounds.width - 32
+            guard !loadedImages.isEmpty else {
+                return paths.count == 1 ? availableWidth : availableWidth * 0.75
+            }
+            let spacing: CGFloat = 6
+            let totalSpacing = spacing * CGFloat(loadedImages.count - 1)
+            let totalAspect = loadedImages.reduce(0.0) { $0 + ($1.image.size.width / $1.image.size.height) }
+            return totalAspect > 0 ? (availableWidth - totalSpacing) / totalAspect : 200
+        }
     }
 }

@@ -53,6 +53,7 @@ struct CompactEntryCard: View {
             }
         }
         .frame(width: cardWidth, height: cardHeight)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
         .contentShape(RoundedRectangle(cornerRadius: 14))
         
     }
@@ -77,11 +78,11 @@ struct CompactEntryCard: View {
         case .music:
             musicCard
         case .media:
-                    mediaCard
-                case .attachment:
-                    attachmentCard
-                }
-            }
+            mediaCard
+        case .attachment:
+            attachmentCard
+        }
+    }
     
     // MARK: - Text Card
     
@@ -98,32 +99,46 @@ struct CompactEntryCard: View {
     // MARK: - Photo Card
     
     var photoCard: some View {
-        Group {
-            if let path = entry.imagePath,
-               let data = MediaFileManager.load(path: path),
-               let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 160, height: 80)
-                    .clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                    .contentShape(RoundedRectangle(cornerRadius: 14))
-            } else {
-                VStack(spacing: 6) {
-                    Image(systemName: "photo.fill")
-                        .font(.system(size: 24))
-                        .foregroundStyle(entryAccent)
-                    if !entry.text.isEmpty {
-                        Text(entry.text)
-                            .font(style.typeCaption)
-                            .foregroundStyle(style.cardSecondaryText)
-                            .lineLimit(2)
+            let paths = entry.allImagePaths
+            let _ = print("DEBUG photoCard paths: \(paths.count) imagePath: \(entry.imagePath ?? "nil") imagePaths: \(entry.imagePaths)")
+            return Group {
+                if !paths.isEmpty {
+                    compactPhotoGrid
+                } else {
+                    VStack(spacing: 6) {
+                        Image(systemName: "photo.fill")
+                            .font(.system(size: 24))
+                            .foregroundStyle(entryAccent)
+                        if !entry.text.isEmpty {
+                            Text(entry.text)
+                                .font(style.typeCaption)
+                                .foregroundStyle(style.cardSecondaryText)
+                                .lineLimit(2)
+                        }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+    
+    var compactPhotoGrid: some View {
+        let paths = entry.allImagePaths
+        let count = min(paths.count, 4)
+        print("DEBUG compactPhotoGrid paths: \(paths.count) count: \(count)")
+        return HStack(spacing: 1) {
+            ForEach(0..<count, id: \.self) { index in
+                if let data = MediaFileManager.load(path: paths[index]),
+                   let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 160 / CGFloat(count), height: 80)
+                        .clipped()
+                }
+            }
+        }
+        .frame(width: 160, height: 80)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
     
     // MARK: - Audio Card
@@ -308,43 +323,43 @@ struct CompactEntryCard: View {
         }
     }
     // MARK: - Attachment Card
-
+    
     var attachmentCard: some View {
-            Group {
-                if entry.attachmentType == "video",
-                   let thumbPath = entry.attachmentThumbnailPath,
-                   let data = MediaFileManager.load(path: thumbPath),
-                   let uiImage = UIImage(data: data) {
-                    ZStack(alignment: .bottomLeading) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 160, height: 80)
-                            .clipped()
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                        Image(systemName: "play.circle.fill")
-                            .font(.system(size: 20))
-                            .foregroundStyle(.white.opacity(0.9))
-                            .padding(8)
-                    }
-                } else {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Image(systemName: entry.attachmentType == "pdf" ? "doc.fill" : "video.fill")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(entryAccent)
-                        Spacer()
-                        Text(entry.attachmentFilename ?? "Attachment")
-                            .font(style.typeCaption)
-                            .fontWeight(.medium)
-                            .foregroundStyle(style.cardPrimaryText)
-                            .lineLimit(2)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
+        Group {
+            if entry.attachmentType == "video",
+               let thumbPath = entry.attachmentThumbnailPath,
+               let data = MediaFileManager.load(path: thumbPath),
+               let uiImage = UIImage(data: data) {
+                ZStack(alignment: .bottomLeading) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 160, height: 80)
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .padding(8)
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    Image(systemName: entry.attachmentType == "pdf" ? "doc.fill" : "video.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(entryAccent)
+                    Spacer()
+                    Text(entry.attachmentFilename ?? "Attachment")
+                        .font(style.typeCaption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(style.cardPrimaryText)
+                        .lineLimit(2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
-
-        // MARK: - Media Card
+    }
+    
+    // MARK: - Media Card
     
     var mediaCard: some View {
         ZStack(alignment: .bottomLeading) {

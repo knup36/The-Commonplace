@@ -21,6 +21,20 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.8",
+            title: "The Rockford Files",
+            notes: [
+                "New entry type: Attachment — archive PDFs and videos directly in Commonplace",
+                "PDFs open in a full-screen reader with pinch-to-zoom and scroll",
+                "Videos play with native controls — scrub, go full screen, rotate",
+                "Video attachments generate a thumbnail at import for the feed and cards",
+                "Attachments are copied in to your iCloud archive — no broken references if the original moves",
+                "Attachments are included in both the JSON and Markdown weekly exports",
+                "Attachment filenames are fully searchable",
+                "Search field now auto-focuses when opened — keyboard appears immediately"
+            ]
+        ),
+        Release(
             version: "2.7",
             title: "Watch This",
             notes: [

@@ -195,17 +195,13 @@ struct SlimEntryFeed: View {
                 slimIconThumb(icon: entry.type.icon, accent: accent, size: size)
             }
         case .photo:
-            if let path = entry.imagePath,
-               let data = MediaFileManager.load(path: path),
-               let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: size, height: size)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-            } else {
-                slimIconThumb(icon: entry.type.icon, accent: accent, size: size)
-            }
+                    if !entry.allImagePaths.isEmpty {
+                        PhotoCollageView(paths: entry.allImagePaths, cornerRadius: 8)
+                            .frame(width: size, height: size)
+                            .clipped()
+                    } else {
+                        slimIconThumb(icon: entry.type.icon, accent: accent, size: size)
+                    }
         case .audio:
             SlimWaveformThumbnail(entry: entry, accent: accent, size: size)
         default:

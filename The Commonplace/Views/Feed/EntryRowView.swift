@@ -177,15 +177,14 @@ struct EntryRowView: View {
     var cardContent: some View {
         switch entry.type {
         case .photo:
-            VStack(alignment: .leading, spacing: 8) {
-                if let path = entry.imagePath {
-                    AsyncMediaImage(path: path)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-                if !entry.text.isEmpty {
-                    noteText(italic: false)
-                }
-            }
+                    VStack(alignment: .leading, spacing: 8) {
+                        if !entry.allImagePaths.isEmpty {
+                            PhotoCollageView(paths: entry.allImagePaths, cornerRadius: 8)
+                        }
+                        if !entry.text.isEmpty {
+                            noteText(italic: false)
+                        }
+                    }
         case .link:
             VStack(alignment: .leading, spacing: 6) {
                 LinkPreviewView(entry: entry)
