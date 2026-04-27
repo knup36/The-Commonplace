@@ -21,6 +21,18 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.9",
+            title: "The Big Picture",
+            notes: [
+                "Shot entries now support up to 4 photos — capture a moment, not just a frame",
+                "Photos display as a smart collage in the feed — layout adapts based on portrait or landscape orientation",
+                "In the detail view, all photos appear side by side in a horizontal strip — tap any one to view full screen",
+                "Scrapbook view shows multi-image shots as a stack of individual Polaroids",
+                "Compact cards show a mini photo grid for multi-image shots",
+                "Videos remain single-image only — clean and intentional"
+            ]
+        ),
+        Release(
             version: "2.8",
             title: "The Rockford Files",
             notes: [
