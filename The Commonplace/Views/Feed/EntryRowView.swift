@@ -144,6 +144,7 @@ struct EntryRowView: View {
             case "tv":      return "TV Show"
             case "podcast": return "Podcast"
             case "game":    return "Game"
+            case "book":    return "Book"
             default:        return "Media"
             }
         }
@@ -177,14 +178,14 @@ struct EntryRowView: View {
     var cardContent: some View {
         switch entry.type {
         case .photo:
-                    VStack(alignment: .leading, spacing: 8) {
-                        if !entry.allImagePaths.isEmpty {
-                            PhotoCollageView(paths: entry.allImagePaths, cornerRadius: 8)
-                        }
-                        if !entry.text.isEmpty {
-                            noteText(italic: false)
-                        }
-                    }
+            VStack(alignment: .leading, spacing: 8) {
+                if !entry.allImagePaths.isEmpty {
+                    PhotoCollageView(paths: entry.allImagePaths, cornerRadius: 8)
+                }
+                if !entry.text.isEmpty {
+                    noteText(italic: false)
+                }
+            }
         case .link:
             VStack(alignment: .leading, spacing: 6) {
                 LinkPreviewView(entry: entry)
@@ -306,21 +307,21 @@ struct EntryRowView: View {
         case .sticky:
             StickyEntryView(entry: entry, isPreview: true)
         case .attachment:
-                    HStack(spacing: 10) {
-                        if entry.attachmentType == "video",
-                           let thumbPath = entry.attachmentThumbnailPath,
-                           let data = MediaFileManager.load(path: thumbPath),
-                           let uiImage = UIImage(data: data) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 50, height: 50)
-                                .clipShape(RoundedRectangle(cornerRadius: 6))
-                        } else {
-                            Image(systemName: entry.attachmentType == "pdf" ? "doc.fill" : "video.fill")
-                                .font(.system(size: 24))
-                                .foregroundStyle(labelColor)
-                        }
+            HStack(spacing: 10) {
+                if entry.attachmentType == "video",
+                   let thumbPath = entry.attachmentThumbnailPath,
+                   let data = MediaFileManager.load(path: thumbPath),
+                   let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 50, height: 50)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                } else {
+                    Image(systemName: entry.attachmentType == "pdf" ? "doc.fill" : "video.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(labelColor)
+                }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(entry.attachmentFilename ?? "Attachment")
                         .font(style.typeTitle3)
@@ -527,8 +528,10 @@ func mediaStatusColor(for status: String, theme: AppTheme) -> Color {
         case "inProgress": return Color(hex: "#877662")
         case "finished":   return Color(hex: "#526349")
         case "rewatch":    return Color(hex: "#4A6070")
-        case "replay":     return Color(hex: "#4A6070")
-        default:           return Color.white.opacity(0.5)
+                case "replay":     return Color(hex: "#4A6070")
+                case "readingList": return Color(hex: "#7A5855")
+                case "reading":     return Color(hex: "#877662")
+                default:           return Color.white.opacity(0.5)
         }
     default:
         switch status {
@@ -536,8 +539,10 @@ func mediaStatusColor(for status: String, theme: AppTheme) -> Color {
         case "inProgress": return InkwellTheme.stickyAccent
         case "finished":   return InkwellTheme.locationAccent
         case "rewatch":    return InkwellTheme.audioAccent
-        case "replay":     return InkwellTheme.audioAccent
-        default:           return InkwellTheme.inkSecondary
+                case "replay":     return InkwellTheme.audioAccent
+                case "readingList": return InkwellTheme.mediaAccent
+                case "reading":     return InkwellTheme.stickyAccent
+                default:           return InkwellTheme.inkSecondary
         }
     }
 }

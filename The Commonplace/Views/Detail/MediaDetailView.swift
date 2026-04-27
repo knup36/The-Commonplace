@@ -34,6 +34,7 @@ struct MediaDetailView: View {
     @State private var tmdbResults: [TMDBSearchResult] = []
     @State private var podcastResults: [PodcastSearchResult] = []
     @State private var gameResults: [RAWGSearchResult] = []
+    @State private var bookResults: [OpenLibrarySearchResult] = []
     @State private var isSearching: Bool = false
     @State private var searchError: String? = nil
     
@@ -146,12 +147,14 @@ struct MediaDetailView: View {
                 Text("TV Show").tag(MediaSearchType.tv)
                 Text("Podcast").tag(MediaSearchType.podcast)
                 Text("Game").tag(MediaSearchType.game)
+                Text("Book").tag(MediaSearchType.book)
             }
             .pickerStyle(.segmented)
             .padding(.horizontal, 24)
             .onChange(of: selectedMediaType) { _, _ in
                 tmdbResults = []
                 podcastResults = []
+                bookResults = []
                 searchError = nil
                 if !searchQuery.isEmpty { performSearch() }
             }
@@ -170,6 +173,7 @@ struct MediaDetailView: View {
                         tmdbResults = []
                         podcastResults = []
                         gameResults = []
+                        bookResults = []
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(style.secondaryText)
@@ -185,6 +189,7 @@ struct MediaDetailView: View {
                     tmdbResults = []
                     podcastResults = []
                     gameResults = []
+                    bookResults = []
                 }
             }
             
@@ -217,7 +222,7 @@ struct MediaDetailView: View {
             }
             
             // Results
-            let hasResults = !tmdbResults.isEmpty || !podcastResults.isEmpty || !gameResults.isEmpty
+            let hasResults = !tmdbResults.isEmpty || !podcastResults.isEmpty || !gameResults.isEmpty || !bookResults.isEmpty
             if hasResults {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Results")
@@ -247,6 +252,18 @@ struct MediaDetailView: View {
                             }
                             .buttonStyle(.plain)
                             if result.id != gameResults.last?.id {
+                                Divider().padding(.leading, 24 + 56 + 12)
+                            }
+                        }
+                    } else if selectedMediaType == .book {
+                        ForEach(bookResults) { result in
+                            Button {
+                                selectBookResult(result)
+                            } label: {
+                                bookResultRow(result)
+                            }
+                            .buttonStyle(.plain)
+                            if result.id != bookResults.last?.id {
                                 Divider().padding(.leading, 24 + 56 + 12)
                             }
                         }
@@ -401,6 +418,76 @@ struct MediaDetailView: View {
         .contentShape(Rectangle())
     }
     
+    func bookResultRow(_ result: OpenLibrarySearchResult) -> some View {
+        HStack(spacing: 12) {
+            AsyncImage(url: result.thumbnailURL) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(style.surface)
+                    .overlay(Image(systemName: "books.vertical").foregroundStyle(style.secondaryText))
+            }
+            .frame(width: 44, height: 66)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(result.title)
+                    .font(style.typeTitle3)
+                    .fontWeight(.medium)
+                    .foregroundStyle(style.cardPrimaryText)
+                    .lineLimit(2)
+                HStack(spacing: 6) {
+                    if !result.author.isEmpty {
+                        Text(result.author)
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.cardSecondaryText)
+                    }
+                    if !result.year.isEmpty {
+                        Text("· \(result.year)")
+                            .font(style.typeCaption)
+                            .foregroundStyle(style.cardSecondaryText)
+                    }
+                }
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(style.tertiaryText)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
+    }
+    
+    func selectBookResult(_ result: OpenLibrarySearchResult) {
+        Task {
+            var coverData: Data? = nil
+            if let url = result.coverURL {
+                coverData = await OpenLibraryService.downloadCover(from: url)
+            }
+            
+            await MainActor.run {
+                entry.mediaTitle    = result.title
+                entry.mediaType     = "book"
+                entry.mediaOverview = result.author
+                entry.mediaYear     = result.year
+                entry.mediaGenre    = nil
+                entry.mediaRuntime  = result.pageCount
+                entry.mediaStatus   = "readingList"
+                
+                if let data = coverData {
+                    entry.mediaCoverPath = try? MediaFileManager.save(
+                        data, type: .image, id: "\(entry.id.uuidString)_cover"
+                    )
+                    coverImage = UIImage(data: data)
+                }
+                
+                SearchIndex.shared.index(entry: entry)
+                try? modelContext.save()
+            }
+        }
+    }
+    
     func selectGameResult(_ result: RAWGSearchResult) {
         Task {
             // Fetch full detail for developer/publisher
@@ -462,6 +549,14 @@ struct MediaDetailView: View {
                 )
             case "game":
                 GameDetailSection(
+                    entry: entry,
+                    coverImage: coverImage,
+                    localRating: $localRating,
+                    localStatus: $localStatus,
+                    onStatusChange: scheduleSave
+                )
+            case "book":
+                BookDetailSection(
                     entry: entry,
                     coverImage: coverImage,
                     localRating: $localRating,
@@ -536,14 +631,14 @@ struct MediaDetailView: View {
                 .padding(.horizontal, 20)
             
             if editMode.isEditing {
-                            CommonplaceTextEditor(
-                                text: Binding(
-                                    get: { entry.text },
-                                    set: { entry.text = $0 }
-                                ),
-                                placeholder: "Add notes about this title...",
-                                usesSerifFont: false
-                            )
+                CommonplaceTextEditor(
+                    text: Binding(
+                        get: { entry.text },
+                        set: { entry.text = $0 }
+                    ),
+                    placeholder: "Add notes about this title...",
+                    usesSerifFont: false
+                )
                 .padding(.horizontal, 20)
             } else if !entry.text.isEmpty {
                 Text(entry.text)
@@ -567,7 +662,7 @@ struct MediaDetailView: View {
                 if editMode.isEditing {
                     HStack(spacing: 12) {
                         Button {
-                            appendWatchedEntry()
+                            entry.mediaType == "book" ? appendReadEntry() : appendWatchedEntry()
                         } label: {
                             Image(systemName: "plus.circle")
                                 .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
@@ -676,6 +771,13 @@ struct MediaDetailView: View {
                         gameResults = results
                         isSearching = false
                         if results.isEmpty { searchError = "No games found. Try a different title." }
+                    }
+                case .book:
+                    let results = try await OpenLibraryService.search(query: searchQuery)
+                    await MainActor.run {
+                        bookResults = results
+                        isSearching = false
+                        if results.isEmpty { searchError = "No books found. Try a different title." }
                     }
                 case .movie, .tv:
                     let tmdbType: TMDBMediaType = selectedMediaType == .movie ? .movie : .tv
@@ -787,6 +889,21 @@ struct MediaDetailView: View {
         try? modelContext.save()
     }
     
+    func appendReadEntry() {
+        let today = Calendar.current.startOfDay(for: Date())
+        let alreadyLogged = entry.mediaLog.contains { log in
+            let parts = log.components(separatedBy: "::")
+            guard parts.count == 2,
+                  let date = ISO8601DateFormatter().date(from: parts[0]) else { return false }
+            return Calendar.current.startOfDay(for: date) == today && parts[1] == "Read"
+        }
+        guard !alreadyLogged else { return }
+        let dateString = ISO8601DateFormatter().string(from: Date())
+        entry.mediaLog.append("\(dateString)::Read")
+        entry.touch()
+        try? modelContext.save()
+    }
+    
     func appendWatchedEntry() {
         let today = Calendar.current.startOfDay(for: Date())
         let alreadyLogged = entry.mediaLog.contains { log in
@@ -824,6 +941,7 @@ enum MediaSearchType: String {
     case tv      = "tv"
     case podcast = "podcast"
     case game    = "game"
+    case book    = "book"
     
     var icon: String {
         switch self {
@@ -831,6 +949,7 @@ enum MediaSearchType: String {
         case .tv:      return "tv.fill"
         case .podcast: return "mic.fill"
         case .game:    return "gamecontroller.fill"
+        case .book:    return "books.vertical.fill"
         }
     }
     
@@ -840,6 +959,7 @@ enum MediaSearchType: String {
         case .tv:      return "What are you watching?"
         case .podcast: return "What are you listening to?"
         case .game:    return "What are you playing?"
+        case .book:    return "What are you reading?"
         }
     }
     
@@ -849,6 +969,7 @@ enum MediaSearchType: String {
         case .tv:      return "Search for a TV show to get started."
         case .podcast: return "Search for a podcast to get started."
         case .game:    return "Search for a game to get started."
+        case .book:    return "Search for a book to get started."
         }
     }
 }

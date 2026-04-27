@@ -1,33 +1,40 @@
-// TVDetailSection.swift
+// BookDetailSection.swift
 // Commonplace
 //
-// Detail section for .media entries with mediaType == "tv".
-// Redesigned v2.4 — centered poster hero with accent glow,
-// bold title below, metadata hierarchy, centered star rating,
-// 4-status picker (Watchlist · Watching · Done · Re-Watch).
-// Takes design cues from MusicDetailSection.
+// Detail section for .media entries with mediaType == "book".
+// Mirrors MovieDetailSection — centered cover hero with accent glow,
+// title and author below, metadata hierarchy, star rating, status picker.
+//
+// Field mapping from the shared Entry media fields:
+//   mediaTitle    → book title
+//   mediaOverview → author name
+//   mediaYear     → publish year
+//   mediaGenre    → genre
+//   mediaRuntime  → page count (repurposed)
+//
+// Status values: "readingList", "reading", "finished"
 //
 // Consumed by MediaDetailView inside populatedView.
 // Requires EditModeManager via @EnvironmentObject.
 
 import SwiftUI
 
-struct TVDetailSection: View {
+struct BookDetailSection: View {
     @Bindable var entry: Entry
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var editMode: EditModeManager
-    
+
     var coverImage: UIImage?
     @Binding var localRating: Int
     @Binding var localStatus: String
     var onStatusChange: () -> Void
-    
+
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
-    
+
     var body: some View {
         VStack(spacing: 20) {
-            posterHero
+            coverHero
             metadataBlock
             starRating
             if editMode.isEditing {
@@ -35,10 +42,10 @@ struct TVDetailSection: View {
             }
         }
     }
-    
-    // MARK: - Poster Hero
-    
-    var posterHero: some View {
+
+    // MARK: - Cover Hero
+
+    var coverHero: some View {
         ZStack {
             if coverImage != nil {
                 RoundedRectangle(cornerRadius: 12)
@@ -46,7 +53,7 @@ struct TVDetailSection: View {
                     .frame(width: 160, height: 240)
                     .blur(radius: 20)
             }
-            
+
             Group {
                 if let image = coverImage {
                     Image(uiImage: image)
@@ -60,7 +67,7 @@ struct TVDetailSection: View {
                         .fill(style.cardDivider)
                         .frame(width: 160, height: 240)
                         .overlay(
-                            Image(systemName: "tv.fill")
+                            Image(systemName: "books.vertical.fill")
                                 .font(.system(size: 48))
                                 .foregroundStyle(accentColor.opacity(0.4))
                         )
@@ -70,9 +77,9 @@ struct TVDetailSection: View {
         .frame(maxWidth: .infinity, alignment: .center)
         .padding(.top, 20)
     }
-    
+
     // MARK: - Metadata
-    
+
     var metadataBlock: some View {
         VStack(spacing: 6) {
             if let title = entry.mediaTitle {
@@ -83,50 +90,52 @@ struct TVDetailSection: View {
                     .multilineTextAlignment(.center)
                     .lineLimit(3)
             }
+
             metaLine
-                .frame(maxWidth: .infinity, alignment: .center)
-            if !editMode.isEditing {
-                statusLine
-                    .frame(maxWidth: .infinity, alignment: .center)
-            }
-            if let overview = entry.mediaOverview, !overview.isEmpty {
-                Text(overview)
-                    .font(style.typeBodySecondary)
-                    .foregroundStyle(style.cardSecondaryText)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(3)
-                    .padding(.top, 4)
-            }
+                            .frame(maxWidth: .infinity, alignment: .center)
+
+                        // Author as overview
+                        if let author = entry.mediaOverview, !author.isEmpty {
+                            Text(author)
+                                .font(style.typeBodySecondary)
+                                .foregroundStyle(style.cardSecondaryText)
+                                .multilineTextAlignment(.center)
+                                .lineLimit(2)
+                                .padding(.top, 4)
+                        }
+
+                        if !editMode.isEditing {
+                            statusLine
+                                .frame(maxWidth: .infinity, alignment: .center)
+                        }
         }
         .padding(.horizontal, 20)
         .frame(maxWidth: .infinity, alignment: .center)
     }
-    
+
     var metaLine: some View {
         let parts: [String] = [
             entry.mediaYear.flatMap { $0.isEmpty ? nil : $0 },
-            "TV Series",
+            "Book",
             entry.mediaGenre.flatMap { $0.isEmpty ? nil : $0 },
-            entry.mediaSeasons.map { "\($0) \($0 == 1 ? "Season" : "Seasons")" }
+            entry.mediaRuntime.map { "\($0) pages" }
         ].compactMap { $0 }
-        
+
         return Text(parts.joined(separator: " · "))
             .font(style.typeBodySecondary)
             .foregroundStyle(style.cardSecondaryText)
             .multilineTextAlignment(.center)
     }
-    
+
     var statusLine: some View {
         let statuses: [(label: String, value: String, icon: String)] = [
-            ("Watchlist", "wantTo",     "bookmark"),
-            ("Watching",  "inProgress", "play.circle.fill"),
-            ("Done",      "finished",   "checkmark.circle.fill"),
-            ("Re-Watch",  "rewatch",    "arrow.clockwise.circle.fill")
+            ("Reading List", "readingList", "bookmark"),
+            ("Reading",      "reading",     "book"),
+            ("Finished",     "finished",    "checkmark.circle.fill")
         ]
-        let current = statuses.first { $0.value == localStatus }
-        ?? statuses[0]
+        let current = statuses.first { $0.value == localStatus } ?? statuses[0]
         let color = mediaStatusColor(for: localStatus, theme: themeManager.current)
-        
+
         return HStack(spacing: 5) {
             Image(systemName: current.icon)
                 .font(style.typeBodySecondary)
@@ -136,8 +145,9 @@ struct TVDetailSection: View {
                 .foregroundStyle(color)
         }
     }
+
     // MARK: - Star Rating
-    
+
     var starRating: some View {
         HStack(spacing: 6) {
             ForEach(1...5, id: \.self) { star in
@@ -154,15 +164,14 @@ struct TVDetailSection: View {
         .transaction { $0.animation = nil }
         .frame(maxWidth: .infinity, alignment: .center)
     }
-    
+
     // MARK: - Status Section
-    
+
     var statusSection: some View {
         let statuses: [(label: String, value: String, icon: String)] = [
-            ("Watchlist", "wantTo",     "bookmark"),
-            ("Watching",  "inProgress", "play.circle"),
-            ("Done",      "finished",   "checkmark.circle"),
-            ("Re-Watch",  "rewatch",    "arrow.clockwise.circle")
+            ("Reading List", "readingList", "bookmark"),
+            ("Reading",      "reading",     "book"),
+            ("Finished",     "finished",    "checkmark.circle")
         ]
         return HStack(spacing: 0) {
             ForEach(statuses, id: \.value) { item in
@@ -185,7 +194,7 @@ struct TVDetailSection: View {
                     .background(isSelected ? color.opacity(0.15) : Color.clear)
                 }
                 .buttonStyle(.plain)
-                if item.value != "rewatch" {
+                if item.value != "finished" {
                     Divider()
                         .frame(height: 16)
                         .overlay(style.tertiaryText.opacity(0.3))
