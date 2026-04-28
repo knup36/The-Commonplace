@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import LinkPresentation
+import TipKit
 
 @main
 struct CommonplaceApp: App {
@@ -49,7 +50,11 @@ struct CommonplaceApp: App {
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
-        MediaFileManager.initializeiCloudContainer()
+        try? Tips.configure([
+                    .displayFrequency(.immediate),
+                    .datastoreLocation(.applicationDefault)
+                ])
+                MediaFileManager.initializeiCloudContainer()
         Task.detached {
             _ = FileManager.default.url(
                 forUbiquityContainerIdentifier: "iCloud.com.johncaldwell.commonplace"
@@ -122,6 +127,6 @@ extension UIWindow {
 extension Notification.Name {
     static let deviceDidShake = Notification.Name("deviceDidShake")
     static let musicPlaybackStarted = Notification.Name("musicPlaybackStarted")
-    
-}
+        static let openNewEntrySheet = Notification.Name("openNewEntrySheet")
+    }
 

@@ -14,18 +14,26 @@
 				<string>commonplace</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.johncaldwell.commonplace</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>commonplace</string>
+			</array>
+		</dict>
 	</array>
+	<key>NSMicrophoneInjectionUsageDescription</key>
+	<string>Commonplace uses your microphone to import Shazam Music</string>
+	<key>NSShazamLibraryAddUsageDescription</key>
+	<string>Commonplace imports your Shazam recognitions as music entries</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
 	</array>
 	<key>UIFileSharingEnabled</key>
 	<true/>
-	<key>NSAppleMusicUsageDescription</key>
-	<string>Commonplace uses Apple Music to play your saved tracks.</string>
-	<key>NSShazamLibraryAddUsageDescription</key>
-	<string>Commonplace imports your Shazam recognitions as music entries</string>
-	<key>NSMicrophoneInjectionUsageDescription</key>
-	<string>Commonplace uses your microphone to import Shazam Music</string>
 </dict>
 </plist>

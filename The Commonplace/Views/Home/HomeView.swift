@@ -6,6 +6,7 @@
 // Screen: Home tab (leftmost tab)
 
 import SwiftUI
+import TipKit
 import SwiftData
 
 struct HomeView: View {
@@ -117,25 +118,29 @@ struct HomeView: View {
                 .listRowSeparator(.hidden)
             }
         } header: {
-            NavigationLink(destination: PinnedPagesListView()) {
-                HStack(spacing: 6) {
-                    Image(systemName: "bookmark.fill")
-                        .font(.caption)
-                        .foregroundStyle(style.accent)
-                    Text("Bookmarks")
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(style.primaryText)
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundStyle(style.primaryText)
-                    Spacer()
+                    VStack(alignment: .leading, spacing: 8) {
+                        NavigationLink(destination: PinnedPagesListView()) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "bookmark.fill")
+                                    .font(.caption)
+                                    .foregroundStyle(style.accent)
+                                Text("Bookmarks")
+                                    .font(.title3)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(style.primaryText)
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundStyle(style.primaryText)
+                                Spacer()
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        TipView(BookmarkTip(), arrowEdge: .top)
+                            .padding(.trailing, 8)
+                    }
+                    .padding(.horizontal, 8)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 12, trailing: 16))
                 }
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 8)
-            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 12, trailing: 16))
-        }
     }
     
     // MARK: - Collections Section

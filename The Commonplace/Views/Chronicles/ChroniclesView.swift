@@ -11,6 +11,7 @@
 //   This eliminates repeated O(n) passes across multiple cards simultaneously.
 
 import SwiftUI
+import TipKit
 import SwiftData
 
 struct ChroniclesView: View {
@@ -24,7 +25,7 @@ struct ChroniclesView: View {
     
     // Stored as comma-separated string since AppStorage doesn't support [String]
     @AppStorage("chronicles_card_order") private var cardOrderString: String =
-            "dogEars,onThisDay,mood,stats,watchTimeline,habitPatterns,rewind"
+    "dogEars,onThisDay,mood,stats,watchTimeline,habitPatterns,rewind"
     
     @State private var showingReorder = false
     
@@ -51,6 +52,8 @@ struct ChroniclesView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     chroniclesHeader
+                    TipView(ChroniclesTop(), arrowEdge: .top)
+                        .padding(.horizontal, 0)
                     ForEach(cardOrder, id: \.self) { cardID in
                         switch cardID {
                         case "dogEars":
@@ -91,13 +94,13 @@ struct ChroniclesView: View {
                                 style: style
                             )
                         case "rewind":
-                                                    RewindCard(
-                                                        allEntries: entries,
-                                                        style: style,
-                                                        themeManager: themeManager
-                                                    )
-                                                default:
-                                                    EmptyView()
+                            RewindCard(
+                                allEntries: entries,
+                                style: style,
+                                themeManager: themeManager
+                            )
+                        default:
+                            EmptyView()
                         }
                     }
                     Spacer().frame(height: 80)
@@ -113,9 +116,9 @@ struct ChroniclesView: View {
             }
         }
         .onAppear {
-                    computeData()
-                    migrateCardOrderIfNeeded()
-                }
+            computeData()
+            migrateCardOrderIfNeeded()
+        }
         .onChange(of: entries.count) { _, _ in computeData() }
     }
     
@@ -209,17 +212,17 @@ struct ChroniclesView: View {
         }.sorted { $0.count > $1.count }
     }
     func migrateCardOrderIfNeeded() {
-            let knownCards = ["dogEars", "onThisDay", "mood", "stats", "watchTimeline", "habitPatterns", "rewind"]
-            var current = cardOrderString.components(separatedBy: ",")
-            var changed = false
-            for card in knownCards {
-                if !current.contains(card) {
-                    current.append(card)
-                    changed = true
-                }
-            }
-            if changed {
-                cardOrderString = current.joined(separator: ",")
+        let knownCards = ["dogEars", "onThisDay", "mood", "stats", "watchTimeline", "habitPatterns", "rewind"]
+        var current = cardOrderString.components(separatedBy: ",")
+        var changed = false
+        for card in knownCards {
+            if !current.contains(card) {
+                current.append(card)
+                changed = true
             }
         }
+        if changed {
+            cardOrderString = current.joined(separator: ",")
+        }
+    }
 }

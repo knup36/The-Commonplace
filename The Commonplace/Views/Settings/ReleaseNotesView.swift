@@ -21,6 +21,16 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.10",
+            title: "The Bookhouse Boys",
+            notes: [
+            "Books are now a first-class entry type in Commonplace.",
+            "Search for any book by title via OpenLibrary — cover art, author, publish year, and page count are pulled in automatically. Track your reading with three statuses: Reading List, Reading, and Finished. Log your thoughts as you read, chapter by chapter if you like.",
+            "The last major missing piece of the media collection is now complete.",
+            "Attachments look nicer in Scrapbook view. PDFs live in a folder and videos are paperclipped to the background."
+            ]
+        ),
+        Release(
             version: "2.9",
             title: "The Big Picture",
             notes: [

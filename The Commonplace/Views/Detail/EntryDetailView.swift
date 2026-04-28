@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import MapKit
+import TipKit
 
 // MARK: - EntryDetailView
 // Main detail view for all entry types.
@@ -141,6 +142,7 @@ struct EntryDetailView: View {
                         Image(systemName: "ellipsis.circle")
                             .foregroundStyle(entryAccent)
                     }
+                    .popoverTip(EllipsisMenuTip())
                 }
             }
         }

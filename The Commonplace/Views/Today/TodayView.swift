@@ -1,4 +1,5 @@
 import SwiftUI
+import TipKit
 import SwiftData
 import CoreLocation
 
@@ -31,7 +32,9 @@ struct TodayView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         titleHeader
-                        WeeklyReviewCard()
+                                                TipView(TodayViewTip(), arrowEdge: .top)
+                                                    .padding(.horizontal, 16)
+                                                WeeklyReviewCard()
                         if let entry = entries.first(where: {
                             Calendar.current.isDateInToday($0.createdAt) && $0.type == .journal
                         }),

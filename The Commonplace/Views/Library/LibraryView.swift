@@ -1,4 +1,5 @@
 import SwiftUI
+import TipKit
 import SwiftData
 import CoreLocation
 
@@ -147,16 +148,17 @@ struct LibraryView: View {
                             .padding(.leading, 8)
                         
                         Picker("", selection: $selectedTab) {
-                            Text("Collections").tag(0)
-                            Text("Folios").tag(1)
-                            Text("People").tag(2)
-                            Text("Tags").tag(3)
-                        }
-                        .pickerStyle(.segmented)
-                    }
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
+                                                    Text("Collections").tag(0)
+                                                    Text("Folios").tag(1)
+                                                    Text("People").tag(2)
+                                                    Text("Tags").tag(3)
+                                                }
+                                                .pickerStyle(.segmented)
+                                                TipView(OrganizationTip(), arrowEdge: .top)
+                                            }
+                                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                                            .listRowSeparator(.hidden)
+                                            .listRowBackground(Color.clear)
                     
                     // Collections content
                     if selectedTab == 0 {

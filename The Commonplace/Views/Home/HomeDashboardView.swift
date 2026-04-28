@@ -16,6 +16,7 @@
 // Keep HomeView.swift around as fallback.
 
 import SwiftUI
+import TipKit
 import SwiftData
 
 struct HomeDashboardView: View {
@@ -39,10 +40,10 @@ struct HomeDashboardView: View {
     // MARK: - Filtered Data
     
     var pinnedCollections: [Collection] {
-            allCollections
-                .filter { $0.isPinned && !$0.isFolio }
-                .sorted { $0.pinnedOrder < $1.pinnedOrder }
-        }
+        allCollections
+            .filter { $0.isPinned && !$0.isFolio }
+            .sorted { $0.pinnedOrder < $1.pinnedOrder }
+    }
     
     var pinnedEntries: [Entry] {
         allEntries.filter { $0.isPinned }
@@ -53,10 +54,10 @@ struct HomeDashboardView: View {
     }
     
     var pinnedFolios: [Collection] {
-            allCollections
-                .filter { $0.isPinned && $0.isFolio }
-                .sorted { $0.createdAt < $1.createdAt }
-        }
+        allCollections
+            .filter { $0.isPinned && $0.isFolio }
+            .sorted { $0.createdAt < $1.createdAt }
+    }
     
     var pinnedTags: [Tag] {
         allTags
@@ -90,6 +91,9 @@ struct HomeDashboardView: View {
                         .foregroundStyle(style.primaryText)
                         .padding(.horizontal, 20)
                         .padding(.top, 16)
+                    
+                    TipView(BookmarkTip(), arrowEdge: .top)
+                        .padding(.horizontal, 20)
                     
                     if !hasAnything {
                         emptyState
@@ -287,11 +291,11 @@ struct HomeDashboardView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(pinnedFolios) { folio in
-                                            NavigationLink(destination: CollectionDetailView(collection: folio)) {
-                                                folioPill(folio: folio)
-                                            }
-                                            .buttonStyle(.plain)
-                                        }
+                        NavigationLink(destination: CollectionDetailView(collection: folio)) {
+                            folioPill(folio: folio)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 8)
@@ -301,32 +305,32 @@ struct HomeDashboardView: View {
     }
     
     func folioPill(folio: Collection) -> some View {
-            return HStack(spacing: 6) {
-                Text(folio.folioEmoji ?? "◆")
-                    .font(.system(size: 20))
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(folio.name)
-                        .font(style.typeBodySecondary)
-                        .fontWeight(.medium)
-                        .foregroundStyle(style.primaryText)
-                }
+        return HStack(spacing: 6) {
+            Text(folio.folioEmoji ?? "◆")
+                .font(.system(size: 20))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(folio.name)
+                    .font(style.typeBodySecondary)
+                    .fontWeight(.medium)
+                    .foregroundStyle(style.primaryText)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(Color(hex: folio.colorHex).opacity(0.15))
-            .clipShape(Capsule())
-            .overlay(
-                Capsule().strokeBorder(
-                    LinearGradient(
-                        colors: [Color(white: 0.85), Color(white: 0.6), Color(white: 0.85), Color(white: 0.5), Color(white: 0.85)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1.5
-                )
-            )
-            .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color(hex: folio.colorHex).opacity(0.15))
+        .clipShape(Capsule())
+        .overlay(
+            Capsule().strokeBorder(
+                LinearGradient(
+                    colors: [Color(white: 0.85), Color(white: 0.6), Color(white: 0.85), Color(white: 0.5), Color(white: 0.85)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 1.5
+            )
+        )
+        .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+    }
     
     // MARK: - Tags Section
     
@@ -348,8 +352,8 @@ struct HomeDashboardView: View {
     }
     
     func tagPill(tag: Tag) -> some View {
-            let count = allEntries.filter { $0.tagNames.contains(tag.name) }.count
-            return HStack(spacing: 4) {
+        let count = allEntries.filter { $0.tagNames.contains(tag.name) }.count
+        return HStack(spacing: 4) {
             Text(tag.name)
                 .font(style.typeCaption)
                 .foregroundStyle(style.accent)

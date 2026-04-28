@@ -1,4 +1,5 @@
 import SwiftUI
+import TipKit
 import SwiftData
 import CoreLocation
 
@@ -146,6 +147,7 @@ struct FeedView: View {
             }
             .background(isScrapbookMode ? Color(red: 0.91, green: 0.86, blue: 0.76).opacity(0.3) : style.surface.opacity(0.5))
             .clipShape(Capsule())
+            .popoverTip(ViewModesTip())
         }
         .padding(.leading, 24)
         .padding(.trailing, 16)
@@ -198,6 +200,7 @@ struct FeedView: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         feedHeader
+                        filterStripTipView
                         entryFilterStrip
                         if isSlimMode {
                             SlimEntryFeed(entries: filteredEntries, style: style)
@@ -255,6 +258,15 @@ struct FeedView: View {
                 .onAppear {
                     locationManager.requestLocation()
                     updateFilter()
+                    SearchBarTip.feedIsActive = true
+                }
+                .onDisappear {
+                    SearchBarTip.feedIsActive = false
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .openNewEntrySheet)) { _ in
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        showingAddEntry = true
+                    }
                 }
                 .onChange(of: entries) { _, _ in updateFilter() }
                 .onChange(of: filterType) { _, _ in visibleCount = 50; updateFilter() }
@@ -338,6 +350,16 @@ struct FeedView: View {
         .padding(.horizontal, 16)
         .padding(.top, 8)
         .padding(.bottom, 12)
+    }
+    
+    // MARK: - Filter Strip Tip
+    
+    @State private var filterStripTip = FilterStripTip()
+    
+    var filterStripTipView: some View {
+        TipView(filterStripTip, arrowEdge: .bottom)
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
     }
     
     // MARK: - Scrapbook Cards

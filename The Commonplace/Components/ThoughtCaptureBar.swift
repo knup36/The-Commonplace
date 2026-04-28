@@ -27,19 +27,20 @@
 import SwiftUI
 import SwiftData
 import CoreLocation
+import TipKit
 
 struct ThoughtCaptureBar: View {
     @Environment(\.modelContext) var modelContext
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     var showFullBar: Bool = true
-        var isInSidebar: Bool = false
-        @Binding var showingAddEntry: Bool
-        @Binding var showingTemplatePicker: Bool
-        var contextTags: [String] = []
-
-        @State private var showingSearch: Bool = false
-
+    var isInSidebar: Bool = false
+    @Binding var showingAddEntry: Bool
+    @Binding var showingTemplatePicker: Bool
+    var contextTags: [String] = []
+    
+    @State private var showingSearch: Bool = false
+    
     @Query var allEntries: [Entry]
     @StateObject private var locationManager = LocationManager()
     @State private var thoughtText: String = ""
@@ -48,41 +49,41 @@ struct ThoughtCaptureBar: View {
     @State private var currentPrompt: String = ""
     @State private var selectedTags: [String] = []
     @State private var showingTagStrip: Bool = false
-        @State private var frozenSuggestions: [String] = []
-
+    @State private var frozenSuggestions: [String] = []
+    
     var style: any AppThemeStyle { themeManager.style }
-
+    
     @Query var allCollections: [Collection]
-
+    
     // Most-used tags across all entries, context tags pinned to front
-        var suggestedTags: [String] {
-            let soloFolioTags = Set(allCollections.filter { collection in
-                guard collection.isFolio else { return false }
-                guard collection.filterTags.count == 1 else { return false }
-                return collection.filterTypes.isEmpty &&
-                       collection.filterSearchText == nil &&
-                       collection.filterLocationLatitude == nil &&
-                       (DateFilterRange(rawValue: collection.filterDateRange) ?? .allTime) == .allTime
-            }.flatMap { $0.filterTags })
-            let allNames = allEntries.flatMap { $0.tagNames }
-                .filter { !$0.hasPrefix("@") && !soloFolioTags.contains($0) }
-            let counts = Dictionary(allNames.map { ($0, 1) }, uniquingKeysWith: +)
-            let sorted = counts
-                .sorted { $0.value > $1.value }
-                .map { $0.key }
-                .filter { !selectedTags.contains($0) }
-            let pinned = contextTags.filter { !selectedTags.contains($0) }
-            let rest = sorted.filter { !pinned.contains($0) }
-            return pinned + rest
-        }
-
+    var suggestedTags: [String] {
+        let soloFolioTags = Set(allCollections.filter { collection in
+            guard collection.isFolio else { return false }
+            guard collection.filterTags.count == 1 else { return false }
+            return collection.filterTypes.isEmpty &&
+            collection.filterSearchText == nil &&
+            collection.filterLocationLatitude == nil &&
+            (DateFilterRange(rawValue: collection.filterDateRange) ?? .allTime) == .allTime
+        }.flatMap { $0.filterTags })
+        let allNames = allEntries.flatMap { $0.tagNames }
+            .filter { !$0.hasPrefix("@") && !soloFolioTags.contains($0) }
+        let counts = Dictionary(allNames.map { ($0, 1) }, uniquingKeysWith: +)
+        let sorted = counts
+            .sorted { $0.value > $1.value }
+            .map { $0.key }
+            .filter { !selectedTags.contains($0) }
+        let pinned = contextTags.filter { !selectedTags.contains($0) }
+        let rest = sorted.filter { !pinned.contains($0) }
+        return pinned + rest
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-
+            
             // Tag button row + sliding strip — visible while capturing
             if isCapturingThought {
                 HStack(alignment: .center, spacing: 0) {
-
+                    
                     // Tag toggle button
                     Button {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
@@ -101,7 +102,7 @@ struct ThoughtCaptureBar: View {
                     }
                     .buttonStyle(.plain)
                     .padding(.leading, 16)
-
+                    
                     // Tag suggestion strip — slides out from tag button
                     if showingTagStrip {
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -136,59 +137,67 @@ struct ThoughtCaptureBar: View {
                             )
                         )
                     }
-
+                    
                     Spacer()
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-
+            
             // Main bar row
             HStack(spacing: 12) {
-
+                
                 // Search button — full bar only, hidden while capturing
-                                if showFullBar && !isCapturingThought {
-                                    Group {
-                                        if isInSidebar {
-                                            Button {
-                                                showingSearch = true
-                                            } label: {
-                                                ZStack {
-                                                    Circle()
-                                                        .fill(Color.primary.opacity(0.001))
-                                                        .frame(width: 44, height: 44)
-                                                        .glassEffect(.regular.interactive(), in: Circle())
-                                                    Image(systemName: "magnifyingglass")
-                                                        .font(.system(size: 16, weight: .medium))
-                                                        .foregroundStyle(style.accent)
-                                                }
-                                            }
-                                            .buttonStyle(.plain)
-                                            .contentShape(Circle())
-                                        } else {
-                                            NavigationLink(destination: SearchView()) {
-                                                ZStack {
-                                                    Circle()
-                                                        .fill(Color.primary.opacity(0.001))
-                                                        .frame(width: 44, height: 44)
-                                                        .glassEffect(.regular.interactive(), in: Circle())
-                                                    Image(systemName: "magnifyingglass")
-                                                        .font(.system(size: 16, weight: .medium))
-                                                        .foregroundStyle(style.accent)
-                                                }
-                                            }
-                                            .buttonStyle(.plain)
-                                            .contentShape(Circle())
-                                        }
-                                    }
-                                    .transition(.scale.combined(with: .opacity))
-                                    .sheet(isPresented: $showingSearch) {
-                                        SearchView()
-                                    }
+                if showFullBar && !isCapturingThought {
+                    Group {
+                        if isInSidebar {
+                            Button {
+                                showingSearch = true
+                            } label: {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.primary.opacity(0.001))
+                                        .frame(width: 44, height: 44)
+                                        .glassEffect(.regular.interactive(), in: Circle())
+                                    Image(systemName: "magnifyingglass")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundStyle(style.accent)
                                 }
-
+                            }
+                            .buttonStyle(.plain)
+                            .contentShape(Circle())
+                        } else {
+                            NavigationLink(destination: SearchView()) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.primary.opacity(0.001))
+                                        .frame(width: 44, height: 44)
+                                        .glassEffect(.regular.interactive(), in: Circle())
+                                    Image(systemName: "magnifyingglass")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundStyle(style.accent)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .contentShape(Circle())
+                        }
+                    }
+                    .popoverTip(SearchBarTip())
+                                        .task {
+                                            for await status in SearchBarTip().statusUpdates {
+                                                if status == .invalidated(.actionPerformed) || status == .invalidated(.tipClosed) {
+                                                    QuickCaptureTip.searchTipDismissed = true
+                                                }
+                                            }
+                                        }
+                    .transition(.scale.combined(with: .opacity))
+                    .sheet(isPresented: $showingSearch) {
+                        SearchView()
+                    }
+                }
+                
                 // Thought capture field
                 VStack(alignment: .leading, spacing: 6) {
-
+                    
                     // Selected tags inside capsule
                     if !selectedTags.isEmpty {
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -217,7 +226,7 @@ struct ThoughtCaptureBar: View {
                         }
                         .transition(.move(edge: .top).combined(with: .opacity))
                     }
-
+                    
                     // Text input row
                     HStack(spacing: 8) {
                         ZStack(alignment: .leading) {
@@ -238,17 +247,17 @@ struct ThoughtCaptureBar: View {
                                     createThought()
                                 }
                                 .onChange(of: thoughtFieldFocused) { _, focused in
-                                                                    withAnimation(.spring(duration: 0.25)) {
-                                                                        isCapturingThought = focused
-                                                                        if focused {
-                                                                            frozenSuggestions = suggestedTags
-                                                                        } else {
-                                                                            showingTagStrip = false
-                                                                        }
-                                                                    }
-                                                                }
+                                    withAnimation(.spring(duration: 0.25)) {
+                                        isCapturingThought = focused
+                                        if focused {
+                                            frozenSuggestions = suggestedTags
+                                        } else {
+                                            showingTagStrip = false
+                                        }
+                                    }
+                                }
                         }
-
+                        
                         if isCapturingThought {
                             Button {
                                 createThought()
@@ -265,7 +274,15 @@ struct ThoughtCaptureBar: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 22))
-
+                                .popoverTip(QuickCaptureTip())
+                                .task {
+                                    for await status in QuickCaptureTip().statusUpdates {
+                                        if status == .invalidated(.actionPerformed) || status == .invalidated(.tipClosed) {
+                                            CaptureBarTip.quickCaptureTipDismissed = true
+                                        }
+                                    }
+                                }
+                
                 // Right button — × when capturing, + when idle (full bar only)
                 if showFullBar {
                     Button {
@@ -299,6 +316,7 @@ struct ThoughtCaptureBar: View {
                             }
                         }
                     )
+                    .popoverTip(CaptureBarTip(), arrowEdge: .bottom)
                 } else if isCapturingThought {
                     // Slim bar (CollectionDetailView) — × button when capturing
                     Button {
@@ -330,9 +348,9 @@ struct ThoughtCaptureBar: View {
             currentPrompt = ThoughtPrompts.random()
         }
     }
-
+    
     // MARK: - Create Thought
-
+    
     func createThought() {
         let trimmed = thoughtText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
@@ -341,7 +359,7 @@ struct ThoughtCaptureBar: View {
             showingTagStrip = false
             return
         }
-
+        
         let entry = Entry(type: .text, text: trimmed, tags: [])
         entry.tagNames = selectedTags
         if let location = locationManager.currentLocation {
@@ -352,16 +370,16 @@ struct ThoughtCaptureBar: View {
         modelContext.insert(entry)
         try? modelContext.save()
         SearchIndex.shared.index(entry: entry)
-
+        
         thoughtText = ""
         selectedTags = []
         showingTagStrip = false
         thoughtFieldFocused = false
         isCapturingThought = false
     }
-
+    
     // MARK: - Reset
-
+    
     func resetCapture() {
         thoughtText = ""
         selectedTags = []

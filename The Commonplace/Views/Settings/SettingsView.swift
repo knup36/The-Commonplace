@@ -20,6 +20,7 @@
 //   and shows a result summary alert.
 
 import SwiftUI
+import TipKit
 import SwiftData
 import UniformTypeIdentifiers
 
@@ -180,6 +181,23 @@ struct SettingsView: View {
                 Text("What's New")
                     .foregroundStyle(style.primaryText)
             }
+            Button("Reset All Tips") {
+                Task {
+                    await SearchBarTip().resetEligibility()
+                    await QuickCaptureTip().resetEligibility()
+                    await CaptureBarTip().resetEligibility()
+                    await EllipsisMenuTip().resetEligibility()
+                    await BookmarkTip().resetEligibility()
+                    await OrganizationTip().resetEligibility()
+                    await ViewModesTip().resetEligibility()
+                    await FilterStripTip().resetEligibility()
+                    await ChroniclesTop().resetEligibility()
+                    await TodayViewTip().resetEligibility()
+                    QuickCaptureTip.searchTipDismissed = false
+                    CaptureBarTip.quickCaptureTipDismissed = false
+                }
+            }
+            .foregroundStyle(.orange)
         } header: {
             Text("About")
                 .foregroundStyle(style.tertiaryText)
@@ -406,21 +424,21 @@ struct SettingsView: View {
                     to: rangeExportEnd
                 )
                 await MainActor.run {
-                                    isExportingRange = false
-                                    showingRangeExportSheet = false
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                                        let url = result.zipURL
-                                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                                           let rootVC = windowScene.windows.first?.rootViewController {
-                                            var topVC = rootVC
-                                            while let presented = topVC.presentedViewController {
-                                                topVC = presented
-                                            }
-                                            let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-                                            topVC.present(activityVC, animated: true)
-                                        }
-                                    }
-                                }
+                    isExportingRange = false
+                    showingRangeExportSheet = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                        let url = result.zipURL
+                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                           let rootVC = windowScene.windows.first?.rootViewController {
+                            var topVC = rootVC
+                            while let presented = topVC.presentedViewController {
+                                topVC = presented
+                            }
+                            let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+                            topVC.present(activityVC, animated: true)
+                        }
+                    }
+                }
             } catch {
                 await MainActor.run {
                     isExportingRange = false
