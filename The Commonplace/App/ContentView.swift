@@ -89,7 +89,10 @@ struct ContentView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             }
         }
-        .fontDesign(themeManager.current == .inkwell ? .serif : .rounded)
+        .onReceive(NotificationCenter.default.publisher(for: .openNewEntrySheet)) { _ in
+                    selectedTab = 1
+                }
+                .fontDesign(themeManager.current == .inkwell ? .serif : .rounded)
         .overlay(alignment: .bottom) {
                     VStack {
                         Spacer()

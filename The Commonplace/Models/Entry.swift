@@ -5,8 +5,8 @@
 // All entry types share this one model, differentiated by the `type` field.
 //
 // ============================================================
-// SCHEMA VERSION: 12
-// Last updated: v2.9
+// SCHEMA VERSION: 13
+// Last updated: v2.12
 //
 // Schema change policy:
 //   - Adding optional fields: safe, no migration needed
@@ -51,6 +51,7 @@
 //   v2.3    — mediaPlatform
 //   v2.8    — attachmentPath, attachmentType, attachmentFilename, attachmentFileSize, attachmentThumbnailPath
 //   v2.9    — imagePaths (photo/shot — multi-image support, up to 4)
+//   v2.12   — shazamID (music — deduplication key for Shazam playlist sync)
 //
 // Deprecated fields (do not remove yet):
 //   journalImageData — deprecated v1.9.1, replaced by journalImagePath
@@ -223,7 +224,13 @@ class Entry {
         var attachmentType: String? = nil
         var attachmentFilename: String? = nil
         var attachmentFileSize: Int? = nil
-        var attachmentThumbnailPath: String? = nil
+    var attachmentThumbnailPath: String? = nil
+
+        // Shazam sync (v2.12)
+        // shazamID: Apple Music track ID string from the Shazam playlist
+        // Used as deduplication key — if this field matches an existing entry,
+        // that track is skipped during sync
+        var shazamID: String? = nil
     
     init(type: EntryType = .text, text: String = "", tags: [String] = []) {
         self.id = UUID()

@@ -21,6 +21,15 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.11",
+            title: "Mr. Pink Doesn't Tip",
+            notes: [
+            "Commonplace now guides new users with contextual tips throughout the app.",
+            "Tips appear exactly where you need them — pointing at the capture bar, the entry menu, the filter strip, the view modes toggle, and more. Each tip appears once and gets out of the way. The app explains itself without a manual.",
+            "One new shortcut added - New Entry. Add to your home screen or the action button to quickly add an entry to Commonplace."
+            ]
+        ),
+        Release(
             version: "2.10",
             title: "The Bookhouse Boys",
             notes: [

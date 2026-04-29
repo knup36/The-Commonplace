@@ -55,6 +55,14 @@ struct SettingsView: View {
     // Import state
     @State private var isImporting = false
     
+    // Shazam state
+    @State private var shazamEnabled: Bool = UserDefaults.standard.bool(forKey: "shazamSyncEnabled")
+    @State private var shazamSyncStartDate: Date? = UserDefaults.standard.object(forKey: "shazamSyncStartDate") as? Date
+    @State private var shazamLastSynced: Date? = UserDefaults.standard.object(forKey: "shazamLastSyncedAt") as? Date
+    @State private var isSyncingShazam: Bool = false
+    @State private var shazamSyncMessage: String? = nil
+    @State private var shazamSyncError: String? = nil
+    
     // Readwise state
     @State private var readwiseToken: String = ""
     @State private var readwiseTokenSaved: Bool = ReadwiseKeychainService.retrieveToken() != nil
@@ -77,6 +85,7 @@ struct SettingsView: View {
             appearanceSection
             habitsSection
             readwiseSection
+            shazamSection
             aboutSection
             dataSection
         }
@@ -352,6 +361,74 @@ struct SettingsView: View {
         }
     }
     
+    // MARK: - Shazam
+    
+    var shazamSection: some View {
+        Section {
+            if shazamEnabled {
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                    Text("Shazam sync enabled")
+                        .foregroundStyle(style.primaryText)
+                    Spacer()
+                    Button("Disable") {
+                        shazamEnabled = false
+                        UserDefaults.standard.set(false, forKey: "shazamSyncEnabled")
+                    }
+                    .foregroundStyle(.red)
+                    .font(.footnote)
+                }
+                
+                Button {
+                                    performShazamSync()
+                } label: {
+                    if isSyncingShazam {
+                        HStack(spacing: 10) {
+                            ProgressView()
+                            Text("Syncing...")
+                                .foregroundStyle(style.primaryText)
+                        }
+                    } else if let message = shazamSyncMessage {
+                        Label(message, systemImage: "checkmark")
+                            .foregroundStyle(.green)
+                    } else {
+                        Label("Sync Shazam Tracks", systemImage: "shazam.logo")
+                            .foregroundStyle(accent)
+                    }
+                }
+                .disabled(isSyncingShazam)
+                
+            } else {
+                Button {
+                    enableShazamSync()
+                } label: {
+                    Label("Enable Shazam Sync", systemImage: "shazam.logo")
+                        .foregroundStyle(accent)
+                }
+            }
+            
+        } header: {
+            Text("Shazam")
+                .foregroundStyle(style.tertiaryText)
+        } footer: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Imports new tracks from your \"My Shazam Tracks\" Apple Music playlist. Only tracks added after you enable sync will be imported.")
+                    .foregroundStyle(style.tertiaryText)
+                if let startDate = shazamSyncStartDate {
+                    Text("Syncing tracks from \(startDate.formatted(date: .abbreviated, time: .omitted)) onwards.")
+                        .foregroundStyle(style.tertiaryText)
+                        .font(.footnote)
+                }
+                if let lastSynced = shazamLastSynced {
+                    Text("Last synced: \(lastSynced.formatted(.relative(presentation: .named)))")
+                        .foregroundStyle(style.tertiaryText)
+                        .font(.footnote)
+                }
+            }
+        }
+    }
+    
     // MARK: - Range Export Sheet
     
     var rangeExportSheet: some View {
@@ -449,6 +526,63 @@ struct SettingsView: View {
                         importError = "Export failed: \(error.localizedDescription)"
                     }
                     showingImportError = true
+                }
+            }
+        }
+    }
+    
+    func enableShazamSync() {
+        let startDate = Date()
+        UserDefaults.standard.set(true, forKey: "shazamSyncEnabled")
+        UserDefaults.standard.set(startDate, forKey: "shazamSyncStartDate")
+        shazamEnabled = true
+        shazamSyncStartDate = startDate
+        
+        // Record baseline — marks all existing tracks as seen without importing them
+        isSyncingShazam = true
+        Task {
+            do {
+                let service = ShazamSyncService(modelContext: modelContext)
+                try await service.recordBaseline()
+                await MainActor.run {
+                    isSyncingShazam = false
+                    shazamSyncMessage = "Ready — new Shazams will sync automatically"
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+                        shazamSyncMessage = nil
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isSyncingShazam = false
+                    shazamSyncMessage = "Setup failed: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
+    
+    func performShazamSync() {
+        isSyncingShazam = true
+        shazamSyncMessage = nil
+        shazamSyncError = nil
+        
+        Task {
+            do {
+                let service = ShazamSyncService(modelContext: modelContext)
+                let result = try await service.sync()
+                await MainActor.run {
+                    isSyncingShazam = false
+                    shazamLastSynced = Date()
+                    shazamSyncMessage = result.displayMessage
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+                        shazamSyncMessage = nil
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isSyncingShazam = false
+                    shazamSyncMessage = "Sync failed: \(error.localizedDescription)"
+                    AppLogger.error("Shazam sync failed", domain: .api, error: error)
+                    print("Shazam sync error detail: \(error)")
                 }
             }
         }
