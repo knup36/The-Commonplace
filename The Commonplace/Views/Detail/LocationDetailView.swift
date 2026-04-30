@@ -18,6 +18,7 @@ struct LocationDetailView: View {
     @State private var showingDeleteConfirmation = false
     @State private var editText = ""
     @FocusState private var textFieldFocused: Bool
+        @State private var debounceTimer: Timer? = nil
     
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
@@ -139,7 +140,12 @@ struct LocationDetailView: View {
                         .focused($textFieldFocused)
                         .foregroundStyle(style.cardPrimaryText)
                         .onAppear { editText = entry.text }
-                        .onChange(of: editText) { _, newValue in entry.text = newValue }
+                                            .onChange(of: editText) { _, newValue in
+                                                debounceTimer?.invalidate()
+                                                debounceTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: false) { _ in
+                                                    entry.text = newValue
+                                                }
+                                            }
                     } else if !entry.text.isEmpty {
                         Text(entry.text)
                             .font(style.typeBody)
@@ -149,11 +155,11 @@ struct LocationDetailView: View {
                     }
                     
                     EntryTagRow(
-                                            tagNames: $entry.tagNames,
-                                            isPinned: entry.isPinned,
-                                            accentColor: accentColor,
-                                            style: style
-                                        )
+                        tagNames: $entry.tagNames,
+                        isPinned: entry.isPinned,
+                        accentColor: accentColor,
+                        style: style
+                    )
                     
                     Divider()
                         .overlay(style.cardDivider)

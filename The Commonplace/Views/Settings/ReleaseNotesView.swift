@@ -21,6 +21,16 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.12",
+            title: "The Sound of Music",
+            notes: [
+                "Your Shazamed tracks now sync automatically into Commonplace as music entries.",
+                "Enable Shazam sync in Settings and Commonplace records a baseline of your existing Shazam library — only new tracks added after that point will be imported. No duplicates, no noise.",
+                "Each imported track comes in with full metadata — title, artist, album, artwork, and a direct Apple Music link for playback. Entries are automatically tagged 'shazam' so you can find them instantly.",
+                "Tap Sync Shazam Tracks anytime to pull in new discoveries."
+            ]
+        ),
+        Release(
             version: "2.11",
             title: "Mr. Pink Doesn't Tip",
             notes: [

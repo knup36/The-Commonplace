@@ -719,13 +719,29 @@ struct MediaDetailView: View {
                     .padding(.horizontal, 20)
             } else {
                 VStack(spacing: 0) {
-                    ForEach(entry.mediaLog.reversed(), id: \.self) { logEntry in
-                        let parts = logEntry.components(separatedBy: "::")
-                        if parts.count == 2 {
-                            logEntryRow(dateString: parts[0], text: parts[1])
-                        }
-                    }
-                }
+                                    ForEach(entry.mediaLog.reversed(), id: \.self) { logEntry in
+                                        let parts = logEntry.components(separatedBy: "::")
+                                        if parts.count == 2 {
+                                            HStack(alignment: .top, spacing: 0) {
+                                                logEntryRow(dateString: parts[0], text: parts[1])
+                                                if editMode.isEditing {
+                                                    Button {
+                                                        entry.mediaLog.removeAll { $0 == logEntry }
+                                                        entry.touch()
+                                                        try? modelContext.save()
+                                                    } label: {
+                                                        Image(systemName: "xmark.circle.fill")
+                                                            .font(.system(size: 16))
+                                                            .foregroundStyle(style.cardMetadataText)
+                                                    }
+                                                    .buttonStyle(.plain)
+                                                    .padding(.top, 14)
+                                                    .padding(.trailing, 20)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
             }
         }
     }

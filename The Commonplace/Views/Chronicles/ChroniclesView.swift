@@ -53,8 +53,9 @@ struct ChroniclesView: View {
                 VStack(spacing: 16) {
                     chroniclesHeader
                     TipView(ChroniclesTop(), arrowEdge: .top)
-                        .padding(.horizontal, 0)
-                    ForEach(cardOrder, id: \.self) { cardID in
+                                            .padding(.horizontal, 0)
+                    GiftCardsCard(style: style, allEntries: entries)
+                                        ForEach(cardOrder, id: \.self) { cardID in
                         switch cardID {
                         case "dogEars":
                             DogEarsCard(

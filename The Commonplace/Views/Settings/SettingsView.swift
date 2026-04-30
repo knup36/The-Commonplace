@@ -381,7 +381,7 @@ struct SettingsView: View {
                 }
                 
                 Button {
-                                    performShazamSync()
+                    performShazamSync()
                 } label: {
                     if isSyncingShazam {
                         HStack(spacing: 10) {
