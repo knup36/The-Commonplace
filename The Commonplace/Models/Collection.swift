@@ -6,8 +6,8 @@
 // filter criteria rather than storing explicit entry references.
 //
 // ============================================================
-// SCHEMA VERSION: 4
-// Last updated: v2.4
+// SCHEMA VERSION: 5
+// Last updated: v2.13
 //
 // Schema change policy: same as Entry.swift — optional fields are safe to
 // add at any time. Never remove fields without deprecating first.
@@ -19,6 +19,7 @@
 //   v1.5  — filterMediaStatus (movie/TV watch status filter)
 //   v1.14.1 — filterLocationStatus (Want to Visit / Been Here filter)
 //   v2.4    — collectionType, folioEmoji, folioHeaderImagePath
+//   v2.13   — filterHideCompletedStickies
 //
 // Filter notes:
 //   - filterSearchText == "__bookmarks__" or "__favorites__" are magic values
@@ -56,6 +57,7 @@ class Collection {
     var filterLocationRadius: Double? = nil
     var filterMediaStatus: [String] = []
     var filterLocationStatus: [String] = []
+        var filterHideCompletedStickies: Bool = false
     
     // Folio fields (v2.4)
     // collectionType: nil = plain collection, "folio" = promoted to Folio

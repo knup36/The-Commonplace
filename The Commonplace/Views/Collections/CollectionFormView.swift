@@ -43,6 +43,7 @@ struct CollectionFormView: View {
     @State private var favoritesOnly = false
     @State private var selectedMediaStatuses: Set<String> = []
     @State private var selectedLocationStatuses: Set<String> = []
+        @State private var hideCompletedStickies: Bool = false
     
     // Folio state
     @State private var selectedFormTab = 0  // 0 = Collection, 1 = Folio
@@ -121,6 +122,7 @@ struct CollectionFormView: View {
                     favoritesOnly = collection.filterSearchText == "__favorites__"
                     selectedMediaStatuses = Set(collection.filterMediaStatus)
                     selectedLocationStatuses = Set(collection.filterLocationStatus)
+                                        hideCompletedStickies = collection.filterHideCompletedStickies
                     filterSearchText = collection.filterSearchText == "__favorites__" ? "" : (collection.filterSearchText ?? "")
                     isFolio = collection.isFolio
                     folioEmoji = collection.folioEmoji ?? ""
@@ -296,7 +298,16 @@ struct CollectionFormView: View {
                 }
             }
             
-            Section("Filter by Favorites") {
+            if selectedTypes.contains("sticky") {
+                            Section("Filter by List Status") {
+                                Toggle(isOn: $hideCompletedStickies) {
+                                    Label("Hide Completed Lists", systemImage: "checklist")
+                                }
+                                .tint(Color(hex: selectedColorHex))
+                            }
+                        }
+
+                        Section("Filter by Favorites") {
                 Toggle(isOn: $favoritesOnly) {
                     Label("Favorites Only", systemImage: "star.fill")
                         .foregroundStyle(.yellow)
@@ -509,7 +520,8 @@ struct CollectionFormView: View {
         c.filterLocationRadius = filterLocationRadius
         c.filterSearchText = favoritesOnly ? "__favorites__" : (filterSearchText.isEmpty ? nil : filterSearchText)
         c.filterMediaStatus = Array(selectedMediaStatuses)
-        c.filterLocationStatus = Array(selectedLocationStatuses)
+                c.filterLocationStatus = Array(selectedLocationStatuses)
+                c.filterHideCompletedStickies = hideCompletedStickies
         
         if isFolio {
             c.collectionType = "folio"

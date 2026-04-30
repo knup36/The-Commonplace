@@ -47,10 +47,19 @@ func collectionMatches(entry: Entry, collection: Collection) -> Bool {
               collection.filterMediaStatus.contains(status) else { return false }
     }
     if !collection.filterLocationStatus.isEmpty {
-        guard entry.type == .location else { return false }
-        let visitedValue = entry.locationVisited ? "beenHere" : "wantToVisit"
-        guard collection.filterLocationStatus.contains(visitedValue) else { return false }
-    }
+            guard entry.type == .location else { return false }
+            let visitedValue = entry.locationVisited ? "beenHere" : "wantToVisit"
+            guard collection.filterLocationStatus.contains(visitedValue) else { return false }
+        }
+        if collection.filterHideCompletedStickies {
+            if entry.type == .sticky {
+                let allComplete = !entry.stickyItems.isEmpty && entry.stickyItems.allSatisfy { raw in
+                    let id = raw.components(separatedBy: "::").first ?? ""
+                    return entry.stickyChecked.contains(id)
+                }
+                if allComplete { return false }
+            }
+        }
     if let searchText = collection.filterSearchText,
        !searchText.isEmpty,
        searchText != "__favorites__" {
