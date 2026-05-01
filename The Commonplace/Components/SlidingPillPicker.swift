@@ -136,9 +136,17 @@ struct SlidingPillPicker<T: Hashable>: View {
     // If the icon already ends in ".fill" or has no fill variant, returns as-is.
 
     private func selectedIcon(_ icon: String) -> String {
-        let noFillNeeded = ["arrow.clockwise.circle", "play.circle", "gamecontroller", "book"]
-        if noFillNeeded.contains(icon) { return "\(icon).fill" }
-        if icon.hasSuffix(".fill") { return icon }
-        return "\(icon).fill"
-    }
+            let fillVariants: [String: String] = [
+                "bookmark":              "bookmark.fill",
+                "checkmark.circle":      "checkmark.circle.fill",
+                "play.circle":           "play.circle.fill",
+                "arrow.clockwise.circle":"arrow.clockwise.circle.fill",
+                "gamecontroller":        "gamecontroller.fill",
+                "book":                  "book.fill",
+                "doc.text":              "doc.text.fill",
+                "link":                  "link",          // no fill variant — use as-is
+                "film.fill":             "film.fill"
+            ]
+            return fillVariants[icon] ?? icon
+        }
 }

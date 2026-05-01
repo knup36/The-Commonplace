@@ -178,12 +178,12 @@ struct LinkDetailSection: View {
             // Title
             VStack(alignment: .leading, spacing: 8) {
                 if let title = entry.linkTitle, !title.isEmpty {
-                                    Text(title)
-                                        .font(style.typeTitle2)
-                                        .fontWeight(.bold)
-                                        .foregroundStyle(style.cardPrimaryText)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                }
+                    Text(title)
+                        .font(style.typeTitle2)
+                        .fontWeight(.bold)
+                        .foregroundStyle(style.cardPrimaryText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
                 
                 // Domain + favicon
                 HStack(spacing: 4) {
@@ -249,45 +249,31 @@ struct LinkDetailSection: View {
                 }
             }
             .padding(.horizontal, 4)
-                    .padding(.top, 16)
-                    .padding(.bottom, 8)
-                    }
-                    .padding(.horizontal, 16)
-                }
+            .padding(.top, 16)
+            .padding(.bottom, 8)
+        }
+        .padding(.horizontal, 16)
+    }
     
     // MARK: - Content Type Selector
+    //
+    // linkContentType is String? — nil means "generic".
+    // We bridge to a non-optional String for SlidingPillPicker,
+    // then map back to nil when "generic" is selected.
     
     var contentTypeSelector: some View {
-        HStack(spacing: 0) {
-            ForEach(["generic", "article", "video"], id: \.self) { type in
-                let isSelected = (type == "generic" && entry.linkContentType == nil) ||
-                entry.linkContentType == type
-                Button {
-                    entry.linkContentType = type == "generic" ? nil : type
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: iconFor(type))
-                            .font(style.typeCaption)
-                        Text(type.capitalized)
-                            .font(style.typeLabel)
-                    }
-                    .foregroundStyle(isSelected ? accentColor : accentColor.opacity(0.4))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 7)
-                    .background(isSelected ? accentColor.opacity(0.15) : Color.clear)
-                }
-                .buttonStyle(.plain)
-                if type != "video" {
-                    Divider()
-                        .frame(height: 16)
-                        .overlay(style.tertiaryText.opacity(0.3))
-                }
-            }
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(accentColor.opacity(0.3), lineWidth: 0.5)
+        let contentTypeBinding = Binding<String>(
+            get: { entry.linkContentType ?? "generic" },
+            set: { entry.linkContentType = $0 == "generic" ? nil : $0 }
+        )
+        return SlidingPillPicker(
+            options: [
+                .init(label: "Generic", value: "generic", icon: "link"),
+                .init(label: "Article", value: "article", icon: "doc.text"),
+                .init(label: "Video",   value: "video",   icon: "play.circle")
+            ],
+            selection: contentTypeBinding,
+            accentColor: accentColor
         )
     }
     
