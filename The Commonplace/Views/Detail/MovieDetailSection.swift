@@ -163,45 +163,17 @@ struct MovieDetailSection: View {
     }
     
     // MARK: - Status Section
-    
-    var statusSection: some View {
-        let statuses: [(label: String, value: String, icon: String)] = [
-                    ("Watchlist", "wantTo",    "bookmark"),
-                    ("Watched",   "finished",  "checkmark.circle")
-                ]
-        return HStack(spacing: 0) {
-            ForEach(statuses, id: \.value) { item in
-                let isSelected = localStatus == item.value
-                let color = mediaStatusColor(for: item.value, theme: themeManager.current)
-                Button {
-                    guard editMode.isEditing else { return }
-                    localStatus = item.value
-                    onStatusChange()
-                } label: {
-                                    VStack(spacing: 3) {
-                                        Image(systemName: isSelected ? "\(item.icon).fill" : item.icon)
-                                            .font(style.typeCaption)
-                                        Text(item.label)
-                                            .font(.system(size: 10, weight: .medium, design: .rounded))
-                                    }
-                                    .foregroundStyle(isSelected ? color : accentColor.opacity(0.4))
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 8)
-                                    .background(isSelected ? color.opacity(0.15) : Color.clear)
-                                }
-                .buttonStyle(.plain)
-                if item.value != "finished" {
-                    Divider()
-                        .frame(height: 16)
-                        .overlay(style.tertiaryText.opacity(0.3))
-                }
-            }
+
+        var statusSection: some View {
+            SlidingPillPicker(
+                options: [
+                    .init(label: "Watchlist", value: "wantTo",   icon: "bookmark",        selectedColor: mediaStatusColor(for: "wantTo",   theme: themeManager.current)),
+                    .init(label: "Watched",   value: "finished", icon: "checkmark.circle", selectedColor: mediaStatusColor(for: "finished", theme: themeManager.current))
+                ],
+                selection: $localStatus,
+                accentColor: accentColor
+            )
+            .padding(.horizontal, 20)
+            .onChange(of: localStatus) { _, _ in onStatusChange() }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(accentColor.opacity(0.3), lineWidth: 0.5)
-        )
-        .padding(.horizontal, 20)
-    }
 }
