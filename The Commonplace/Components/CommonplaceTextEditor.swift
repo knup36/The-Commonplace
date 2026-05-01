@@ -4,7 +4,7 @@
 // A UIViewRepresentable text editor that:
 //   1. Auto-resizes as the user types (GrowingTextView)
 //   2. Correctly renders the Inkwell serif font while actively editing
-//   3. Debounces SwiftData saves (300ms after typing stops)
+//   3. Debounces SwiftData saves (2s after typing stops)
 //   4. Posts a focus notification so parent ScrollViews can scroll to keep
 //      the editor visible above the keyboard
 //   5. Has an extensible toolbar slot for future formatting tools
@@ -29,7 +29,6 @@
 
 import SwiftUI
 import UIKit
-import Combine
 
 // MARK: - Notification Names
 
@@ -55,7 +54,7 @@ struct CommonplaceTextEditor<Toolbar: View>: UIViewRepresentable {
     var onSubmit: (() -> Void)? = nil
     var toolbar: Toolbar
     
-    private let debounceInterval: TimeInterval = 0.3
+    private let debounceInterval: TimeInterval = 2.0
     
     // Convenience init without toolbar
     init(
@@ -128,10 +127,6 @@ struct CommonplaceTextEditor<Toolbar: View>: UIViewRepresentable {
                     textView.text = text
                     textView.invalidateIntrinsicContentSize()
                     updatePlaceholder(textView, context: context)
-                }
-                // Ensure full height is measured whenever view updates
-                DispatchQueue.main.async {
-                    textView.invalidateIntrinsicContentSize()
                 }
         // Always keep font in sync (e.g. theme changes)
         textView.font = resolvedUIFont

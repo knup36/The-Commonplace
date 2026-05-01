@@ -88,8 +88,8 @@ struct CommonplaceApp: App {
     
     @MainActor
     func startupTasks() async {
-        do {
-            let context = container.mainContext
+            do {
+                let context = container.mainContext
             let entries = try context.fetch(FetchDescriptor<Entry>())
             SearchIndex.shared.backfillIfNeeded(entries: entries)
             // Bootstrap: if this is an existing install with no migration version stored,

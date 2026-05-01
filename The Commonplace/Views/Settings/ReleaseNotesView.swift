@@ -21,6 +21,16 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.13",
+            title: "The Gift",
+            notes: [
+                "Gift Cards are here. Commonplace now notices things worth surfacing — a show you started months ago, a place you saved and never visited — and offers them as small, joyful nudges when you're already in the right context.",
+                "Gift Cards appear in media and location collections when something qualifies. Each card has a warm silver shimmer border so it feels special. Dismiss one and it snoozes for 30 days. Everything that fires gets archived in Chronicles under a new Gift Cards card.",
+                "Three cards in this first batch: Still Watching (in-progress media gone quiet), Still On Your List (watchlist entries over 90 days old), and Still Want to Go (unvisited places over 90 days old). More cards coming in future releases.",
+                "Collections filtering by sticky type can now hide fully completed lists."
+            ]
+        ),
+        Release(
             version: "2.12",
             title: "The Sound of Music",
             notes: [
