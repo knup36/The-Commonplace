@@ -141,48 +141,19 @@ struct GameDetailSection: View {
     }
     
     // MARK: - Status Section
-    
-    var statusSection: some View {
-        let statuses: [(label: String, value: String, icon: String)] = [
-            ("To Play",  "wantTo",     "bookmark"),
-            ("Playing",  "inProgress", "gamecontroller"),
-            ("Done",     "finished",   "checkmark.circle"),
-            ("Re-Play",  "replay",     "arrow.clockwise.circle")
-        ]
-        return HStack(spacing: 0) {
-            ForEach(statuses, id: \.value) { item in
-                let isSelected = localStatus == item.value
-                let color = mediaStatusColor(for: item.value, theme: themeManager.current)
-                let inactiveColor = accentColor
-                Button {
-                    guard editMode.isEditing else { return }
-                    localStatus = item.value
-                    onStatusChange()
-                } label: {
-                    VStack(spacing: 3) {
-                        Image(systemName: isSelected ? "\(item.icon).fill" : item.icon)
-                            .font(style.typeCaption)
-                        Text(item.label)
-                            .font(.system(size: 10, weight: .medium, design: .rounded))
-                    }
-                    .foregroundStyle(isSelected ? color : inactiveColor.opacity(0.4))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .background(isSelected ? color.opacity(0.15) : Color.clear)
-                }
-                .buttonStyle(.plain)
-                if item.value != "replay" {
-                    Divider()
-                        .frame(height: 16)
-                        .overlay(style.tertiaryText.opacity(0.3))
-                }
-            }
+
+        var statusSection: some View {
+            SlidingPillPicker(
+                options: [
+                    .init(label: "To Play",  value: "wantTo",     icon: "bookmark",              selectedColor: mediaStatusColor(for: "wantTo",     theme: themeManager.current)),
+                    .init(label: "Playing",  value: "inProgress", icon: "gamecontroller",         selectedColor: mediaStatusColor(for: "inProgress", theme: themeManager.current)),
+                    .init(label: "Done",     value: "finished",   icon: "checkmark.circle",       selectedColor: mediaStatusColor(for: "finished",   theme: themeManager.current)),
+                    .init(label: "Re-Play",  value: "replay",     icon: "arrow.clockwise.circle", selectedColor: mediaStatusColor(for: "replay",     theme: themeManager.current))
+                ],
+                selection: $localStatus,
+                accentColor: accentColor
+            )
+            .padding(.horizontal, 20)
+            .onChange(of: localStatus) { _, _ in onStatusChange() }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(accentColor.opacity(0.3), lineWidth: 0.5)
-        )
-        .padding(.horizontal, 20)
     }
-}
