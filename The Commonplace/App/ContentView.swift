@@ -92,6 +92,12 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .openNewEntrySheet)) { _ in
                     selectedTab = 1
                 }
+                .onReceive(NotificationCenter.default.publisher(for: .navigateToHome)) { _ in
+                    selectedTab = 0
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .navigateToToday)) { _ in
+                    selectedTab = 4
+                }
                 .fontDesign(themeManager.current == .inkwell ? .serif : .rounded)
         .overlay(alignment: .bottom) {
                     VStack {

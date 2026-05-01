@@ -127,6 +127,8 @@ extension UIWindow {
 extension Notification.Name {
     static let deviceDidShake = Notification.Name("deviceDidShake")
     static let musicPlaybackStarted = Notification.Name("musicPlaybackStarted")
-        static let openNewEntrySheet = Notification.Name("openNewEntrySheet")
-    }
+    static let openNewEntrySheet = Notification.Name("openNewEntrySheet")
+    static let navigateToHome = Notification.Name("navigateToHome")
+    static let navigateToToday = Notification.Name("navigateToToday")
+}
 
