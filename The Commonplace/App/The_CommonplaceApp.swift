@@ -97,8 +97,10 @@ struct CommonplaceApp: App {
             if UserDefaults.standard.object(forKey: "completedMigrationVersion") == nil {
                 UserDefaults.standard.set(5, forKey: "completedMigrationVersion")
             }
-            MigrationCoordinator.shared.runIfNeeded(context: context, entries: entries)
-            ShareExtensionIngestor.ingestPendingEntries(context: context)
+                MigrationCoordinator.shared.runIfNeeded(context: context, entries: entries)
+                            ShareExtensionIngestor.ingestPendingEntries(context: context)
+                            let sorted = entries.sorted { $0.createdAt > $1.createdAt }
+                            WidgetDataStore.writeSnapshot(from: Array(sorted.prefix(6)))
             Task.detached {
                             await HealthKitBackfillService.shared.backfillIfNeeded(
                                 entries: entries,

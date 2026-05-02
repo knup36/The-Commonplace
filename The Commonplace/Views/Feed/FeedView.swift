@@ -256,10 +256,11 @@ struct FeedView: View {
                 }
                 .animation(.spring(response: 0.4, dampingFraction: 0.78), value: showingAddEntry)
                 .onAppear {
-                    locationManager.requestLocation()
-                    updateFilter()
-                    SearchBarTip.feedIsActive = true
-                }
+                                    locationManager.requestLocation()
+                                    updateFilter()
+                                    SearchBarTip.feedIsActive = true
+                                    WidgetDataStore.writeSnapshot(from: Array(entries.prefix(6)))
+                                }
                 .onDisappear {
                     SearchBarTip.feedIsActive = false
                 }
@@ -268,7 +269,10 @@ struct FeedView: View {
                         showingAddEntry = true
                     }
                 }
-                .onChange(of: entries) { _, _ in updateFilter() }
+                .onChange(of: entries) { _, newEntries in
+                                    updateFilter()
+                                    WidgetDataStore.writeSnapshot(from: Array(newEntries.prefix(6)))
+                                }
                 .onChange(of: filterType) { _, _ in visibleCount = 50; updateFilter() }
                 .onChange(of: deletedEntry) { _, _ in updateFilter() }
                 .safeAreaInset(edge: .bottom) {

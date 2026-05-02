@@ -24,6 +24,7 @@ struct WidgetEntrySnapshot: Codable, Identifiable {
     let title: String?       // mediaTitle, linkTitle, locationName, stickyTitle etc.
     let createdAt: Date
     let icon: String         // SF Symbol name
+    let accentHex: String    // Entry color inheritance
 }
 
 // MARK: - WidgetPayload
