@@ -69,10 +69,11 @@ struct AttachmentDetailView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 if editMode.isEditing {
                     Button("Done") {
-                        notesFocused = false
-                        entry.touch()
-                        editMode.exit()
-                    }
+                                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                                            notesFocused = false
+                                            entry.touch()
+                                            editMode.exit()
+                                        }
                     .bold()
                     .foregroundStyle(entryAccent)
                 } else {

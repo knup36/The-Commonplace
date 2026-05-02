@@ -167,10 +167,11 @@ struct StickyDetailView: View {
             if editMode.isEditing {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        editMode.exit()
-                    }
-                    .bold()
-                    .foregroundStyle(accentColor)
+                                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                                            editMode.exit()
+                                        }
+                                        .bold()
+                                        .foregroundStyle(accentColor)
                 }
             } else {
                 ToolbarItem(placement: .navigationBarTrailing) {

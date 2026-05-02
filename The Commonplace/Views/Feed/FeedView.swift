@@ -546,8 +546,9 @@ struct FeedView: View {
             entry.captureLocationName = locationManager.currentPlaceName
         }
         modelContext.insert(entry)
-        try? modelContext.save()
-        SearchIndex.shared.index(entry: entry)
+                try? modelContext.save()
+                SearchIndex.shared.index(entry: entry)
+                WidgetDataStore.writeSnapshot(from: Array(entries.prefix(6)))
         navigationPath.append(entry)
         // Reset backdated state for next entry
         isBackdated = false

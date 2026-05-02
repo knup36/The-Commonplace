@@ -179,11 +179,12 @@ struct LocationDetailView: View {
             if editMode.isEditing {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        entry.text = editText
-                        textFieldFocused = false
-                        entry.touch()
-                        editMode.exit()
-                    }
+                                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                                            entry.text = editText
+                                            textFieldFocused = false
+                                            entry.touch()
+                                            editMode.exit()
+                                        }
                     .bold()
                     .foregroundStyle(accentColor)
                 }

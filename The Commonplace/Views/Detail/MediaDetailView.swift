@@ -73,7 +73,10 @@ struct MediaDetailView: View {
         .toolbar {
             if editMode.isEditing {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { editMode.exit() }
+                    Button("Done") {
+                                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                                            editMode.exit()
+                                        }
                         .bold()
                         .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
                 }
