@@ -221,12 +221,12 @@ struct GiftCardService {
     }
     
     private static func isSnoozed(id: String) -> Bool {
-            guard let snoozeStart = UserDefaults.standard.object(
-                forKey: "giftCard_snoozed_\(id)"
-            ) as? Date else { return false }
-            let daysSince = Calendar.current.dateComponents([.day], from: snoozeStart, to: Date()).day ?? 0
-            return daysSince < snoozeDays
-        }
+        guard let snoozeStart = UserDefaults.standard.object(
+            forKey: "giftCard_snoozed_\(id)"
+        ) as? Date else { return false }
+        let daysSince = Calendar.current.dateComponents([.day], from: snoozeStart, to: Date()).day ?? 0
+        return daysSince < snoozeDays
+    }
     
     // MARK: - Archive
     

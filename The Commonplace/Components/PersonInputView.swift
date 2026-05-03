@@ -11,9 +11,9 @@ import SwiftData
 
 struct PersonInputView: View {
     @Binding var tags: [String]
+    var personFrequencyCounts: [String: Int] = [:]  // precomputed, passed from parent
     @Query(sort: \Tag.name) var allPersonTags: [Tag]
-    @Query var allEntries: [Entry]
-    
+
     var allPersons: [Tag] { allPersonTags.filter { $0.isPerson } }
     var accentColor: Color = .accentColor
     var style: (any AppThemeStyle)?
@@ -33,22 +33,17 @@ struct PersonInputView: View {
     
     var suggestions: [Tag] {
             let tagged = Set(taggedPersonNames)
-            let counts = Dictionary(
-                allEntries.flatMap { $0.tagNames.filter { $0.hasPrefix("@") } }
-                    .map { (String($0.dropFirst()), 1) },
-                uniquingKeysWith: +
-            )
             if inputText.isEmpty {
                 return allPersons
                     .filter { !tagged.contains($0.name) }
-                    .sorted { (counts[$0.name] ?? 0) > (counts[$1.name] ?? 0) }
+                    .sorted { (personFrequencyCounts[$0.name] ?? 0) > (personFrequencyCounts[$1.name] ?? 0) }
             }
             return allPersons
                 .filter {
                     !tagged.contains($0.name) &&
                     $0.name.localizedCaseInsensitiveContains(inputText)
                 }
-                .sorted { (counts[$0.name] ?? 0) > (counts[$1.name] ?? 0) }
+                .sorted { (personFrequencyCounts[$0.name] ?? 0) > (personFrequencyCounts[$1.name] ?? 0) }
         }
     
     var showCreateOption: Bool {

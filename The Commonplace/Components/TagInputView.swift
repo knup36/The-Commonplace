@@ -10,7 +10,7 @@ import SwiftData
 
 struct TagInputView: View {
     @Binding var tags: [String]
-    @Query var entries: [Entry]
+    var existingTagsSortedByFrequency: [String] = []  // precomputed, passed from parent
     @Query var allTagObjects: [Tag]
     var accentColor: Color = .accentColor
     var style: (any AppThemeStyle)?
@@ -29,20 +29,15 @@ struct TagInputView: View {
     @Query var allCollections: [Collection]
     
     var allExistingTags: [String] {
-        let allNames = entries.flatMap { $0.tagNames }.filter { !$0.hasPrefix("@") }
-        let counts = Dictionary(allNames.map { ($0, 1) }, uniquingKeysWith: +)
-        return counts
-            .filter { !tags.contains($0.key) }
-            .sorted { $0.value > $1.value }
-            .map { $0.key }
-    }
-    
-    var suggestions: [String] {
-        if inputText.isEmpty { return allExistingTags }
-        return allExistingTags.filter {
-            $0.localizedCaseInsensitiveContains(inputText)
+            existingTagsSortedByFrequency.filter { !tags.contains($0) }
         }
-    }
+
+        var suggestions: [String] {
+            if inputText.isEmpty { return allExistingTags }
+            return allExistingTags.filter {
+                $0.localizedCaseInsensitiveContains(inputText)
+            }
+        }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {

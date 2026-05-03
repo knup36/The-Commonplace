@@ -584,35 +584,14 @@ struct MediaDetailView: View {
                 logSection
                 
                 // Tags + People
-                let mediaAccent = entry.type.detailAccentColor(for: themeManager.current)
-                if editMode.isEditing {
-                    PersonInputView(tags: $entry.tagNames, accentColor: mediaAccent, style: style)
-                        .padding(.horizontal, 20)
-                    TagInputView(tags: $entry.tagNames, accentColor: mediaAccent, style: style)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 4)
-                } else {
-                    let hasPeople = entry.tagNames.contains { $0.hasPrefix("@") }
-                    let hasTags = entry.tagNames.contains { !$0.hasPrefix("@") }
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 6) {
-                            if entry.isPinned {
-                                Image(systemName: "bookmark.fill")
-                                    .font(.system(size: 20))
-                                    .foregroundStyle(mediaAccent)
-                                if hasPeople || hasTags { pipe }
-                            }
-                            if hasPeople {
-                                PersonInputView(tags: $entry.tagNames, accentColor: mediaAccent, style: style)
-                                if hasTags { pipe }
-                            }
-                            if hasTags {
-                                TagInputView(tags: $entry.tagNames, accentColor: mediaAccent, style: style)
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                    }
-                }
+                                let mediaAccent = entry.type.detailAccentColor(for: themeManager.current)
+                                EntryTagRow(
+                                    tagNames: $entry.tagNames,
+                                    isPinned: entry.isPinned,
+                                    accentColor: mediaAccent,
+                                    style: style
+                                )
+                                .padding(.horizontal, 20)
                 
                 Divider().padding(.horizontal, 20)
                 EntryMetadataFooter(entry: entry, style: style, accentColor: mediaAccent)
