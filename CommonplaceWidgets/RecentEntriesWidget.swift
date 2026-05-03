@@ -35,7 +35,7 @@ struct RecentEntriesEntry: TimelineEntry {
                     WidgetEntrySnapshot(id: "3", type: "location", text: "",                                                               title: "Griffith Observatory",    createdAt: Date().addingTimeInterval(-7200),   icon: "mappin.circle.fill", accentHex: "#66BB6A"),
                     WidgetEntrySnapshot(id: "4", type: "link",     text: "",                                                               title: "The Art of Noticing",     createdAt: Date().addingTimeInterval(-10800),  icon: "link",              accentHex: "#64B5F6"),
                     WidgetEntrySnapshot(id: "5", type: "photo",    text: "",                                                               title: nil,                        createdAt: Date().addingTimeInterval(-14400),  icon: "photo.fill",        accentHex: "#E57373"),
-                    WidgetEntrySnapshot(id: "6", type: "audio",    text: "Voice memo from the drive home.",                               title: nil,                        createdAt: Date().addingTimeInterval(-18000),  icon: "waveform",          accentHex: "#FF9800"),
+
                 ]
             )
         }
@@ -79,11 +79,10 @@ struct RecentEntriesEntryView: View {
     
     var body: some View {
         switch family {
-        case .systemSmall:  smallView
-        case .systemMedium: mediumView
-        case .systemLarge:  largeView
-        default:            smallView
-        }
+                case .systemSmall:  smallView
+                case .systemMedium: mediumView
+                default:            smallView
+                }
     }
     
     // MARK: - Small (1 entry)
@@ -141,26 +140,6 @@ struct RecentEntriesEntryView: View {
                                                 Divider().opacity(0.3)
                                             }
                                         }
-                }
-                .padding(1)
-            }
-        }
-    }
-    
-    // MARK: - Large (6 entries)
-    
-    var largeView: some View {
-        Group {
-            if entry.snapshots.isEmpty {
-                emptyState
-            } else {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(entry.snapshots.prefix(6).enumerated()), id: \.element.id) { i, snapshot in
-                        entryRow(snapshot: snapshot)
-                        if i < min(5, entry.snapshots.prefix(6).count - 1) {
-                            Divider().opacity(0.3)
-                        }
-                    }
                 }
                 .padding(1)
             }
@@ -253,7 +232,7 @@ struct RecentEntriesWidget: Widget {
         }
         .configurationDisplayName("Recent Entries")
         .description("See your most recently captured pages.")
-        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+        .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
 
