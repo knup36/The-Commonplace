@@ -229,22 +229,21 @@ struct PersonInputView: View {
     // MARK: - Add Person
     
     func addPerson(_ name: String) {
-        let cleaned = name.trimmingCharacters(in: .whitespaces)
-        guard !cleaned.isEmpty else { return }
-        let tagString = "@\(cleaned)"
-        guard !tags.contains(tagString) else {
+            let cleaned = name.trimmingCharacters(in: .whitespaces)
+            guard !cleaned.isEmpty else { return }
+            let tagString = "@\(cleaned)"
+            guard !tags.contains(tagString) else {
+                inputText = ""
+                return
+            }
+            tags.append(tagString)
             inputText = ""
-            return
+            let existingNames = allPersons.map { $0.name }
+            if !existingNames.contains(where: { $0.lowercased() == cleaned.lowercased() }) {
+                let tag = Tag(name: cleaned)
+                tag.subjectType = "person"
+                modelContext.insert(tag)
+                try? modelContext.save()
+            }
         }
-        tags.append(tagString)
-        inputText = ""
-        isExpanded = false
-        let existingNames = allPersons.map { $0.name }
-        if !existingNames.contains(where: { $0.lowercased() == cleaned.lowercased() }) {
-            let tag = Tag(name: cleaned)
-            tag.subjectType = "person"
-            modelContext.insert(tag)
-            try? modelContext.save()
-        }
-    }
 }
