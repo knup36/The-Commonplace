@@ -27,18 +27,18 @@ struct RecentEntriesEntry: TimelineEntry {
     
     /// Placeholder data shown while widget loads
     static var placeholder: RecentEntriesEntry {
-            RecentEntriesEntry(
-                date: Date(),
-                snapshots: [
-                    WidgetEntrySnapshot(id: "1", type: "text",     text: "Started reading a fascinating book about the history of maps.", title: nil,                       createdAt: Date(),                             icon: "text.alignleft",    accentHex: "#A0A0A0"),
-                    WidgetEntrySnapshot(id: "2", type: "music",    text: "",                                                               title: "Radiohead — OK Computer", createdAt: Date().addingTimeInterval(-3600),   icon: "music.note",        accentHex: "#E57373"),
-                    WidgetEntrySnapshot(id: "3", type: "location", text: "",                                                               title: "Griffith Observatory",    createdAt: Date().addingTimeInterval(-7200),   icon: "mappin.circle.fill", accentHex: "#66BB6A"),
-                    WidgetEntrySnapshot(id: "4", type: "link",     text: "",                                                               title: "The Art of Noticing",     createdAt: Date().addingTimeInterval(-10800),  icon: "link",              accentHex: "#64B5F6"),
-                    WidgetEntrySnapshot(id: "5", type: "photo",    text: "",                                                               title: nil,                        createdAt: Date().addingTimeInterval(-14400),  icon: "photo.fill",        accentHex: "#E57373"),
-
-                ]
-            )
-        }
+        RecentEntriesEntry(
+            date: Date(),
+            snapshots: [
+                WidgetEntrySnapshot(id: "1", type: "text",     text: "Started reading a fascinating book about the history of maps.", title: nil,                       createdAt: Date(),                             icon: "text.alignleft",    accentHex: "#A0A0A0"),
+                WidgetEntrySnapshot(id: "2", type: "music",    text: "",                                                               title: "Radiohead — OK Computer", createdAt: Date().addingTimeInterval(-3600),   icon: "music.note",        accentHex: "#E57373"),
+                WidgetEntrySnapshot(id: "3", type: "location", text: "",                                                               title: "Griffith Observatory",    createdAt: Date().addingTimeInterval(-7200),   icon: "mappin.circle.fill", accentHex: "#66BB6A"),
+                WidgetEntrySnapshot(id: "4", type: "link",     text: "",                                                               title: "The Art of Noticing",     createdAt: Date().addingTimeInterval(-10800),  icon: "link",              accentHex: "#64B5F6"),
+                WidgetEntrySnapshot(id: "5", type: "photo",    text: "",                                                               title: nil,                        createdAt: Date().addingTimeInterval(-14400),  icon: "photo.fill",        accentHex: "#E57373"),
+                
+            ]
+        )
+    }
 }
 
 // MARK: - Timeline Provider
@@ -79,10 +79,10 @@ struct RecentEntriesEntryView: View {
     
     var body: some View {
         switch family {
-                case .systemSmall:  smallView
-                case .systemMedium: mediumView
-                default:            smallView
-                }
+        case .systemSmall:  smallView.widgetURL(URL(string: "commonplace://feed"))
+        case .systemMedium: mediumView.widgetURL(URL(string: "commonplace://feed"))
+        default:            smallView.widgetURL(URL(string: "commonplace://feed"))
+        }
     }
     
     // MARK: - Small (1 entry)
@@ -135,11 +135,11 @@ struct RecentEntriesEntryView: View {
             } else {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(entry.snapshots.prefix(4).enumerated()), id: \.element.id) { i, snapshot in
-                                            entryRow(snapshot: snapshot)
-                                            if i < min(3, entry.snapshots.prefix(4).count - 1) {
-                                                Divider().opacity(0.3)
-                                            }
-                                        }
+                        entryRow(snapshot: snapshot)
+                        if i < min(3, entry.snapshots.prefix(4).count - 1) {
+                            Divider().opacity(0.3)
+                        }
+                    }
                 }
                 .padding(1)
             }
@@ -162,31 +162,31 @@ struct RecentEntriesEntryView: View {
     }
     
     func entryRow(snapshot: WidgetEntrySnapshot) -> some View {
-            let accent = Color(hex: snapshot.accentHex)
-            return HStack(spacing: 10) {
-                Image(systemName: snapshot.icon)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(accent)
-                    .frame(width: 16)
+        let accent = Color(hex: snapshot.accentHex)
+        return HStack(spacing: 10) {
+            Image(systemName: snapshot.icon)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(accent)
+                .frame(width: 16)
             
-                VStack(alignment: .leading, spacing: 1) {
-                                if let title = snapshot.title, !title.isEmpty {
-                                    Text(title)
-                                        .font(.system(size: 15, weight: .medium, design: .rounded))
-                                        .foregroundStyle(accent)
-                                        .lineLimit(1)
-                                } else if !snapshot.text.isEmpty {
-                                    Text(snapshot.text)
-                                        .font(.system(size: 15, design: .rounded))
-                                        .foregroundStyle(accent)
-                                        .lineLimit(1)
-                                } else {
-                                    Text(snapshot.type.capitalized)
-                                        .font(.system(size: 15, weight: .medium, design: .rounded))
-                                        .foregroundStyle(accent)
-                                        .lineLimit(1)
-                                }
-                            }
+            VStack(alignment: .leading, spacing: 1) {
+                if let title = snapshot.title, !title.isEmpty {
+                    Text(title)
+                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .foregroundStyle(accent)
+                        .lineLimit(1)
+                } else if !snapshot.text.isEmpty {
+                    Text(snapshot.text)
+                        .font(.system(size: 15, design: .rounded))
+                        .foregroundStyle(accent)
+                        .lineLimit(1)
+                } else {
+                    Text(snapshot.type.capitalized)
+                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .foregroundStyle(accent)
+                        .lineLimit(1)
+                }
+            }
             
             Spacer()
             

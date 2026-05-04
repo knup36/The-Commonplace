@@ -11,6 +11,8 @@ import SwiftUI
 @main
 struct CommonplaceWidgetsBundle: WidgetBundle {
     var body: some Widget {
-        RecentEntriesWidget()
-    }
+            RecentEntriesWidget()
+            GiftCardWidget()
+        MemoryWidget()
+        }
 }

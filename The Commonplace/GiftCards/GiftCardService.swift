@@ -19,6 +19,8 @@
 
 import Foundation
 import SwiftData
+import UIKit
+import WidgetKit
 
 // MARK: - GiftCard
 
@@ -125,12 +127,33 @@ struct GiftCardService {
         guard let winner = sorted.first?.card else { return nil }
         
         // Record that a card fired today
-        UserDefaults.standard.set(Date(), forKey: "giftCardLastShownDate")
-        
-        // Add to archive
-        addToArchive(winner)
-        
-        return winner
+                UserDefaults.standard.set(Date(), forKey: "giftCardLastShownDate")
+                
+                // Add to archive
+                addToArchive(winner)
+
+        // Write thumbnail to App Group if cover art exists
+                var thumbnailPath: String? = nil
+                if let coverPath = winner.entry.mediaCoverPath,
+                   let imageData = MediaFileManager.load(path: coverPath),
+                   let uiImage = UIImage(data: imageData),
+                   let thumbData = uiImage.jpegData(compressionQuality: 0.6) {
+                    thumbnailPath = GiftCardSnapshotStore.saveThumbnail(thumbData, id: winner.entryID)
+                }
+
+                // Write to App Group for widget
+                let snapshot = GiftCardSnapshot(
+                    title: winner.title,
+                    message: winner.message,
+                    icon: winner.icon,
+                    firedAt: winner.firedAt,
+                    isEmpty: false,
+                    thumbnailPath: thumbnailPath
+                )
+                GiftCardSnapshotStore.save(snapshot)
+                WidgetCenter.shared.reloadAllTimelines()
+                
+                return winner
     }
     
     // MARK: - Card Rules

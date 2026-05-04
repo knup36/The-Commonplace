@@ -7,13 +7,13 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var selectedTab = 1
-        @State private var previousTab = 0
-        @State private var showingAddEntry = false
-        @State private var showingTemplatePicker = false
-
-        private var isIPad: Bool {
-            UIDevice.current.userInterfaceIdiom == .pad
-        }
+    @State private var previousTab = 0
+    @State private var showingAddEntry = false
+    @State private var showingTemplatePicker = false
+    
+    private var isIPad: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+    }
     
     @Environment(\.modelContext) var modelContext
     @EnvironmentObject var themeManager: ThemeManager
@@ -43,69 +43,75 @@ struct ContentView: View {
     }
     
     var body: some View {
-            if isIPad {
-                iPadRootView(
-                    selectedTab: $selectedTab,
-                    showingAddEntry: $showingAddEntry,
-                    showingTemplatePicker: $showingTemplatePicker
-                )
-            } else {
-                TabView(selection: $selectedTab) {
-            HomeDashboardView()
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
-                }
-                .tag(0)
-            
-            FeedView()
-                .tabItem {
-                    Label("Feed", systemImage: "rectangle.stack.fill")
-                }
-                .tag(1)
-            
-            LibraryView()
-                .tabItem {
-                    Label("Library", systemImage: "books.vertical.fill")
-                }
-                .tag(2)
-            
-            ChroniclesView()
-                .tabItem {
-                    Label("Chronicles", systemImage: ChroniclesTheme.icon)
-                }
-                .tag(3)
-            
-            TodayView()
-                .tabItem {
-                    Label("Today", systemImage: "sun.max.fill")
-                }
-                .tag(4)
-        }
-        .onChange(of: selectedTab) { old, new in
-            previousTab = old
-            // Tab 2 was Search (keyboard dismiss needed) — now Library, no longer needed
-        }
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .openNewEntrySheet)) { _ in
-                    selectedTab = 1
-                }
-                .onReceive(NotificationCenter.default.publisher(for: .navigateToHome)) { _ in
-                    selectedTab = 0
-                }
-                .onReceive(NotificationCenter.default.publisher(for: .navigateToToday)) { _ in
-                    selectedTab = 4
-                }
-                .fontDesign(themeManager.current == .inkwell ? .serif : .rounded)
-        .overlay(alignment: .bottom) {
-                    VStack {
-                        Spacer()
-                        MiniSoundPlayerBar()
-                            .padding(.bottom, 57)
+        if isIPad {
+            iPadRootView(
+                selectedTab: $selectedTab,
+                showingAddEntry: $showingAddEntry,
+                showingTemplatePicker: $showingTemplatePicker
+            )
+        } else {
+            TabView(selection: $selectedTab) {
+                HomeDashboardView()
+                    .tabItem {
+                        Label("Home", systemImage: "house.fill")
                     }
-                }
-                } // end else (iPhone)
+                    .tag(0)
+                
+                FeedView()
+                    .tabItem {
+                        Label("Feed", systemImage: "rectangle.stack.fill")
+                    }
+                    .tag(1)
+                
+                LibraryView()
+                    .tabItem {
+                        Label("Library", systemImage: "books.vertical.fill")
+                    }
+                    .tag(2)
+                
+                ChroniclesView()
+                    .tabItem {
+                        Label("Chronicles", systemImage: ChroniclesTheme.icon)
+                    }
+                    .tag(3)
+                
+                TodayView()
+                    .tabItem {
+                        Label("Today", systemImage: "sun.max.fill")
+                    }
+                    .tag(4)
             }
-        }
+            .onChange(of: selectedTab) { old, new in
+                previousTab = old
+                // Tab 2 was Search (keyboard dismiss needed) — now Library, no longer needed
+            }
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .openNewEntrySheet)) { _ in
+                selectedTab = 1
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToHome)) { _ in
+                selectedTab = 0
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToFeed)) { _ in
+                selectedTab = 1
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToToday)) { _ in
+                selectedTab = 4
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToChronicles)) { _ in
+                selectedTab = 3
+            }
+            .fontDesign(themeManager.current == .inkwell ? .serif : .rounded)
+            .overlay(alignment: .bottom) {
+                VStack {
+                    Spacer()
+                    MiniSoundPlayerBar()
+                        .padding(.bottom, 57)
+                }
+            }
+        } // end else (iPhone)
+    }
+}

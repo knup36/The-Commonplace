@@ -51,10 +51,10 @@ struct CommonplaceApp: App {
             fatalError("Could not create ModelContainer: \(error)")
         }
         try? Tips.configure([
-                    .displayFrequency(.immediate),
-                    .datastoreLocation(.applicationDefault)
-                ])
-                MediaFileManager.initializeiCloudContainer()
+            .displayFrequency(.immediate),
+            .datastoreLocation(.applicationDefault)
+        ])
+        MediaFileManager.initializeiCloudContainer()
         Task.detached {
             _ = FileManager.default.url(
                 forUbiquityContainerIdentifier: "iCloud.com.johncaldwell.commonplace"
@@ -80,6 +80,14 @@ struct CommonplaceApp: App {
                         ShareExtensionIngestor.ingestPendingEntries(context: context)
                     }
                 }
+                .onOpenURL { url in
+                    switch url.host {
+                    case "home":        NotificationCenter.default.post(name: .navigateToHome, object: nil)
+                    case "feed":        NotificationCenter.default.post(name: .navigateToFeed, object: nil)
+                    case "chronicles":  NotificationCenter.default.post(name: .navigateToChronicles, object: nil)
+                    default: break
+                    }
+                }
         }
         .modelContainer(container)
     }
@@ -87,27 +95,28 @@ struct CommonplaceApp: App {
     // MARK: - Startup
     
     @MainActor
-    func startupTasks() async {
-            do {
-                let context = container.mainContext
-            let entries = try context.fetch(FetchDescriptor<Entry>())
-            SearchIndex.shared.backfillIfNeeded(entries: entries)
+        func startupTasks() async {
+                do {
+                    let context = container.mainContext
+                let entries = try context.fetch(FetchDescriptor<Entry>())
+                SearchIndex.shared.backfillIfNeeded(entries: entries)
             // Bootstrap: if this is an existing install with no migration version stored,
             // mark all current migrations as complete — they've already run individually.
             if UserDefaults.standard.object(forKey: "completedMigrationVersion") == nil {
                 UserDefaults.standard.set(5, forKey: "completedMigrationVersion")
             }
-                MigrationCoordinator.shared.runIfNeeded(context: context, entries: entries)
-                            ShareExtensionIngestor.ingestPendingEntries(context: context)
-                            let sorted = entries.sorted { $0.createdAt > $1.createdAt }
-                            WidgetDataStore.writeSnapshot(from: Array(sorted.prefix(6)))
+            MigrationCoordinator.shared.runIfNeeded(context: context, entries: entries)
+            ShareExtensionIngestor.ingestPendingEntries(context: context)
+                    let sorted = entries.sorted { $0.createdAt > $1.createdAt }
+                                WidgetDataStore.writeSnapshot(from: Array(sorted.prefix(6)))
+                                MemoryDataStore.writeSnapshotIfNeeded(from: entries)
             Task.detached {
-                            await HealthKitBackfillService.shared.backfillIfNeeded(
-                                entries: entries,
-                                context: context
-                            )
-                        }
-
+                await HealthKitBackfillService.shared.backfillIfNeeded(
+                    entries: entries,
+                    context: context
+                )
+            }
+            
         } catch {
             AppLogger.error("Startup fetch failed", domain: .swiftData, error: error)
         }
@@ -131,6 +140,8 @@ extension Notification.Name {
     static let musicPlaybackStarted = Notification.Name("musicPlaybackStarted")
     static let openNewEntrySheet = Notification.Name("openNewEntrySheet")
     static let navigateToHome = Notification.Name("navigateToHome")
+    static let navigateToFeed = Notification.Name("navigateToFeed")
     static let navigateToToday = Notification.Name("navigateToToday")
+    static let navigateToChronicles = Notification.Name("navigateToChronicles")
 }
 
