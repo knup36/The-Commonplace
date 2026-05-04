@@ -19,6 +19,7 @@ struct WeeklyReviewCard: View {
     var allPersons: [Tag] { allPersonTags.filter { $0.isPerson } }
     @EnvironmentObject var themeManager: ThemeManager
     @State private var reviewingWeekStart: IdentifiableDate? = nil
+        @State private var cachedUnreviewedWeeks: [Date] = []
     
     var style: any AppThemeStyle { themeManager.style }
     
@@ -55,7 +56,7 @@ struct WeeklyReviewCard: View {
     }
     
     /// All unreviewed completed weeks, newest first, up to 8 weeks back
-    var unreviewedWeeks: [Date] {
+        private func computeUnreviewedWeeks() -> [Date] {
         (0..<8).compactMap { weeksAgo -> Date? in
             let start = weekStart(weeksAgo: weeksAgo)
             let end = weekEnd(for: start)
@@ -93,17 +94,23 @@ struct WeeklyReviewCard: View {
     // MARK: - Body
     
     var body: some View {
-        ForEach(unreviewedWeeks, id: \.self) { weekStart in
-            reviewCard(for: weekStart)
-                .padding(.horizontal)
-        }
-        .fullScreenCover(item: $reviewingWeekStart) { identifiable in
-            WeeklyReviewFlowView(
-                allEntries: allEntries,
-                allPersons: allPersons,
-                weekStart: identifiable.date
-            )
-        }
+        ForEach(cachedUnreviewedWeeks, id: \.self) { weekStart in
+                    reviewCard(for: weekStart)
+                        .padding(.horizontal)
+                }
+                .fullScreenCover(item: $reviewingWeekStart) { identifiable in
+                    WeeklyReviewFlowView(
+                        allEntries: allEntries,
+                        allPersons: allPersons,
+                        weekStart: identifiable.date
+                    )
+                }
+                .onAppear {
+                    cachedUnreviewedWeeks = computeUnreviewedWeeks()
+                }
+                .onChange(of: allEntries.count) { _, _ in
+                    cachedUnreviewedWeeks = computeUnreviewedWeeks()
+                }
     }
     
     // MARK: - Card
