@@ -5,8 +5,8 @@
 // All entry types share this one model, differentiated by the `type` field.
 //
 // ============================================================
-// SCHEMA VERSION: 13
-// Last updated: v2.12
+// SCHEMA VERSION: 14
+// Last updated: v2.14.1
 //
 // Schema change policy:
 //   - Adding optional fields: safe, no migration needed
@@ -52,6 +52,7 @@
 //   v2.8    — attachmentPath, attachmentType, attachmentFilename, attachmentFileSize, attachmentThumbnailPath
 //   v2.9    — imagePaths (photo/shot — multi-image support, up to 4)
 //   v2.12   — shazamID (music — deduplication key for Shazam playlist sync)
+//   v2.14.1 — mediaReleaseDate, mediaReleaseDateFetched (media — upcoming release tracking)
 //
 // Deprecated fields (do not remove yet):
 //   journalImageData — deprecated v1.9.1, replaced by journalImagePath
@@ -230,7 +231,14 @@ class Entry {
         // shazamID: Apple Music track ID string from the Shazam playlist
         // Used as deduplication key — if this field matches an existing entry,
         // that track is skipped during sync
-        var shazamID: String? = nil
+    var shazamID: String? = nil
+        
+        // Upcoming release tracking (v2.14.1)
+        // mediaReleaseDate: release date fetched from TMDB at capture time (movies and TV only)
+        // mediaReleaseDateFetched: timestamp of last TMDB check — drives the weekly Monday refresh
+        // Once mediaReleaseDate is in the past, the entry no longer qualifies for the Coming Soon card
+        var mediaReleaseDate: Date? = nil
+        var mediaReleaseDateFetched: Date? = nil
     
     init(type: EntryType = .text, text: String = "", tags: [String] = []) {
         self.id = UUID()

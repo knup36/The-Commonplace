@@ -41,6 +41,7 @@ enum GiftCardType: String, Codable {
     case unfinishedMedia    = "unfinishedMedia"
     case forgottenWatchlist = "forgottenWatchlist"
     case placeRevisit       = "placeRevisit"
+    case comingSoon         = "comingSoon"
     
     var snoozeKey: String { "giftCard_snoozed_\(rawValue)" }
 }
@@ -55,6 +56,8 @@ struct GiftCardRecord: Codable, Identifiable {
     let icon: String
     let entryID: String
     let firedAt: Date
+    // Coming Soon fields (optional — nil for standard gift cards)
+    var comingSoonTitles: [String]? = nil
 }
 
 // MARK: - GiftCardService
@@ -285,10 +288,11 @@ struct GiftCardService {
     // MARK: - Type Priority
     
     private static func typePriority(_ type: GiftCardType) -> Int {
-        switch type {
-        case .unfinishedMedia:    return 3
-        case .forgottenWatchlist: return 2
-        case .placeRevisit:       return 1
+            switch type {
+            case .unfinishedMedia:    return 3
+            case .forgottenWatchlist: return 2
+            case .placeRevisit:       return 1
+            case .comingSoon:         return 0
+            }
         }
-    }
 }

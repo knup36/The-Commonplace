@@ -50,47 +50,50 @@ struct GiftCardsCard: View {
         }
     
     func archiveRow(record: GiftCardRecord) -> some View {
-        let rowContent = HStack(spacing: 10) {
-            ZStack {
-                            RoundedRectangle(cornerRadius: 7)
-                                .fill((lookupEntry(for: record)?.type.accentColor(for: .inkwell) ?? Color.white).opacity(0.2))
-                                .frame(width: 28, height: 28)
-                            Image(systemName: record.icon)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle((lookupEntry(for: record)?.type.accentColor(for: .inkwell) ?? Color.white).opacity(0.85))
-                        }
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(record.title)
-                    .font(style.typeBodySecondary)
-                    .foregroundStyle(ChroniclesTheme.primaryText)
-                    .lineLimit(1)
-                Text(record.message)
-                    .font(style.typeCaption)
-                    .foregroundStyle(ChroniclesTheme.secondaryText)
-                    .lineLimit(2)
-                Text(record.firedAt.formatted(.dateTime.month(.abbreviated).day().year()))
-                    .font(style.typeCaption)
-                    .foregroundStyle(Color.white.opacity(0.4))
-                    .padding(.top, 1)
+            let isComingSoon = record.cardType == GiftCardType.comingSoon.rawValue
+            let accentColor: Color = isComingSoon ? .orange : (lookupEntry(for: record)?.type.accentColor(for: .inkwell) ?? .white)
+
+            let rowContent = HStack(spacing: 10) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 7)
+                        .fill(accentColor.opacity(0.2))
+                        .frame(width: 28, height: 28)
+                    Image(systemName: record.icon)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(accentColor.opacity(0.85))
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(record.title)
+                        .font(style.typeBodySecondary)
+                        .foregroundStyle(ChroniclesTheme.primaryText)
+                        .lineLimit(1)
+                    Text(record.message)
+                        .font(style.typeCaption)
+                        .foregroundStyle(ChroniclesTheme.secondaryText)
+                        .lineLimit(2)
+                    Text(record.firedAt.formatted(.dateTime.month(.abbreviated).day().year()))
+                        .font(style.typeCaption)
+                        .foregroundStyle(Color.white.opacity(0.4))
+                        .padding(.top, 1)
+                }
+
+                Spacer()
+
+                if !isComingSoon, lookupEntry(for: record) != nil {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(ChroniclesTheme.tertiaryText)
+                }
             }
-            
-            Spacer()
-            
-            if lookupEntry(for: record) != nil {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(ChroniclesTheme.tertiaryText)
-            }
-        }
             .padding(.vertical, 10)
             .contentShape(Rectangle())
-        
-        if let entry = lookupEntry(for: record) {
-            return AnyView(NavigationLink(value: entry) { rowContent }.buttonStyle(.plain))
-        } else {
-            return AnyView(rowContent)
+
+            if !isComingSoon, let entry = lookupEntry(for: record) {
+                return AnyView(NavigationLink(value: entry) { rowContent }.buttonStyle(.plain))
+            } else {
+                return AnyView(rowContent)
+            }
         }
-    }
 }
 

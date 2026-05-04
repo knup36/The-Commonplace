@@ -176,11 +176,42 @@ struct TMDBService {
         )
     }
 
-    // MARK: - Download Poster
+    // MARK: - Fetch Release Date
 
-    /// Downloads poster image data from a TMDBSearchResult or TMDBDetail posterURL.
-    /// Returns nil if no poster is available or the download fails.
-    static func downloadPoster(from url: URL) async -> Data? {
+        /// Fetches the release date for a single movie or TV show by its TMDB ID.
+        /// Returns nil if no release date is available or the fetch fails.
+        /// Used at capture time and during the Monday refresh job in ComingSoonService.
+        static func fetchReleaseDate(id: Int, type: TMDBMediaType) async -> Date? {
+            let urlString = "\(baseURL)/\(type.rawValue)/\(id)"
+            guard let url = URL(string: urlString) else { return nil }
+
+            var request = URLRequest(url: url)
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            request.setValue("application/json", forHTTPHeaderField: "accept")
+
+            guard let (data, _) = try? await URLSession.shared.data(for: request),
+                  let item = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            else { return nil }
+
+            let rawDate: String
+            if type == .movie {
+                rawDate = item["release_date"] as? String ?? ""
+            } else {
+                rawDate = item["first_air_date"] as? String ?? ""
+            }
+
+            guard rawDate.count >= 10 else { return nil }
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.timeZone = TimeZone(identifier: "UTC")
+            return formatter.date(from: String(rawDate.prefix(10)))
+        }
+
+        // MARK: - Download Poster
+
+        /// Downloads poster image data from a TMDBSearchResult or TMDBDetail posterURL.
+        /// Returns nil if no poster is available or the download fails.
+        static func downloadPoster(from url: URL) async -> Data? {
             do {
                 let (data, _) = try await URLSession.shared.data(from: url)
                 return data

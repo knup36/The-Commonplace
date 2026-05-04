@@ -74,11 +74,11 @@ struct MediaDetailView: View {
             if editMode.isEditing {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                                            editMode.exit()
-                                        }
-                        .bold()
-                        .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        editMode.exit()
+                    }
+                    .bold()
+                    .foregroundStyle(entry.type.detailAccentColor(for: themeManager.current))
                 }
             } else {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -584,14 +584,14 @@ struct MediaDetailView: View {
                 logSection
                 
                 // Tags + People
-                                let mediaAccent = entry.type.detailAccentColor(for: themeManager.current)
-                                EntryTagRow(
-                                    tagNames: $entry.tagNames,
-                                    isPinned: entry.isPinned,
-                                    accentColor: mediaAccent,
-                                    style: style
-                                )
-                                .padding(.horizontal, 20)
+                let mediaAccent = entry.type.detailAccentColor(for: themeManager.current)
+                EntryTagRow(
+                    tagNames: $entry.tagNames,
+                    isPinned: entry.isPinned,
+                    accentColor: mediaAccent,
+                    style: style
+                )
+                .padding(.horizontal, 20)
                 
                 Divider().padding(.horizontal, 20)
                 EntryMetadataFooter(entry: entry, style: style, accentColor: mediaAccent)
@@ -701,29 +701,29 @@ struct MediaDetailView: View {
                     .padding(.horizontal, 20)
             } else {
                 VStack(spacing: 0) {
-                                    ForEach(entry.mediaLog.reversed(), id: \.self) { logEntry in
-                                        let parts = logEntry.components(separatedBy: "::")
-                                        if parts.count == 2 {
-                                            HStack(alignment: .top, spacing: 0) {
-                                                logEntryRow(dateString: parts[0], text: parts[1])
-                                                if editMode.isEditing {
-                                                    Button {
-                                                        entry.mediaLog.removeAll { $0 == logEntry }
-                                                        entry.touch()
-                                                        try? modelContext.save()
-                                                    } label: {
-                                                        Image(systemName: "xmark.circle.fill")
-                                                            .font(.system(size: 16))
-                                                            .foregroundStyle(style.cardMetadataText)
-                                                    }
-                                                    .buttonStyle(.plain)
-                                                    .padding(.top, 14)
-                                                    .padding(.trailing, 20)
-                                                }
-                                            }
-                                        }
+                    ForEach(entry.mediaLog.reversed(), id: \.self) { logEntry in
+                        let parts = logEntry.components(separatedBy: "::")
+                        if parts.count == 2 {
+                            HStack(alignment: .top, spacing: 0) {
+                                logEntryRow(dateString: parts[0], text: parts[1])
+                                if editMode.isEditing {
+                                    Button {
+                                        entry.mediaLog.removeAll { $0 == logEntry }
+                                        entry.touch()
+                                        try? modelContext.save()
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.system(size: 16))
+                                            .foregroundStyle(style.cardMetadataText)
                                     }
+                                    .buttonStyle(.plain)
+                                    .padding(.top, 14)
+                                    .padding(.trailing, 20)
                                 }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -809,6 +809,8 @@ struct MediaDetailView: View {
                 posterData = await TMDBService.downloadPoster(from: url)
             }
             
+            let releaseDate = await TMDBService.fetchReleaseDate(id: result.id, type: result.mediaType)
+            
             await MainActor.run {
                 entry.mediaTitle   = detail?.title ?? result.title
                 entry.mediaType    = result.mediaType.rawValue
@@ -819,6 +821,8 @@ struct MediaDetailView: View {
                 entry.mediaRuntime = detail?.runtime
                 entry.mediaSeasons = detail?.seasons
                 entry.mediaStatus  = "wantTo"
+                entry.mediaReleaseDate = releaseDate
+                entry.mediaReleaseDateFetched = Date()
                 
                 if let data = posterData {
                     entry.mediaCoverPath = try? MediaFileManager.save(

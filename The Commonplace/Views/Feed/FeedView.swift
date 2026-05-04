@@ -31,6 +31,7 @@ struct FeedView: View {
     @AppStorage("feedFullMode") private var isFullMode: Bool = false
     @AppStorage("feedShuffleSeed") private var shuffleSeed: Int = 0
     @State private var isShuffleMode: Bool = false
+    @State private var comingSoonCard: ComingSoonCard? = nil
     
     @EnvironmentObject var themeManager: ThemeManager
     
@@ -202,6 +203,13 @@ struct FeedView: View {
                         feedHeader
                         filterStripTipView
                         entryFilterStrip
+                        if let card = comingSoonCard {
+                            ComingSoonCardView(card: card) {
+                                comingSoonCard = nil
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 8)
+                        }
                         if isSlimMode {
                             SlimEntryFeed(entries: filteredEntries, style: style)
                                 .padding(.horizontal, 16)
@@ -256,11 +264,17 @@ struct FeedView: View {
                 }
                 .animation(.spring(response: 0.4, dampingFraction: 0.78), value: showingAddEntry)
                 .onAppear {
-                                    locationManager.requestLocation()
-                                    updateFilter()
-                                    SearchBarTip.feedIsActive = true
-                                    WidgetDataStore.writeSnapshot(from: Array(entries.prefix(6)))
-                                }
+                    locationManager.requestLocation()
+                    updateFilter()
+                    SearchBarTip.feedIsActive = true
+                    WidgetDataStore.writeSnapshot(from: Array(entries.prefix(6)))
+                    Task {
+                        comingSoonCard = await ComingSoonService.runIfNeeded(
+                            entries: Array(entries),
+                            modelContext: modelContext
+                        )
+                    }
+                }
                 .onDisappear {
                     SearchBarTip.feedIsActive = false
                 }
@@ -270,9 +284,9 @@ struct FeedView: View {
                     }
                 }
                 .onChange(of: entries) { _, newEntries in
-                                    updateFilter()
-                                    WidgetDataStore.writeSnapshot(from: Array(newEntries.prefix(6)))
-                                }
+                    updateFilter()
+                    WidgetDataStore.writeSnapshot(from: Array(newEntries.prefix(6)))
+                }
                 .onChange(of: filterType) { _, _ in visibleCount = 50; updateFilter() }
                 .onChange(of: deletedEntry) { _, _ in updateFilter() }
                 .safeAreaInset(edge: .bottom) {
@@ -550,9 +564,9 @@ struct FeedView: View {
             entry.captureLocationName = locationManager.currentPlaceName
         }
         modelContext.insert(entry)
-                try? modelContext.save()
-                SearchIndex.shared.index(entry: entry)
-                WidgetDataStore.writeSnapshot(from: Array(entries.prefix(6)))
+        try? modelContext.save()
+        SearchIndex.shared.index(entry: entry)
+        WidgetDataStore.writeSnapshot(from: Array(entries.prefix(6)))
         navigationPath.append(entry)
         // Reset backdated state for next entry
         isBackdated = false
