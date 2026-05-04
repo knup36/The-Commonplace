@@ -21,6 +21,16 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.14",
+            title: "Short Circuit",
+            notes: [
+                "Commonplace is now wired into iOS in ways it never has been before. Three new widgets live on your home screen: Recent Entries shows your latest captures at a glance, Gift Card surfaces your most recent nudge, and Memory reaches back into your archive and pulls something out for you to rediscover.",
+                "Siri and Shortcuts now know about Commonplace. Ask Siri to add a note and it lands silently in your feed — no app required. You can also build automations that jump straight to your Home or Today tab.",
+                "The status pickers on movie, TV, book, and game entries got a quiet upgrade. The native segmented control is gone, replaced with a sliding pill that feels like a physical switch. Small thing, but it makes editing feel more considered.",
+                "Tag and person suggestions now load faster across all entry types. A bug that was causing suggestions to disappear on media entries has been fixed, and people suggestions now stay open so you can tag multiple people in one go."
+            ]
+        ),
+        Release(
             version: "2.13",
             title: "The Gift",
             notes: [
