@@ -60,6 +60,7 @@ struct WeeklyReviewCard: View {
             let start = weekStart(weeksAgo: weeksAgo)
             let end = weekEnd(for: start)
             let hasReview = allEntries.contains {
+                $0.type == .journal &&
                 $0.tagNames.contains(WeeklyReviewTheme.weeklyReviewTag) &&
                 $0.createdAt >= start &&
                 $0.createdAt < end
