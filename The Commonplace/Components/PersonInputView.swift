@@ -13,7 +13,7 @@ struct PersonInputView: View {
     @Binding var tags: [String]
     var personFrequencyCounts: [String: Int] = [:]  // precomputed, passed from parent
     @Query(sort: \Tag.name) var allPersonTags: [Tag]
-
+    
     var allPersons: [Tag] { allPersonTags.filter { $0.isPerson } }
     var accentColor: Color = .accentColor
     var style: (any AppThemeStyle)?
@@ -32,19 +32,19 @@ struct PersonInputView: View {
     }
     
     var suggestions: [Tag] {
-            let tagged = Set(taggedPersonNames)
-            if inputText.isEmpty {
-                return allPersons
-                    .filter { !tagged.contains($0.name) }
-                    .sorted { (personFrequencyCounts[$0.name] ?? 0) > (personFrequencyCounts[$1.name] ?? 0) }
-            }
+        let tagged = Set(taggedPersonNames)
+        if inputText.isEmpty {
             return allPersons
-                .filter {
-                    !tagged.contains($0.name) &&
-                    $0.name.localizedCaseInsensitiveContains(inputText)
-                }
+                .filter { !tagged.contains($0.name) }
                 .sorted { (personFrequencyCounts[$0.name] ?? 0) > (personFrequencyCounts[$1.name] ?? 0) }
         }
+        return allPersons
+            .filter {
+                !tagged.contains($0.name) &&
+                $0.name.localizedCaseInsensitiveContains(inputText)
+            }
+            .sorted { (personFrequencyCounts[$0.name] ?? 0) > (personFrequencyCounts[$1.name] ?? 0) }
+    }
     
     var showCreateOption: Bool {
         let trimmed = inputText.trimmingCharacters(in: .whitespaces)
@@ -176,30 +176,30 @@ struct PersonInputView: View {
     // MARK: - Person Chip
     
     func personChip(name: String) -> some View {
-            let person = allPersons.first { $0.name == name }
-            let chipView = ZStack {
-                Circle()
-                    .strokeBorder(SharedTheme.goldRingGradient, lineWidth: 1.5)
-                    .frame(width: 28, height: 28)
-                personAvatar(name: name, photoPath: person?.profilePhotoPath, size: 26)
-            }
+        let person = allPersons.first { $0.name == name }
+        let chipView = ZStack {
+            Circle()
+                .strokeBorder(SharedTheme.goldRingGradient, lineWidth: 1.5)
+                .frame(width: 28, height: 28)
+            personAvatar(name: name, photoPath: person?.profilePhotoPath, size: 26)
+        }
             .onLongPressGesture {
                 if editMode.isEditing {
                     tags.removeAll { $0 == "@\(name)" }
                 }
             }
-
-            return Group {
-                if !editMode.isEditing, let person {
-                    NavigationLink(destination: PersonDetailView(tag: person)) {
-                        chipView
-                    }
-                    .buttonStyle(.plain)
-                } else {
+        
+        return Group {
+            if !editMode.isEditing, let person {
+                NavigationLink(destination: PersonDetailView(tag: person)) {
                     chipView
                 }
+                .buttonStyle(.plain)
+            } else {
+                chipView
             }
         }
+    }
     
     // MARK: - Person Avatar
     
@@ -229,21 +229,25 @@ struct PersonInputView: View {
     // MARK: - Add Person
     
     func addPerson(_ name: String) {
-            let cleaned = name.trimmingCharacters(in: .whitespaces)
-            guard !cleaned.isEmpty else { return }
-            let tagString = "@\(cleaned)"
-            guard !tags.contains(tagString) else {
+                let cleaned = name.trimmingCharacters(in: .whitespaces)
+                guard !cleaned.isEmpty else { return }
+                let tagString = "@\(cleaned)"
+                guard !tags.contains(tagString) else {
+                    inputText = ""
+                    return
+                }
+                tags.append(tagString)
                 inputText = ""
-                return
+                isExpanded = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    isFocused = true
+                }
+                let existingNames = allPersons.map { $0.name }
+                if !existingNames.contains(where: { $0.lowercased() == cleaned.lowercased() }) {
+                    let tag = Tag(name: cleaned)
+                    tag.subjectType = "person"
+                    modelContext.insert(tag)
+                    try? modelContext.save()
+                }
             }
-            tags.append(tagString)
-            inputText = ""
-            let existingNames = allPersons.map { $0.name }
-            if !existingNames.contains(where: { $0.lowercased() == cleaned.lowercased() }) {
-                let tag = Tag(name: cleaned)
-                tag.subjectType = "person"
-                modelContext.insert(tag)
-                try? modelContext.save()
-            }
-        }
 }

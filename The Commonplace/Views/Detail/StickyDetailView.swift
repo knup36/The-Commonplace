@@ -21,15 +21,29 @@ struct StickyDetailView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var themeManager: ThemeManager
     
+    @Query var allEntries: [Entry]
     @StateObject private var editMode = EditModeManager()
     @State private var showingDeleteConfirmation = false
     @State private var inputText: String = ""
     @State private var editingItemID: String? = nil  // nil = adding new
     @FocusState private var inputFocused: Bool
+    @FocusState private var titleFocused: Bool
+    @State private var titleText: String = ""
+    @State private var titleDebounceTask: Task<Void, Never>? = nil
     
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
     var bgColor: Color { entry.type.cardColor(for: themeManager.current) }
+    
+    var existingTagsSortedByFrequency: [String] {
+        var counts: [String: Int] = [:]
+        for e in allEntries {
+            for tag in e.tagNames where !tag.hasPrefix("@") {
+                counts[tag, default: 0] += 1
+            }
+        }
+        return counts.sorted { $0.value > $1.value }.map { $0.key }
+    }
     
     // MARK: - Item model
     
@@ -115,7 +129,7 @@ struct StickyDetailView: View {
                     PersonInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
                         .listRowBackground(bgColor)
                         .listRowSeparator(.hidden)
-                    TagInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
+                    TagInputView(tags: $entry.tagNames, existingTagsSortedByFrequency: existingTagsSortedByFrequency, accentColor: accentColor, style: style)
                         .listRowBackground(bgColor)
                         .listRowSeparator(.hidden)
                 } else {
@@ -139,7 +153,7 @@ struct StickyDetailView: View {
                                     }
                                 }
                                 if hasTags {
-                                    TagInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
+                                    TagInputView(tags: $entry.tagNames, existingTagsSortedByFrequency: existingTagsSortedByFrequency, accentColor: accentColor, style: style)
                                 }
                             }
                         }
@@ -160,18 +174,27 @@ struct StickyDetailView: View {
         .safeAreaInset(edge: .bottom) {
             bottomInputBar
         }
+        .onAppear {
+            titleText = entry.stickyTitle ?? ""
+            if entry.stickyTitle == nil && entry.stickyItems.isEmpty {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    titleFocused = true
+                }
+            }
+        }
         .onDisappear {
+            entry.stickyTitle = titleText.isEmpty ? nil : titleText
             SearchIndex.shared.index(entry: entry)
         }
         .toolbar {
             if editMode.isEditing {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                                            editMode.exit()
-                                        }
-                                        .bold()
-                                        .foregroundStyle(accentColor)
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        editMode.exit()
+                    }
+                    .bold()
+                    .foregroundStyle(accentColor)
                 }
             } else {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -257,12 +280,19 @@ struct StickyDetailView: View {
     // MARK: - Title
     
     var titleField: some View {
-        TextField("Title", text: Binding(
-            get: { entry.stickyTitle ?? "" },
-            set: { entry.stickyTitle = $0.isEmpty ? nil : $0 }
-        ))
-        .font(style.typeLargeTitle)
-        .foregroundStyle(style.cardPrimaryText)    }
+        TextField("Title", text: $titleText)
+            .font(style.typeLargeTitle)
+            .foregroundStyle(style.cardPrimaryText)
+            .focused($titleFocused)
+            .onChange(of: titleText) { _, newValue in
+                titleDebounceTask?.cancel()
+                titleDebounceTask = Task {
+                    try? await Task.sleep(for: .milliseconds(500))
+                    guard !Task.isCancelled else { return }
+                    entry.stickyTitle = newValue.isEmpty ? nil : newValue
+                }
+            }
+    }
     
     // MARK: - Progress
     

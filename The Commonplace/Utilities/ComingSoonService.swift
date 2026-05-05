@@ -124,12 +124,16 @@ struct ComingSoonService {
             let releaseDate = await TMDBService.fetchReleaseDate(id: tmdbID, type: tmdbType)
             
             await MainActor.run {
-                entry.mediaReleaseDate = releaseDate
-                entry.mediaReleaseDateFetched = Date()
-                try? modelContext.save()
-            }
-        }
-    }
+                            entry.mediaReleaseDate = releaseDate
+                            entry.mediaReleaseDateFetched = Date()
+                        }
+                    }
+                    // Save once after all updates — avoids repeated onChange(of: entries)
+                    // triggers that can reset the NavigationStack path mid-navigation
+                    await MainActor.run {
+                        try? modelContext.save()
+                    }
+                }
     
     // MARK: - Evaluate
     
