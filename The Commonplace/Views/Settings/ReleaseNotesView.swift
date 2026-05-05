@@ -21,6 +21,19 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.14.1",
+            title: "Coming Soon",
+            notes: [
+                "Commonplace now tracks release dates for movies and TV series you've saved. When something you're anticipating is less than two weeks away, a card surfaces in your feed.",
+                "Release dates refresh quietly in the background each week so the information stays current.",
+                "The Today tab is now split into three sections — Journal, Entries, and Media Log — so each part of your day has its own space.",
+                "Fixed a bug where the Weekly Review card could be suppressed by non-journal entries that shared its tag.",
+                "Sound entries now show the full tags row, including people and Folio pills, matching the rest of the feed.",
+                "Fixed a bug in People entry where the suggestion picker dismissed after adding the first person.",
+                "Sticky title editing is now debounced — the app writes to storage after you pause, not on every keystroke."
+            ]
+        ),
+        Release(
             version: "2.14",
             title: "Short Circuit",
             notes: [

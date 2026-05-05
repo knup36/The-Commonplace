@@ -49,6 +49,7 @@ struct ContentView: View {
                 showingAddEntry: $showingAddEntry,
                 showingTemplatePicker: $showingTemplatePicker
             )
+            .environmentObject(NavigationRouter.shared)
         } else {
             TabView(selection: $selectedTab) {
                 HomeDashboardView()
@@ -104,6 +105,7 @@ struct ContentView: View {
             .onReceive(NotificationCenter.default.publisher(for: .navigateToChronicles)) { _ in
                 selectedTab = 3
             }
+            .environmentObject(NavigationRouter.shared)
             .fontDesign(themeManager.current == .inkwell ? .serif : .rounded)
             .overlay(alignment: .bottom) {
                 VStack {
