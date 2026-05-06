@@ -21,7 +21,6 @@ struct StickyDetailView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var themeManager: ThemeManager
     
-    @Query var allEntries: [Entry]
     @StateObject private var editMode = EditModeManager()
     @State private var showingDeleteConfirmation = false
     @State private var inputText: String = ""
@@ -34,16 +33,6 @@ struct StickyDetailView: View {
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
     var bgColor: Color { entry.type.cardColor(for: themeManager.current) }
-    
-    var existingTagsSortedByFrequency: [String] {
-        var counts: [String: Int] = [:]
-        for e in allEntries {
-            for tag in e.tagNames where !tag.hasPrefix("@") {
-                counts[tag, default: 0] += 1
-            }
-        }
-        return counts.sorted { $0.value > $1.value }.map { $0.key }
-    }
     
     // MARK: - Item model
     
@@ -124,47 +113,19 @@ struct StickyDetailView: View {
             }
             
             // Tags + footer
-            Section {
-                if editMode.isEditing {
-                    PersonInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
-                        .listRowBackground(bgColor)
-                        .listRowSeparator(.hidden)
-                    TagInputView(tags: $entry.tagNames, existingTagsSortedByFrequency: existingTagsSortedByFrequency, accentColor: accentColor, style: style)
-                        .listRowBackground(bgColor)
-                        .listRowSeparator(.hidden)
-                } else {
-                    let hasPeople = entry.tagNames.contains { $0.hasPrefix("@") }
-                    let hasTags = entry.tagNames.contains { !$0.hasPrefix("@") }
-                    if entry.isPinned || hasPeople || hasTags {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 6) {
-                                if entry.isPinned {
-                                    Image(systemName: "bookmark.fill")
-                                        .font(.system(size: 12))
-                                        .foregroundStyle(accentColor)
-                                    if hasPeople || hasTags {
-                                        Text("|").font(.system(size: 12)).foregroundStyle(accentColor.opacity(0.3))
-                                    }
-                                }
-                                if hasPeople {
-                                    PersonInputView(tags: $entry.tagNames, accentColor: accentColor, style: style)
-                                    if hasTags {
-                                        Text("|").font(.system(size: 12)).foregroundStyle(accentColor.opacity(0.3))
-                                    }
-                                }
-                                if hasTags {
-                                    TagInputView(tags: $entry.tagNames, existingTagsSortedByFrequency: existingTagsSortedByFrequency, accentColor: accentColor, style: style)
-                                }
-                            }
+                        Section {
+                            EntryTagRow(
+                                tagNames: $entry.tagNames,
+                                isPinned: entry.isPinned,
+                                accentColor: accentColor,
+                                style: style
+                            )
+                            .listRowBackground(bgColor)
+                            .listRowSeparator(.hidden)
+                            EntryMetadataFooter(entry: entry, style: style, accentColor: accentColor)
+                                .listRowBackground(bgColor)
+                                .listRowSeparator(.hidden)
                         }
-                        .listRowBackground(bgColor)
-                        .listRowSeparator(.hidden)
-                    }
-                }
-                EntryMetadataFooter(entry: entry, style: style, accentColor: accentColor)
-                    .listRowBackground(bgColor)
-                    .listRowSeparator(.hidden)
-            }
         }
         .environmentObject(editMode)
         .listStyle(.plain)
