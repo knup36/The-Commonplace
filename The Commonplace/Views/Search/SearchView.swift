@@ -33,9 +33,9 @@ struct SearchView: View {
     var style: any AppThemeStyle { themeManager.style }
     
     @State private var query = ""
-        @State private var recentSearches: [String] = []
-        @State private var searchTask: Task<Void, Never>? = nil
-        @State private var searchFieldIsFocused = false
+    @State private var recentSearches: [String] = []
+    @State private var searchTask: Task<Void, Never>? = nil
+    @State private var searchFieldIsFocused = false
     
     // Result sets
     @State private var matchingEntries: [Entry] = []
@@ -62,13 +62,13 @@ struct SearchView: View {
                 style.background.ignoresSafeArea()
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
-                        // Title
-                        Text("Search")
-                            .font(style.typeLargeTitle)
-                            .foregroundStyle(style.primaryText)
-                            .padding(.horizontal, 20)
-                            .padding(.top, 16)
-                            .padding(.bottom, 20)
+                        // Drag indicator
+                        Capsule()
+                            .fill(style.tertiaryText.opacity(0.4))
+                            .frame(width: 36, height: 5)
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 8)
+                            .padding(.bottom, 16)
                         
                         if isSearching {
                             searchResults
@@ -95,11 +95,9 @@ struct SearchView: View {
             .animation(.easeOut(duration: 0.15), value: matchingEntries.count)
         }
         .onAppear {
-                    loadRecentSearches()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        searchFieldIsFocused = true
-                    }
-                }
+            loadRecentSearches()
+            searchFieldIsFocused = true
+        }
     }
     
     

@@ -130,15 +130,24 @@ struct HomeDashboardView: View {
             .background(style.background)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink(destination: SettingsView()) {
-                        Image(systemName: "gearshape.fill")
-                            .foregroundStyle(style.accent)
+                            ToolbarItem(placement: .navigationBarTrailing) {
+                                NavigationLink(destination: SettingsView()) {
+                                    Image(systemName: "gearshape.fill")
+                                        .foregroundStyle(style.accent)
+                                }
+                            }
+                        }
+                        .navigationDestination(for: Entry.self) { entry in
+                            NavigationRouter.destination(for: entry)
+                        }
+                        .navigationDestination(for: Tag.self) { tag in
+                            NavigationRouter.destination(for: tag)
+                        }
+                        .navigationDestination(for: Collection.self) { collection in
+                            CollectionDetailView(collection: collection)
+                        }
                     }
                 }
-            }
-        }
-    }
     
     // MARK: - Collections Section
     

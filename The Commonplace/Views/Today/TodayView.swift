@@ -78,7 +78,16 @@ struct TodayView: View {
                 keyboardVisible = false
             }
             .background(style.background)
-            .navigationBarTitleDisplayMode(.inline)
+                        .navigationBarTitleDisplayMode(.inline)
+                        .navigationDestination(for: Entry.self) { entry in
+                            NavigationRouter.destination(for: entry)
+                        }
+                        .navigationDestination(for: Tag.self) { tag in
+                            NavigationRouter.destination(for: tag)
+                        }
+                        .navigationDestination(for: Collection.self) { collection in
+                            CollectionDetailView(collection: collection)
+                        }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if keyboardVisible {

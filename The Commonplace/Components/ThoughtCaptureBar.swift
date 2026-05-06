@@ -166,7 +166,9 @@ struct ThoughtCaptureBar: View {
                             .buttonStyle(.plain)
                             .contentShape(Circle())
                         } else {
-                            NavigationLink(destination: SearchView()) {
+                            Button {
+                                showingSearch = true
+                            } label: {
                                 ZStack {
                                     Circle()
                                         .fill(Color.primary.opacity(0.001))

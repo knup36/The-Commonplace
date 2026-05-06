@@ -113,8 +113,11 @@ struct ChroniclesView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: Entry.self) { entry in
-                NavigationRouter.destination(for: entry)
-            }
+                            NavigationRouter.destination(for: entry)
+                        }
+                        .navigationDestination(for: Tag.self) { tag in
+                            NavigationRouter.destination(for: tag)
+                        }
         }
         .onAppear {
             computeData()
