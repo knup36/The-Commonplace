@@ -9,6 +9,13 @@
 // SCHEMA VERSION: 5
 // Last updated: v2.13
 //
+// Schema version history:
+//   v1 — initial schema (v1.1)
+//   v2 — filterLocationName/Latitude/Longitude/Radius added (v1.3)
+//   v3 — filterMediaStatus added (v1.5)
+//   v4 — collectionType, folioEmoji, folioHeaderImagePath added (v2.4)
+//   v5 — filterHideCompletedStickies added (v2.13)
+//
 // Schema change policy: same as Entry.swift — optional fields are safe to
 // add at any time. Never remove fields without deprecating first.
 //
@@ -57,14 +64,12 @@ class Collection {
     var filterLocationRadius: Double? = nil
     var filterMediaStatus: [String] = []
     var filterLocationStatus: [String] = []
-        var filterHideCompletedStickies: Bool = false
+    var filterHideCompletedStickies: Bool = false
     
     // Folio fields (v2.4)
     // collectionType: nil = plain collection, "folio" = promoted to Folio
     // folioEmoji: emoji identifier shown in pills and header
     // folioHeaderImagePath: optional header image saved via MediaFileManager
-    // manualTag: hidden tag written to entry.tagNames — entries with this tag
-    //   are always included in this collection regardless of filter rules
     var collectionType: String? = nil
     var folioEmoji: String? = nil
     var folioHeaderImagePath: String? = nil

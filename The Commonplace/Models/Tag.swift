@@ -25,11 +25,11 @@
 //   nil             — plain tag, no rich metadata
 //   "person"        — replaces Person model (v1.10.1)
 //   "folioGeneric"  — generic Folio (v2.0) — promoted tag with type-aware layout
-//   "folioMovie"    — Movie Folio (v3.0)
-//   "folioShow"     — TV Show Folio (v3.0)
-//   "folioBook"     — Book Folio (v3.0)
-//   "folioPlace"    — Place Folio (v3.0)
-//   "folioBand"     — Band/Artist Folio (v3.0)
+//                     NOTE: Tag-based Folios retired in v2.4. Folio architecture
+//                     moved to the Collection model (collectionType == "folio").
+//                     folioGeneric retained in schema for backwards compatibility only.
+//                     Future folio subtypes (movie, show, book etc.) will live on
+//                     Collection, not Tag.
 
 // ============================================================
 // SCHEMA VERSION: 3
@@ -66,30 +66,30 @@ class Tag {
     var name: String = ""
     var isPinned: Bool = false
     var createdAt: Date = Date()
-
+    
     // Project fields — stored now, activated in v3.0
     var isProject: Bool = false
     var isCompleted: Bool = false
     var completedAt: Date? = nil
-
+    
     // Color support — optional
     var colorHex: String? = nil
-
+    
     // Subject fields (v1.10.1+)
     // subjectType nil = plain tag. Non-nil = promoted Subject.
     var subjectType: String? = nil
-
+    
     // Person subject fields — populated when subjectType == "person"
     var profilePhotoPath: String? = nil
     var bio: String? = nil
     var birthdate: Date? = nil
-
+    
     // Subject emoji — shown in pill for all subject types
-        var subjectEmoji: String? = nil
-
-        // Folio header image — optional full-width header photo (v2.0)
-        var folioHeaderImagePath: String? = nil
-
+    var subjectEmoji: String? = nil
+    
+    // Folio header image — optional full-width header photo (v2.0)
+    var folioHeaderImagePath: String? = nil
+    
     init(name: String) {
         self.name = name
         self.isPinned = false
@@ -104,16 +104,16 @@ class Tag {
 extension Tag {
     /// True if this tag is a promoted Subject
     var isSubject: Bool { subjectType != nil }
-
+    
     /// True if this tag represents a person
     var isPerson: Bool { subjectType == "person" }
-
+    
     /// True if this tag has been promoted to any Folio type
     var isFolio: Bool { subjectType?.hasPrefix("folio") == true }
-
+    
     /// True if this tag is a generic Folio (v2.0)
     var isGenericFolio: Bool { subjectType == "folioGeneric" }
-
+    
     /// Display name for Folio — capitalizes words and replaces hyphens/underscores with spaces
     /// e.g. "warped-2026" → "Warped 2026"
     var folioDisplayName: String {
@@ -124,7 +124,7 @@ extension Tag {
             .map { $0.prefix(1).uppercased() + $0.dropFirst() }
             .joined(separator: " ")
     }
-
+    
     /// The tag string used in entry.tagNames for person subjects
     /// Matches the existing @-prefix convention from the Person model
     var tagString: String {

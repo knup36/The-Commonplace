@@ -59,6 +59,8 @@
 //                      retained for legacy archive import compatibility
 //   isFavorited      — deprecated v1.7.1, replaced by isPinned
 //                      retained in schema, safe to remove after v2.0
+//   readingTime      — deprecated v2.16, never used in UI
+//                      safe to remove after v2.16 version cycle
 // ============================================================
 //
 // UI language conventions (do not change these):
@@ -90,7 +92,7 @@ class Entry {
     var type: EntryType = EntryType.text
     var text: String = ""
     var wordCount: Int? = nil
-    var readingTime: Int? = nil
+    var readingTime: Int? = nil  // DEPRECATED v2.16 — never displayed in UI; remove after one full version cycle
     
     var tagNames: [String] = []
     
@@ -211,9 +213,9 @@ class Entry {
     var linkedEntryIDs: [String] = []
     
     // Screenshot detection (v2.0.1)
-    // isScreenshot: true if the image was detected as a screenshot via EXIF analysis
-    // isScreenshotDetected: true once detection has run — prevents re-processing on every launch
-    // Detection: absence of camera EXIF fields (FNumber, ExposureTime) indicates screenshot
+        // isScreenshot: true if the image was detected as a screenshot via EXIF analysis
+        // Detection: absence of camera EXIF fields (FNumber, ExposureTime) indicates screenshot
+        // Manual override available in PhotoDetailSection edit mode
     var isScreenshot: Bool = false
     
     // Attachment (v2.8)
@@ -222,23 +224,23 @@ class Entry {
     // attachmentFileSize: bytes — displayed as formatted string in detail view
     // attachmentPath: relative path in MediaFileManager, same pattern as imagePath/audioPath
     var attachmentPath: String? = nil
-        var attachmentType: String? = nil
-        var attachmentFilename: String? = nil
-        var attachmentFileSize: Int? = nil
+    var attachmentType: String? = nil
+    var attachmentFilename: String? = nil
+    var attachmentFileSize: Int? = nil
     var attachmentThumbnailPath: String? = nil
-
-        // Shazam sync (v2.12)
-        // shazamID: Apple Music track ID string from the Shazam playlist
-        // Used as deduplication key — if this field matches an existing entry,
-        // that track is skipped during sync
+    
+    // Shazam sync (v2.12)
+    // shazamID: Apple Music track ID string from the Shazam playlist
+    // Used as deduplication key — if this field matches an existing entry,
+    // that track is skipped during sync
     var shazamID: String? = nil
-        
-        // Upcoming release tracking (v2.14.1)
-        // mediaReleaseDate: release date fetched from TMDB at capture time (movies and TV only)
-        // mediaReleaseDateFetched: timestamp of last TMDB check — drives the weekly Monday refresh
-        // Once mediaReleaseDate is in the past, the entry no longer qualifies for the Coming Soon card
-        var mediaReleaseDate: Date? = nil
-        var mediaReleaseDateFetched: Date? = nil
+    
+    // Upcoming release tracking (v2.14.1)
+    // mediaReleaseDate: release date fetched from TMDB at capture time (movies and TV only)
+    // mediaReleaseDateFetched: timestamp of last TMDB check — drives the weekly Monday refresh
+    // Once mediaReleaseDate is in the past, the entry no longer qualifies for the Coming Soon card
+    var mediaReleaseDate: Date? = nil
+    var mediaReleaseDateFetched: Date? = nil
     
     init(type: EntryType = .text, text: String = "", tags: [String] = []) {
         self.id = UUID()
@@ -259,8 +261,9 @@ class Entry {
     }
     
     /// Call whenever meaningful content on the entry changes.
-    /// Updates modifiedAt and recalculates wordCount for text-heavy entries.
-    func touch() {
+        /// Updates modifiedAt and recalculates wordCount for text-heavy entries.
+        /// Note: readingTime is deprecated (v2.16) and no longer updated here.
+        func touch() {
         modifiedAt = Date()
         if !text.isEmpty {
             wordCount = text.split(whereSeparator: \.isWhitespace).count
@@ -331,26 +334,26 @@ enum EntryType: String, Codable, CaseIterable {
     
     // Theme-aware versions — use these in all new and updated views
     func accentColor(for theme: AppTheme) -> Color {
-            switch theme {
-            case .dusk:    return DuskTheme.accentColor(for: self)
-            case .inkwell: return accentColor
-            case .system:  return accentColor
-            }
+        switch theme {
+        case .dusk:    return DuskTheme.accentColor(for: self)
+        case .inkwell: return accentColor
+        case .system:  return accentColor
         }
-
-        func cardColor(for theme: AppTheme) -> Color {
-            switch theme {
-            case .dusk:    return DuskTheme.cardBackground(for: self)
-            case .inkwell: return cardColor
-            case .system:  return cardColor
-            }
+    }
+    
+    func cardColor(for theme: AppTheme) -> Color {
+        switch theme {
+        case .dusk:    return DuskTheme.cardBackground(for: self)
+        case .inkwell: return cardColor
+        case .system:  return cardColor
         }
-
-        func detailAccentColor(for theme: AppTheme) -> Color {
-            switch theme {
-            case .dusk:    return DuskTheme.detailAccentColor(for: self)
-            case .inkwell: return accentColor
-            case .system:  return accentColor
-            }
+    }
+    
+    func detailAccentColor(for theme: AppTheme) -> Color {
+        switch theme {
+        case .dusk:    return DuskTheme.detailAccentColor(for: self)
+        case .inkwell: return accentColor
+        case .system:  return accentColor
         }
+    }
 }

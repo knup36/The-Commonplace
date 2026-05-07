@@ -36,7 +36,7 @@ class Habit {
     var icon: String = "checkmark.circle"
     var order: Int = 0
     var createdAt: Date = Date()
-
+    
     init(name: String, icon: String, order: Int) {
         self.id = UUID()
         self.name = name
