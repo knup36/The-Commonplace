@@ -24,9 +24,9 @@ enum AppTheme: String, CaseIterable {
     case system   = "System"
     case inkwell  = "Inkwell"
     case dusk     = "Dusk"
-
+    
     var label: String { rawValue }
-
+    
     var icon: String {
         switch self {
         case .system:  return "circle.lefthalf.filled"
@@ -60,12 +60,12 @@ class ThemeManager: ObservableObject {
     @Published var current: AppTheme {
         didSet { UserDefaults.standard.set(current.rawValue, forKey: "appTheme") }
     }
-
+    
     init() {
         let saved = UserDefaults.standard.string(forKey: "appTheme") ?? AppTheme.dusk.rawValue
         self.current = AppTheme(rawValue: saved) ?? .dusk
     }
-
+    
     var style: any AppThemeStyle {
         switch current {
         case .inkwell: return InkwellStyle()
@@ -73,7 +73,7 @@ class ThemeManager: ObservableObject {
         case .dusk:    return DuskStyle()
         }
     }
-
+    
     var colorScheme: ColorScheme? {
         switch current {
         case .system:  return nil
@@ -90,16 +90,16 @@ protocol AppThemeStyle {
     var background: Color { get }
     var surface: Color { get }
     var cardBackground: Color { get }
-
+    
     // Text
     var primaryText: Color { get }
     var secondaryText: Color { get }
     var tertiaryText: Color { get }
-
+    
     // Accent
     var accent: Color { get }
     var accentDim: Color { get }
-
+    
     // Legacy font slots — kept for compatibility, use AppTypeScale for new work
     var largeTitle: Font { get }
     var title: Font { get }
@@ -107,7 +107,7 @@ protocol AppThemeStyle {
     var body: Font { get }
     var subheadline: Font { get }
     var caption: Font { get }
-
+    
     // Type scale — use these for all new views
     var typeLargeTitle: Font { get }
     var typeTitle1: Font { get }
@@ -120,28 +120,28 @@ protocol AppThemeStyle {
     var typeCaption: Font { get }
     var typeSectionHeader: Font { get }
     var typeMono: Font { get }
-
+    
     // Pills (tags, stat chips)
-        var pillBackground: Color { get }
-        var pillForeground: Color { get }
-
-        // Person avatar fallback (no photo)
-        var personAvatarBackground: Color { get }
-        var personAvatarForeground: Color { get }
-
-        // Card text — used on colored entry type cards
-        var cardPrimaryText: Color { get }
-        var cardSecondaryText: Color { get }
-        var cardMetadataText: Color { get }
-        var cardDivider: Color { get }
-        var cardBorder: Color { get }
-
-        // Entry type label visibility
-        var showsEntryTypeLabel: Bool { get }
-
-        // Behavior
-        var usesSerifFonts: Bool { get }
-    }
+    var pillBackground: Color { get }
+    var pillForeground: Color { get }
+    
+    // Person avatar fallback (no photo)
+    var personAvatarBackground: Color { get }
+    var personAvatarForeground: Color { get }
+    
+    // Card text — used on colored entry type cards
+    var cardPrimaryText: Color { get }
+    var cardSecondaryText: Color { get }
+    var cardMetadataText: Color { get }
+    var cardDivider: Color { get }
+    var cardBorder: Color { get }
+    
+    // Entry type label visibility
+    var showsEntryTypeLabel: Bool { get }
+    
+    // Behavior
+    var usesSerifFonts: Bool { get }
+}
 
 // MARK: - AppThemeStyle default implementations
 // All themes get the same type scale — only colors differ
@@ -168,16 +168,16 @@ struct DuskTheme {
     static let surface     = Color(hex: "#1A1208")
     static let card        = Color(hex: "#221A0E")
     static let cardBorder  = Color(hex: "#2E2418")
-
+    
     // Text
     static let primaryText   = Color(hex: "#F0E8DC")
     static let secondaryText = Color(hex: "#A89880")
     static let tertiaryText  = Color(hex: "#6A5A48")
-
+    
     // Accent
     static let accent    = Color(hex: "#A89060")
     static let accentDim = Color(hex: "#6A5A3A")
-
+    
     // Entry type base colors
     static let noteColor     = Color(hex: "#464645")
     static let journalColor  = Color(hex: "#4A435D")
@@ -188,13 +188,13 @@ struct DuskTheme {
     static let stickyColor   = Color(hex: "#877662")
     static let musicColor    = Color(hex: "#7E505D")
     static let mediaColor       = Color(hex: "#7A5855")
-        static let attachmentColor  = Color(hex: "#4A4538")
-
+    static let attachmentColor  = Color(hex: "#4A4538")
+    
     // Derived border — base color lightened
     static func borderColor(for base: Color) -> Color {
         base.opacity(0.6)
     }
-
+    
     static func cardBackground(for type: EntryType) -> Color {
         switch type {
         case .text:     return noteColor
@@ -206,30 +206,30 @@ struct DuskTheme {
         case .sticky:   return stickyColor
         case .music:    return musicColor
         case .media:       return mediaColor
-                case .attachment:  return attachmentColor
-                }
-            }
-
-            static func accentColor(for type: EntryType) -> Color {
-            cardBackground(for: type)
+        case .attachment:  return attachmentColor
         }
-
-        // Brighter version of the card color for UI chrome on detail views
-        // Used for toolbar buttons, metadata text, interactive elements
-        static func detailAccentColor(for type: EntryType) -> Color {
-            switch type {
-            case .text:     return Color(hex: "#8A8A88")
-            case .journal:  return Color(hex: "#8A82A8")
-            case .link:     return Color(hex: "#7A9AAA")
-            case .photo:    return Color(hex: "#9ABAAA")
-            case .audio:    return Color(hex: "#C8A898")
-            case .location: return Color(hex: "#8AA882")
-            case .sticky:   return Color(hex: "#C8B898")
-            case .music:    return Color(hex: "#C8909A")
-            case .media:       return Color(hex: "#C89890")
-                        case .attachment:  return Color(hex: "#C8C0A8")
-                        }
-                    }
+    }
+    
+    static func accentColor(for type: EntryType) -> Color {
+        cardBackground(for: type)
+    }
+    
+    // Brighter version of the card color for UI chrome on detail views
+    // Used for toolbar buttons, metadata text, interactive elements
+    static func detailAccentColor(for type: EntryType) -> Color {
+        switch type {
+        case .text:     return Color(hex: "#8A8A88")
+        case .journal:  return Color(hex: "#8A82A8")
+        case .link:     return Color(hex: "#7A9AAA")
+        case .photo:    return Color(hex: "#9ABAAA")
+        case .audio:    return Color(hex: "#C8A898")
+        case .location: return Color(hex: "#8AA882")
+        case .sticky:   return Color(hex: "#C8B898")
+        case .music:    return Color(hex: "#C8909A")
+        case .media:       return Color(hex: "#C89890")
+        case .attachment:  return Color(hex: "#C8C0A8")
+        }
+    }
 }
 
 // MARK: - Dusk Style
@@ -239,16 +239,16 @@ struct DuskStyle: AppThemeStyle {
     var background: Color    { DuskTheme.background }
     var surface: Color       { DuskTheme.surface }
     var cardBackground: Color { DuskTheme.card }
-
+    
     // Text
     var primaryText: Color   { DuskTheme.primaryText }
     var secondaryText: Color { DuskTheme.secondaryText }
     var tertiaryText: Color  { DuskTheme.tertiaryText }
-
+    
     // Accent
     var accent: Color        { DuskTheme.accent }
     var accentDim: Color     { DuskTheme.accentDim }
-
+    
     // Legacy font slots
     var largeTitle: Font  { AppTypeScale.largeTitle }
     var title: Font       { AppTypeScale.title2 }
@@ -256,30 +256,30 @@ struct DuskStyle: AppThemeStyle {
     var body: Font        { AppTypeScale.body }
     var subheadline: Font { AppTypeScale.bodySecondary }
     var caption: Font     { AppTypeScale.caption }
-
+    
     // Pills
-        var pillBackground: Color        { Color.white.opacity(0.12) }
-        var pillForeground: Color        { Color.white.opacity(0.80) }
+    var pillBackground: Color        { Color.white.opacity(0.12) }
+    var pillForeground: Color        { Color.white.opacity(0.80) }
+    
+    // Person avatar
+    var personAvatarBackground: Color { Color.white.opacity(0.15) }
+    var personAvatarForeground: Color { Color.white.opacity(0.90) }
+    
+    // Card text
+    var cardPrimaryText: Color   { Color.white.opacity(0.92) }
+    var cardSecondaryText: Color { Color.white.opacity(0.60) }
+    var cardMetadataText: Color  { Color.white.opacity(0.35) }
+    var cardDivider: Color       { Color.white.opacity(0.10) }
+    var cardBorder: Color        { Color.white.opacity(0.10) }
+    
+    // Entry type label
+    var showsEntryTypeLabel: Bool { true }
+    
+    // Behavior
+    var usesSerifFonts: Bool     { false }
+}
 
-        // Person avatar
-        var personAvatarBackground: Color { Color.white.opacity(0.15) }
-        var personAvatarForeground: Color { Color.white.opacity(0.90) }
-
-        // Card text
-        var cardPrimaryText: Color   { Color.white.opacity(0.92) }
-        var cardSecondaryText: Color { Color.white.opacity(0.60) }
-        var cardMetadataText: Color  { Color.white.opacity(0.35) }
-        var cardDivider: Color       { Color.white.opacity(0.10) }
-        var cardBorder: Color        { Color.white.opacity(0.10) }
-
-        // Entry type label
-        var showsEntryTypeLabel: Bool { true }
-
-        // Behavior
-        var usesSerifFonts: Bool     { false }
-    }
-
-    // MARK: - Inkwell Color Palette
+// MARK: - Inkwell Color Palette
 
 struct InkwellTheme {
     static let background     = Color(hex: "#1A1510")
@@ -301,9 +301,9 @@ struct InkwellTheme {
     static let stickyAccent   = Color(hex: "#B8A030")
     static let musicAccent    = Color(hex: "#C07880")
     static let mediaAccent      = Color(hex: "#C85850")
-        static let attachmentAccent = Color(hex: "#C8C0A0")
-        static let attachmentCard   = Color(hex: "#28261E")
-        static let attachmentBorder = Color(hex: "#383428")
+    static let attachmentAccent = Color(hex: "#C8C0A0")
+    static let attachmentCard   = Color(hex: "#28261E")
+    static let attachmentBorder = Color(hex: "#383428")
     static let textCard       = Color(hex: "#262626")
     static let photoCard      = Color(hex: "#182830")
     static let audioCard      = Color(hex: "#2E2518")
@@ -322,7 +322,7 @@ struct InkwellTheme {
     static let stickyBorder   = Color(hex: "#383410")
     static let musicBorder    = Color(hex: "#3D2830")
     static let mediaBorder    = Color(hex: "#4A2020")
-
+    
     static func cardBackground(for type: EntryType) -> Color {
         switch type {
         case .text:     return textCard
@@ -334,10 +334,10 @@ struct InkwellTheme {
         case .sticky:   return stickyCard
         case .music:    return musicCard
         case .media:       return mediaCard
-                case .attachment:  return attachmentCard
-                }
-            }
-
+        case .attachment:  return attachmentCard
+        }
+    }
+    
     static func cardBorderColor(for type: EntryType) -> Color {
         switch type {
         case .text:     return textBorder
@@ -349,10 +349,10 @@ struct InkwellTheme {
         case .sticky:   return stickyBorder
         case .music:    return musicBorder
         case .media:       return mediaBorder
-                case .attachment:  return attachmentBorder
-                }
-            }
-
+        case .attachment:  return attachmentBorder
+        }
+    }
+    
     static func accentColor(for type: EntryType) -> Color {
         switch type {
         case .text:     return textAccent
@@ -364,10 +364,10 @@ struct InkwellTheme {
         case .sticky:   return stickyAccent
         case .music:    return musicAccent
         case .media:       return mediaAccent
-                case .attachment:  return attachmentAccent
-                }
-            }
-
+        case .attachment:  return attachmentAccent
+        }
+    }
+    
     static func collectionCardBackground(for hex: String) -> Color {
         switch hex.uppercased() {
         case "#FF3B30": return Color(hex: "#2E1A18")
@@ -398,7 +398,7 @@ struct InkwellTheme {
         default:        return Color(hex: "#2E2620")
         }
     }
-
+    
     static func collectionAccentColor(for hex: String) -> Color {
         switch hex.uppercased() {
         case "#FF3B30": return Color(hex: "#C85850")
@@ -462,7 +462,7 @@ struct InkwellStyle: AppThemeStyle {
     var usesSerifFonts: Bool          { true }
 }
 
-    // MARK: - System Style
+// MARK: - System Style
 
 struct SystemStyle: AppThemeStyle {
     var background: Color     { Color(uiColor: .systemBackground) }
@@ -480,14 +480,14 @@ struct SystemStyle: AppThemeStyle {
     var subheadline: Font { .subheadline }
     var caption: Font     { .caption }
     var pillBackground: Color         { Color(uiColor: .systemGray5) }
-        var pillForeground: Color         { Color(uiColor: .label) }
-        var personAvatarBackground: Color { Color(uiColor: .systemGray4) }
-        var personAvatarForeground: Color { Color(uiColor: .label) }
-        var cardPrimaryText: Color        { Color(uiColor: .label) }
-        var cardSecondaryText: Color      { Color(uiColor: .secondaryLabel) }
-        var cardMetadataText: Color       { Color(uiColor: .tertiaryLabel) }
-        var cardDivider: Color            { Color(uiColor: .separator) }
-        var cardBorder: Color             { Color(uiColor: .separator) }
-        var showsEntryTypeLabel: Bool     { false }
-        var usesSerifFonts: Bool          { false }
-    }
+    var pillForeground: Color         { Color(uiColor: .label) }
+    var personAvatarBackground: Color { Color(uiColor: .systemGray4) }
+    var personAvatarForeground: Color { Color(uiColor: .label) }
+    var cardPrimaryText: Color        { Color(uiColor: .label) }
+    var cardSecondaryText: Color      { Color(uiColor: .secondaryLabel) }
+    var cardMetadataText: Color       { Color(uiColor: .tertiaryLabel) }
+    var cardDivider: Color            { Color(uiColor: .separator) }
+    var cardBorder: Color             { Color(uiColor: .separator) }
+    var showsEntryTypeLabel: Bool     { false }
+    var usesSerifFonts: Bool          { false }
+}

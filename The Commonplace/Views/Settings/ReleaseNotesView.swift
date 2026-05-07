@@ -21,6 +21,17 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.15",
+            title: "Dot Matrix",
+            notes: [
+                "The Entry Calendar is a new Chronicles card that shows your entire month at a glance. Each day contains a small grid of colored dots — one for each type of thing you captured. Tap any day to see what you saved.",
+                "Search now slides up as a bottom sheet, rising to meet the search button at the bottom of the screen.",
+                "The Today tab is now split into three sections — Journal, Entries, and Media Log — so each part of your day has its own space.",
+                "Tag pills and person avatars now navigate correctly when tapped from the Today, Home, and Chronicles tabs.",
+                "Several internal improvements and tech debt items cleared ahead of v3.0."
+            ]
+        ),
+        Release(
             version: "2.14.1",
             title: "Coming Soon",
             notes: [

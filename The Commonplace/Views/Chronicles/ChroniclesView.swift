@@ -25,7 +25,7 @@ struct ChroniclesView: View {
     
     // Stored as comma-separated string since AppStorage doesn't support [String]
     @AppStorage("chronicles_card_order") private var cardOrderString: String =
-    "dogEars,onThisDay,mood,stats,watchTimeline,habitPatterns,rewind"
+    "dogEars,onThisDay,mood,stats,watchTimeline,habitPatterns,rewind,entryCalendar"
     
     @State private var showingReorder = false
     
@@ -96,6 +96,12 @@ struct ChroniclesView: View {
                             )
                         case "rewind":
                             RewindCard(
+                                allEntries: entries,
+                                style: style,
+                                themeManager: themeManager
+                            )
+                        case "entryCalendar":
+                            EntryCalendarCard(
                                 allEntries: entries,
                                 style: style,
                                 themeManager: themeManager
@@ -216,7 +222,7 @@ struct ChroniclesView: View {
         }.sorted { $0.count > $1.count }
     }
     func migrateCardOrderIfNeeded() {
-        let knownCards = ["dogEars", "onThisDay", "mood", "stats", "watchTimeline", "habitPatterns", "rewind"]
+        let knownCards = ["dogEars", "onThisDay", "mood", "stats", "watchTimeline", "habitPatterns", "rewind", "entryCalendar"]
         var current = cardOrderString.components(separatedBy: ",")
         var changed = false
         for card in knownCards {
