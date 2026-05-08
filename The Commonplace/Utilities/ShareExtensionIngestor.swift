@@ -39,9 +39,9 @@ struct ShareExtensionIngestor {
             return
         }
         
-        print("ShareExtensionIngestor: ingesting \(pending.count) pending entries")
+        AppLogger.info("ShareExtensionIngestor: ingesting \(pending.count) pending entries", domain: .general)
         for shared in pending {
-            print("ShareExtensionIngestor: found entry type=\(shared.type) url=\(shared.url ?? "nil")")
+            AppLogger.info("ShareExtensionIngestor: found entry type=\(shared.type) url=\(shared.url ?? "nil")", domain: .general)
         }
         
         // Fetch all existing tags once before the loop — avoids a full tag fetch per entry
@@ -53,9 +53,9 @@ struct ShareExtensionIngestor {
                 }
                 
                 for shared in pending {
-                    print("ShareExtensionIngestor: ingesting type=\(shared.type) url=\(shared.url ?? "nil")")
+                    AppLogger.info("ShareExtensionIngestor: ingesting type=\(shared.type) url=\(shared.url ?? "nil")", domain: .general)
                     guard let entryType = EntryType(rawValue: shared.type) else {
-                        print("ShareExtensionIngestor: unknown entry type \(shared.type), skipping")
+                        AppLogger.warning("ShareExtensionIngestor: unknown entry type \(shared.type), skipping", domain: .general)
                         AppGroupContainer.deletePending(id: shared.id)
                         continue
                     }
@@ -88,13 +88,14 @@ struct ShareExtensionIngestor {
                                     if let uiImage = image as? UIImage,
                                        let data = uiImage.jpegData(compressionQuality: 0.7) {
                                         DispatchQueue.main.async {
-                                            entry.previewImagePath = try? MediaFileManager.save(
-                                                data,
-                                                type: .preview,
-                                                id: entry.id.uuidString
-                                            )
-                                            try? context.save()
-                                        }
+                                                                                    entry.previewImagePath = try? MediaFileManager.save(
+                                                                                        data,
+                                                                                        type: .preview,
+                                                                                        id: entry.id.uuidString
+                                                                                    )
+                                                                                    // No save here — the context.save() after article
+                                                                                    // extraction covers this field
+                                                                                }
                                     }
                                 }
                             }
@@ -251,10 +252,10 @@ struct ShareExtensionIngestor {
             // Clean up pending file
             AppGroupContainer.deletePending(id: shared.id)
             
-            print("ShareExtensionIngestor: ingested \(entryType.rawValue) entry")
+                    AppLogger.info("ShareExtensionIngestor: ingested \(entryType.rawValue) entry", domain: .general)
         }
         
-        print("ShareExtensionIngestor: ingestion complete")
+        AppLogger.info("ShareExtensionIngestor: ingestion complete", domain: .general)
             }
             
             @MainActor
@@ -265,11 +266,11 @@ struct ShareExtensionIngestor {
         var request = URLRequest(url: url)
         request.httpMethod = "HEAD"
         
-        guard let (_, response) = try? await URLSession.shared.data(from: url),
-              let finalURL = (response as? HTTPURLResponse)?.url ?? url as URL? else {
-            print("ShareExtensionIngestor: failed to resolve Maps URL")
-            return
-        }
+                guard let (_, response) = try? await URLSession.shared.data(for: request),
+                              let finalURL = (response as? HTTPURLResponse)?.url ?? url as URL? else {
+                            AppLogger.warning("ShareExtensionIngestor: failed to resolve Maps URL", domain: .general)
+                            return
+                        }
         
         // Try to extract coordinates from the final URL
         // Apple Maps format: ?ll=lat,lon or ?q=lat,lon or ?daddr=lat,lon
@@ -320,7 +321,7 @@ struct ShareExtensionIngestor {
         if let lat, let lon {
             entry.locationLatitude = lat
             entry.locationLongitude = lon
-            print("ShareExtensionIngestor: resolved coordinates \(lat), \(lon)")
+            AppLogger.info("ShareExtensionIngestor: resolved coordinates \(lat), \(lon)", domain: .general)
             
             // Reverse geocode to get a place name
             let location = CLLocation(latitude: lat, longitude: lon)
@@ -340,7 +341,7 @@ struct ShareExtensionIngestor {
             }
         } else if let name {
             entry.locationName = name
-            print("ShareExtensionIngestor: resolved place name \(name)")
+            AppLogger.info("ShareExtensionIngestor: resolved place name \(name)", domain: .general)
         }
         
         try? context.save()
