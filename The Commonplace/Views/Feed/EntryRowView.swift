@@ -88,6 +88,72 @@ struct AsyncMediaImage: View {
     }
 }
 
+// MARK: - AsyncPersonAvatar
+
+struct AsyncPersonAvatar: View {
+    let name: String
+    let profilePhotoPath: String?
+    let size: CGFloat
+    let borderGradient: AnyShapeStyle
+    let avatarBackground: Color
+    let avatarForeground: Color
+    
+    @State private var imageData: Data? = nil
+    @State private var isLoaded = false
+    @State private var attempted = false
+    
+    var body: some View {
+        ZStack {
+            Circle()
+                .strokeBorder(borderGradient, lineWidth: 1)
+                .frame(width: size + 2, height: size + 2)
+            
+            if let data = imageData, let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size, height: size)
+                    .clipShape(Circle())
+                    .opacity(isLoaded ? 1 : 0)
+                    .onAppear {
+                        withAnimation(.easeIn(duration: 0.2)) { isLoaded = true }
+                    }
+            } else if attempted {
+                // No photo — show initial letter
+                Circle()
+                    .fill(avatarBackground)
+                    .frame(width: size, height: size)
+                    .overlay(
+                        Text(String(name.prefix(1)).uppercased())
+                            .font(.system(size: size * 0.45, weight: .medium))
+                            .foregroundStyle(avatarForeground)
+                    )
+            } else {
+                // Still loading — shimmer
+                Circle()
+                    .fill(Color.gray.opacity(0.15))
+                    .frame(width: size, height: size)
+            }
+        }
+        .task {
+            guard !attempted else { return }
+            attempted = true
+            guard let path = profilePhotoPath else { return }
+            if let cached = ImageCache.shared.get(path: path) {
+                imageData = cached
+                return
+            }
+            let loaded = await Task.detached(priority: .userInitiated) {
+                MediaFileManager.load(path: path)
+            }.value
+            if let loaded {
+                ImageCache.shared.set(path: path, data: loaded)
+            }
+            await MainActor.run { imageData = loaded }
+        }
+    }
+}
+
 // MARK: - EntryRowView
 
 struct EntryRowView: View {
@@ -240,12 +306,8 @@ struct EntryRowView: View {
                 let thumbWidth: CGFloat = 50
                 let thumbHeight: CGFloat = isPodcast ? 50 : 75
                 let thumbRadius: CGFloat = isPodcast ? 8 : 6
-                if let path = entry.mediaCoverPath,
-                   let data = MediaFileManager.load(path: path),
-                   let uiImage = UIImage(data: data) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
+                if let path = entry.mediaCoverPath {
+                    AsyncMediaImage(path: path)
                         .frame(width: thumbWidth, height: thumbHeight)
                         .clipShape(RoundedRectangle(cornerRadius: thumbRadius))
                 } else {
@@ -364,29 +426,14 @@ struct EntryRowView: View {
                             ForEach(personTags.prefix(3), id: \.self) { tag in
                                 let name = String(tag.dropFirst())
                                 let personTag = allPersonTags.first { $0.name == name && $0.isPerson }
-                                ZStack {
-                                    Circle()
-                                        .strokeBorder(SharedTheme.goldRingGradient, lineWidth: 1)
-                                        .frame(width: 22, height: 22)
-                                    if let path = personTag?.profilePhotoPath,
-                                       let data = MediaFileManager.load(path: path),
-                                       let uiImage = UIImage(data: data) {
-                                        Image(uiImage: uiImage)
-                                            .resizable()
-                                            .scaledToFill()
-                                            .frame(width: 20, height: 20)
-                                            .clipShape(Circle())
-                                    } else {
-                                        Circle()
-                                            .fill(style.personAvatarBackground)
-                                            .frame(width: 20, height: 20)
-                                            .overlay(
-                                                Text(String(name.prefix(1)).uppercased())
-                                                    .font(.system(size: 9, weight: .medium))
-                                                    .foregroundStyle(style.personAvatarForeground)
-                                            )
-                                    }
-                                }
+                                AsyncPersonAvatar(
+                                    name: name,
+                                    profilePhotoPath: personTag?.profilePhotoPath,
+                                    size: 20,
+                                    borderGradient: AnyShapeStyle(SharedTheme.goldRingGradient),
+                                    avatarBackground: style.personAvatarBackground,
+                                    avatarForeground: style.personAvatarForeground
+                                )
                             }
                             if personTags.count > 3 {
                                 Text("+\(personTags.count - 3)")

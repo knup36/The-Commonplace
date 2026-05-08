@@ -166,12 +166,8 @@ struct FullEntryCardView: View {
                 let thumbWidth: CGFloat = 50
                 let thumbHeight: CGFloat = isPodcast ? 50 : 75
                 let thumbRadius: CGFloat = isPodcast ? 8 : 6
-                if let path = entry.mediaCoverPath,
-                   let data = MediaFileManager.load(path: path),
-                   let uiImage = UIImage(data: data) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
+                if let path = entry.mediaCoverPath {
+                    AsyncMediaImage(path: path)
                         .frame(width: thumbWidth, height: thumbHeight)
                         .clipShape(RoundedRectangle(cornerRadius: thumbRadius))
                 } else {
@@ -279,29 +275,14 @@ struct FullEntryCardView: View {
                         ForEach(personTags, id: \.self) { tag in
                             let name = String(tag.dropFirst())
                             let personTag = allPersonTags.first { $0.name == name && $0.isPerson }
-                            ZStack {
-                                Circle()
-                                    .strokeBorder(SharedTheme.goldRingGradient, lineWidth: 1)
-                                    .frame(width: 22, height: 22)
-                                if let path = personTag?.profilePhotoPath,
-                                   let data = MediaFileManager.load(path: path),
-                                   let uiImage = UIImage(data: data) {
-                                    Image(uiImage: uiImage)
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 20, height: 20)
-                                        .clipShape(Circle())
-                                } else {
-                                    Circle()
-                                        .fill(style.personAvatarBackground)
-                                        .frame(width: 20, height: 20)
-                                        .overlay(
-                                            Text(String(name.prefix(1)).uppercased())
-                                                .font(.system(size: 9, weight: .medium))
-                                                .foregroundStyle(style.personAvatarForeground)
-                                        )
-                                }
-                            }
+                            AsyncPersonAvatar(
+                                name: name,
+                                profilePhotoPath: personTag?.profilePhotoPath,
+                                size: 20,
+                                borderGradient: AnyShapeStyle(SharedTheme.goldRingGradient),
+                                avatarBackground: style.personAvatarBackground,
+                                avatarForeground: style.personAvatarForeground
+                            )
                         }
                     }
                 }
