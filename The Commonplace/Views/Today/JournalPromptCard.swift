@@ -21,14 +21,14 @@ struct JournalPromptCard: View {
     let weather: String
     let mood: String
     let vibe: String
-
+    
     @StateObject private var service = JournalPromptService.shared
     @EnvironmentObject var themeManager: ThemeManager
     @State private var isDismissed = false
-
+    
     var style: any AppThemeStyle { themeManager.style }
     var accent: Color { EntryType.journal.detailAccentColor(for: themeManager.current) }
-
+    
     var body: some View {
         if !isDismissed {
             VStack(alignment: .leading, spacing: 0) {
@@ -38,9 +38,9 @@ struct JournalPromptCard: View {
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(accent)
                     Text("Today's Prompts")
-                                            .font(style.typeBodySecondary)
-                                            .fontWeight(.semibold)
-                                            .foregroundStyle(style.cardPrimaryText)
+                        .font(style.typeBodySecondary)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(style.cardPrimaryText)
                     Spacer()
                     // Emoji summary
                     Text("\(weather) \(mood) \(vibe)")
@@ -61,10 +61,10 @@ struct JournalPromptCard: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 14)
                 .padding(.bottom, 12)
-
+                
                 Divider()
                     .overlay(accent.opacity(0.2))
-
+                
                 // Content
                 if service.isLoading {
                     loadingView
@@ -75,13 +75,13 @@ struct JournalPromptCard: View {
                 }
             }
             .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(EntryType.journal.cardColor(for: themeManager.current))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .strokeBorder(style.cardBorder, lineWidth: 0.5)
-                                )
-                        )
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(EntryType.journal.cardColor(for: themeManager.current))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .strokeBorder(style.cardBorder, lineWidth: 0.5)
+                    )
+            )
             .padding(.horizontal)
             .onAppear {
                 isDismissed = service.isDismissedToday
@@ -93,9 +93,9 @@ struct JournalPromptCard: View {
             }
         }
     }
-
+    
     // MARK: - Prompt Content
-
+    
     func promptContent(_ prompt: JournalPrompt) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             // Reflect section
@@ -105,17 +105,17 @@ struct JournalPromptCard: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(accent)
                 Text(prompt.introspective)
-                                    .font(style.typeBody)
-                                    .foregroundStyle(style.cardPrimaryText)
+                    .font(style.typeBody)
+                    .foregroundStyle(style.cardPrimaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
-
+            
             Divider()
                 .overlay(accent.opacity(0.15))
                 .padding(.horizontal, 16)
-
+            
             // Act section
             VStack(alignment: .leading, spacing: 6) {
                 Label("Act", systemImage: "arrow.forward.circle")
@@ -123,17 +123,17 @@ struct JournalPromptCard: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(accent)
                 Text(prompt.practical)
-                                    .font(style.typeBody)
-                                    .foregroundStyle(style.cardPrimaryText)
+                    .font(style.typeBody)
+                    .foregroundStyle(style.cardPrimaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
         }
     }
-
+    
     // MARK: - Loading View
-
+    
     var loadingView: some View {
         VStack(alignment: .leading, spacing: 12) {
             ForEach(0..<2, id: \.self) { _ in
@@ -159,9 +159,9 @@ struct JournalPromptCard: View {
         .padding(16)
         .opacity(0.7)
     }
-
+    
     // MARK: - Error View
-
+    
     var errorView: some View {
         HStack(spacing: 8) {
             Image(systemName: "wifi.slash")

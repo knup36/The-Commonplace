@@ -44,11 +44,15 @@ class JournalPromptService: ObservableObject {
     private let apiKey = Secrets.anthropicAPIKey
     private let model = "claude-sonnet-4-20250514"
 
-    private var todayString: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: Date())
-    }
+    private static let todayFormatter: DateFormatter = {
+            let f = DateFormatter()
+            f.dateFormat = "yyyy-MM-dd"
+            return f
+        }()
+
+        private var todayString: String {
+            Self.todayFormatter.string(from: Date())
+        }
 
     // MARK: - Public Interface
 

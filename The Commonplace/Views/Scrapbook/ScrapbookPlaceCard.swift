@@ -17,15 +17,15 @@ import MapKit
 
 struct ScrapbookPlaceCard: View {
     let entry: Entry
-
+    
     private let cardWidth: CGFloat = 340
-
+    
     var coordinate: CLLocationCoordinate2D? {
-            guard let lat = entry.locationLatitude,
-                  let lon = entry.locationLongitude else { return nil }
-            return CLLocationCoordinate2D(latitude: lat, longitude: lon)
-        }
-
+        guard let lat = entry.locationLatitude,
+              let lon = entry.locationLongitude else { return nil }
+        return CLLocationCoordinate2D(latitude: lat, longitude: lon)
+    }
+    
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             // Map — full card
@@ -49,7 +49,7 @@ struct ScrapbookPlaceCard: View {
                             .foregroundStyle(ScrapbookTheme.inkTertiary)
                     )
             }
-
+            
             // Frosted glass info label
             VStack(alignment: .leading, spacing: 2) {
                 if let name = entry.locationName {

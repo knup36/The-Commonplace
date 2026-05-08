@@ -1,3 +1,13 @@
+// JournalBlockView.swift
+// Commonplace
+//
+// The daily journal card shown on the Today tab.
+// Contains weather/mood/vibe pickers, habit tracking, daily note, and daily photo.
+// All journal data lives on a single Entry of type .journal created for today.
+// getOrCreateTodayEntry() is the single point of entry creation — always use this.
+//
+// Screen: Today tab → Journal segment
+
 import SwiftUI
 import SwiftData
 import PhotosUI
@@ -20,6 +30,7 @@ struct JournalBlockView: View {
     @State private var showingJournalPhotoPicker = false
     @State private var journalImage: UIImage? = nil
     @FocusState private var noteFieldFocused: Bool
+        @State private var saveDebounceTask: Task<Void, Never>? = nil
     
     var style: any AppThemeStyle { themeManager.style }
     var journalAccent: Color { EntryType.journal.detailAccentColor(for: themeManager.current) }
@@ -48,7 +59,7 @@ struct JournalBlockView: View {
             journalHeader
             Divider().overlay(journalDivider)
             emojiPickerRow(options: weatherOptions,
-                                       selected: todayEntry?.weatherEmoji ?? "", onSelect: { setWeather($0) })
+                           selected: todayEntry?.weatherEmoji ?? "", onSelect: { setWeather($0) })
             moodPickerRow
             Divider().overlay(journalDivider)
             vibeBlock
@@ -91,8 +102,8 @@ struct JournalBlockView: View {
         }
     }
     var vibeBlock: some View {
-            VStack(alignment: .leading, spacing: 6) {
-                Button {
+        VStack(alignment: .leading, spacing: 6) {
+            Button {
                 showingVibePicker = true
             } label: {
                 HStack(spacing: 8) {
@@ -131,8 +142,8 @@ struct JournalBlockView: View {
         
     }
     var moodPickerRow: some View {
-            VStack(alignment: .leading, spacing: 6) {
-                LazyVGrid(
+        VStack(alignment: .leading, spacing: 6) {
+            LazyVGrid(
                 columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 9),
                 spacing: 4
             ) {
@@ -163,29 +174,29 @@ struct JournalBlockView: View {
     // MARK: - Sub-views
     
     var journalHeader: some View {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(Date().formatted(.dateTime.weekday(.wide)))
-                        .font(.custom("NewYorkLarge-Black", size: 34))
-                        .foregroundStyle(style.cardPrimaryText)
-                    Text(Date().formatted(.dateTime.month(.wide).day().year()))
-                        .font(style.typeBodySecondary)
-                        .fontWeight(.light)
-                        .foregroundStyle(style.cardSecondaryText)
-                }
-                Spacer()
-                ZStack {
-                    Circle().fill(journalAccent).frame(width: 18, height: 18)
-                    Image(systemName: "bookmark.fill")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(style.background)
-                }
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Date().formatted(.dateTime.weekday(.wide)))
+                    .font(.custom("NewYorkLarge-Black", size: 34))
+                    .foregroundStyle(style.cardPrimaryText)
+                Text(Date().formatted(.dateTime.month(.wide).day().year()))
+                    .font(style.typeBodySecondary)
+                    .fontWeight(.light)
+                    .foregroundStyle(style.cardSecondaryText)
+            }
+            Spacer()
+            ZStack {
+                Circle().fill(journalAccent).frame(width: 18, height: 18)
+                Image(systemName: "bookmark.fill")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(style.background)
             }
         }
+    }
     
     var habitsBlock: some View {
-            VStack(alignment: .leading, spacing: 10) {
-                if habits.isEmpty {
+        VStack(alignment: .leading, spacing: 10) {
+            if habits.isEmpty {
                 Text("Tap + to add habits to track")
                     .font(style.typeCaption)
                     .foregroundStyle(style.cardMetadataText)
@@ -219,7 +230,14 @@ struct JournalBlockView: View {
             )
             .foregroundStyle(style.cardPrimaryText)
             .focused($noteFieldFocused)
-            .onChange(of: dailyNoteText) { _, newValue in saveDailyNote(newValue) }
+            .onChange(of: dailyNoteText) { _, newValue in
+                            saveDebounceTask?.cancel()
+                            saveDebounceTask = Task {
+                                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
+                                guard !Task.isCancelled else { return }
+                                await MainActor.run { saveDailyNote(newValue) }
+                            }
+                        }
         }
     }
     
@@ -269,9 +287,9 @@ struct JournalBlockView: View {
     }
     
     @ViewBuilder
-        func emojiPickerRow(options: [String], selected: String, onSelect: @escaping (String) -> Void) -> some View {
-            VStack(alignment: .leading, spacing: 6) {
-                ScrollView(.horizontal, showsIndicators: false) {
+    func emojiPickerRow(options: [String], selected: String, onSelect: @escaping (String) -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(options, id: \.self) { emoji in
                         Text(emoji)
@@ -341,15 +359,15 @@ struct JournalBlockView: View {
     }
     
     func saveDailyNote(_ text: String) {
-            if let existing = todayEntry {
-                existing.text = text
-                existing.touch()
-            } else if !text.isEmpty {
-                let entry = getOrCreateTodayEntry()
-                entry.text = text
-                entry.touch()
-            }
+        if let existing = todayEntry {
+            existing.text = text
+            existing.touch()
+        } else if !text.isEmpty {
+            let entry = getOrCreateTodayEntry()
+            entry.text = text
+            entry.touch()
         }
+    }
     
     func loadDailyNote() {
         dailyNoteText = todayEntry?.text ?? ""

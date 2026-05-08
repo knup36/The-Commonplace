@@ -20,30 +20,31 @@ struct NowPlayingBlock: View {
     @Environment(\.modelContext) var modelContext
     @Query var entries: [Entry]
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     var style: any AppThemeStyle { themeManager.style }
-
+    
     // MARK: - State
-
+    
     @State private var activeNoteEntryID: UUID? = nil
     @State private var noteText: String = ""
     @State private var watchedFlashIDs: Set<UUID> = []
-
+    
     // MARK: - Derived
-
+    
     var inProgressEntries: [Entry] {
         entries.filter {
-                    $0.type == .media &&
-                    ["movie", "tv"].contains($0.mediaType ?? "") &&
-                    ["inProgress", "rewatch", "replay"].contains($0.mediaStatus ?? "")
-                }
+            $0.type == .media &&
+            ["movie", "tv"].contains($0.mediaType ?? "") &&
+            ["inProgress", "rewatch", "replay"].contains($0.mediaStatus ?? "")
+        }
         .sorted { ($0.mediaTitle ?? "") < ($1.mediaTitle ?? "") }
     }
-
+    
     let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
-
+        private static let isoFormatter = ISO8601DateFormatter()
+    
     // MARK: - Body
-
+    
     var body: some View {
         if inProgressEntries.isEmpty { EmptyView() } else {
             VStack(alignment: .leading, spacing: 12) {
@@ -51,7 +52,7 @@ struct NowPlayingBlock: View {
                     .font(style.typeTitle3)
                     .foregroundStyle(style.secondaryText)
                     .padding(.horizontal)
-
+                
                 LazyVGrid(columns: columns, spacing: 12) {
                     ForEach(inProgressEntries) { entry in
                         posterCell(entry: entry)
@@ -61,13 +62,13 @@ struct NowPlayingBlock: View {
             }
         }
     }
-
+    
     // MARK: - Poster Cell
-
+    
     @ViewBuilder
     func posterCell(entry: Entry) -> some View {
         VStack(spacing: 6) {
-
+            
             // Poster
             NavigationLink(destination: NavigationRouter.destination(for: entry)) {
                 ZStack {
@@ -78,7 +79,7 @@ struct NowPlayingBlock: View {
                             RoundedRectangle(cornerRadius: 8)
                                 .strokeBorder(style.cardBorder, lineWidth: 0.5)
                         )
-
+                    
                     // Watched flash overlay
                     if watchedFlashIDs.contains(entry.id) {
                         RoundedRectangle(cornerRadius: 8)
@@ -90,7 +91,7 @@ struct NowPlayingBlock: View {
                 }
             }
             .buttonStyle(.plain)
-
+            
             // Action buttons
             HStack(spacing: 16) {
                 // Watched
@@ -102,7 +103,7 @@ struct NowPlayingBlock: View {
                         .foregroundStyle(style.accent)
                 }
                 .buttonStyle(.plain)
-
+                
                 // Note
                 Button {
                     if activeNoteEntryID == entry.id {
@@ -119,7 +120,7 @@ struct NowPlayingBlock: View {
                 }
                 .buttonStyle(.plain)
             }
-
+            
             // Inline note input
             if activeNoteEntryID == entry.id {
                 VStack(spacing: 6) {
@@ -132,7 +133,7 @@ struct NowPlayingBlock: View {
                     .padding(8)
                     .background(style.surface)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
-
+                    
                     HStack {
                         Spacer()
                         Button("Cancel") {
@@ -141,7 +142,7 @@ struct NowPlayingBlock: View {
                         }
                         .font(style.typeCaption)
                         .foregroundStyle(style.secondaryText)
-
+                        
                         Button("Add") {
                             appendNote(entry: entry)
                         }
@@ -155,9 +156,9 @@ struct NowPlayingBlock: View {
             }
         }
     }
-
+    
     // MARK: - Poster Image
-
+    
     @ViewBuilder
     func posterImage(entry: Entry) -> some View {
         if let path = entry.mediaCoverPath,
@@ -176,39 +177,39 @@ struct NowPlayingBlock: View {
                 )
         }
     }
-
+    
     // MARK: - Actions
-
+    
     func appendWatched(entry: Entry) {
         let today = Calendar.current.startOfDay(for: Date())
         let alreadyLogged = entry.mediaLog.contains { log in
-            let parts = log.components(separatedBy: "::")
-            guard parts.count == 2,
-                  let date = ISO8601DateFormatter().date(from: parts[0]) else { return false }
-            return Calendar.current.startOfDay(for: date) == today && parts[1] == "Watched"
-        }
-        guard !alreadyLogged else { return }
+                    let parts = log.components(separatedBy: "::")
+                    guard parts.count == 2,
+                          let date = Self.isoFormatter.date(from: parts[0]) else { return false }
+                    return Calendar.current.startOfDay(for: date) == today && parts[1] == "Watched"
+                }
+                guard !alreadyLogged else { return }
 
-        let dateString = ISO8601DateFormatter().string(from: Date())
+                let dateString = Self.isoFormatter.string(from: Date())
         entry.mediaLog.append("\(dateString)::Watched")
         entry.touch()
-
+        
         // Flash animation
         withAnimation(.easeIn(duration: 0.15)) {
             watchedFlashIDs.insert(entry.id)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        _ = self.watchedFlashIDs.remove(entry.id)
-                    }
-                }
+            withAnimation(.easeOut(duration: 0.3)) {
+                _ = self.watchedFlashIDs.remove(entry.id)
+            }
+        }
     }
-
+    
     func appendNote(entry: Entry) {
         let trimmed = noteText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        let dateString = ISO8601DateFormatter().string(from: Date())
-        entry.mediaLog.append("\(dateString)::\(trimmed)")
+        let dateString = Self.isoFormatter.string(from: Date())
+                entry.mediaLog.append("\(dateString)::\(trimmed)")
         entry.touch()
         activeNoteEntryID = nil
         noteText = ""
