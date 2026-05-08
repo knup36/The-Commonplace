@@ -92,9 +92,9 @@ struct AsyncMediaImage: View {
 
 struct EntryRowView: View {
     let entry: Entry
+    var allPersonTags: [Tag] = []
+    var allCollections: [Collection] = []
     @EnvironmentObject var themeManager: ThemeManager
-    @Query var allPersonTags: [Tag]
-        @Query var allCollections: [Collection]
     
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { entry.type.accentColor(for: themeManager.current) }

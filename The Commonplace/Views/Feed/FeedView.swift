@@ -12,7 +12,9 @@ import CoreLocation
 
 struct FeedView: View {
     @Query(sort: \Entry.createdAt, order: .reverse) var entries: [Entry]
-    @Environment(\.modelContext) var modelContext
+        @Query var allPersonTags: [Tag]
+        @Query var allCollections: [Collection]
+        @Environment(\.modelContext) var modelContext
     @StateObject private var locationManager = LocationManager()
     @State private var showingAddEntry = false
     @State private var showingTemplatePicker = false
@@ -165,9 +167,9 @@ struct FeedView: View {
                 if isScrapbookMode {
                     scrapbookCard(for: entry)
                 } else if isFullMode {
-                    FullEntryCardView(entry: entry)
+                    FullEntryCardView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
                 } else {
-                    EntryRowView(entry: entry)
+                    EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
                 }
             }
             .buttonStyle(.plain)

@@ -8,7 +8,9 @@ import SwiftData
 
 struct PinnedPagesListView: View {
     @Query(sort: \Entry.createdAt, order: .reverse) var allEntries: [Entry]
-    @EnvironmentObject var themeManager: ThemeManager
+        @Query var allPersonTags: [Tag]
+        @Query var allCollections: [Collection]
+        @EnvironmentObject var themeManager: ThemeManager
     var style: any AppThemeStyle { themeManager.style }
 
     var pinnedEntries: [Entry] {
@@ -23,7 +25,7 @@ struct PinnedPagesListView: View {
                         EmptyView()
                     }
                     .opacity(0)
-                    EntryRowView(entry: entry)
+                    EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
                 }
                 .buttonStyle(.plain)
                 .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))

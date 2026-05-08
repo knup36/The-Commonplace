@@ -20,6 +20,8 @@ import PhotosUI
 struct CollectionDetailView: View {
     let collection: Collection
     @Query(sort: \Entry.createdAt, order: .reverse) var entries: [Entry]
+    @Query var allPersonTags: [Tag]
+    @Query var allCollections: [Collection]
     @Environment(\.modelContext) var modelContext
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var themeManager: ThemeManager
@@ -355,7 +357,7 @@ struct CollectionDetailView: View {
     var entryRows: some View {
         ForEach(filteredEntries) { entry in
             NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                EntryRowView(entry: entry)
+                EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 16)

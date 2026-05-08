@@ -399,12 +399,12 @@ struct SearchView: View {
                     groupLabel("Tagged")
                     VStack(spacing: 8) {
                         ForEach(displayTagged) { entry in
-                            NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                                EntryRowView(entry: entry)
-                            }
-                            .buttonStyle(.plain)
-                            .padding(.horizontal, 16)
-                        }
+                                                    NavigationLink(destination: NavigationRouter.destination(for: entry)) {
+                                                        EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
+                                                    }
+                                                    .buttonStyle(.plain)
+                                                    .padding(.horizontal, 16)
+                                                }
                     }
                     .padding(.bottom, 8)
                 }
@@ -413,18 +413,18 @@ struct SearchView: View {
                     groupLabel("Mentioned in entries")
                     VStack(spacing: 8) {
                         ForEach(displayMentioned) { entry in
-                            NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                                EntryRowView(entry: entry)
-                            }
-                            .buttonStyle(.plain)
-                            .padding(.horizontal, 16)
-                        }
+                                                    NavigationLink(destination: NavigationRouter.destination(for: entry)) {
+                                                        EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
+                                                    }
+                                                    .buttonStyle(.plain)
+                                                    .padding(.horizontal, 16)
+                                                }
                     }
                     .padding(.bottom, 8)
                 }
                 
                 if totalCount > maxEntries {
-                    NavigationLink(destination: SearchResultsView(query: query, allEntries: allEntries)) {
+                    NavigationLink(destination: SearchResultsView(query: query, allEntries: allEntries, allPersonTags: allPersonTags, allCollections: allCollections)) {
                         HStack {
                             Text("See all \(totalCount) results")
                                 .font(style.typeBodySecondary)

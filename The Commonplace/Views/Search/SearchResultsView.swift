@@ -14,8 +14,10 @@ import SwiftData
 
 struct SearchResultsView: View {
     let query: String
-    let allEntries: [Entry]
-    @EnvironmentObject var themeManager: ThemeManager
+        let allEntries: [Entry]
+        let allPersonTags: [Tag]
+        let allCollections: [Collection]
+        @EnvironmentObject var themeManager: ThemeManager
 
     var style: any AppThemeStyle { themeManager.style }
 
@@ -47,27 +49,27 @@ struct SearchResultsView: View {
                     groupHeader("Tagged")
                     ForEach(taggedEntries) { entry in
                         NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                            EntryRowView(entry: entry)
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 4)
-                    }
-                }
+                                                    EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
+                                                }
+                                                .buttonStyle(.plain)
+                                                .padding(.horizontal, 16)
+                                                .padding(.vertical, 4)
+                                            }
+                                        }
 
-                if !mentionedEntries.isEmpty {
+                                        if !mentionedEntries.isEmpty {
                     groupHeader("Mentioned in entries")
                     ForEach(mentionedEntries) { entry in
                         NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                            EntryRowView(entry: entry)
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 4)
-                    }
-                }
+                                                    EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
+                                                }
+                                                .buttonStyle(.plain)
+                                                .padding(.horizontal, 16)
+                                                .padding(.vertical, 4)
+                                            }
+                                        }
 
-                Color.clear.frame(height: 40)
+                                        Color.clear.frame(height: 40)
             }
         }
         .background(style.background)

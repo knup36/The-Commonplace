@@ -110,7 +110,7 @@ struct HomeView: View {
                         EmptyView()
                     }
                     .opacity(0)
-                    EntryRowView(entry: entry)
+                    EntryRowView(entry: entry, allPersonTags: allTags, allCollections: allCollections)
                 }
                 .buttonStyle(.plain)
                 .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
@@ -118,29 +118,29 @@ struct HomeView: View {
                 .listRowSeparator(.hidden)
             }
         } header: {
-                    VStack(alignment: .leading, spacing: 8) {
-                        NavigationLink(destination: PinnedPagesListView()) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "bookmark.fill")
-                                    .font(.caption)
-                                    .foregroundStyle(style.accent)
-                                Text("Bookmarks")
-                                    .font(.title3)
-                                    .fontWeight(.semibold)
-                                    .foregroundStyle(style.primaryText)
-                                Image(systemName: "chevron.right")
-                                    .font(.caption)
-                                    .foregroundStyle(style.primaryText)
-                                Spacer()
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        TipView(BookmarkTip(), arrowEdge: .top)
-                            .padding(.trailing, 8)
+            VStack(alignment: .leading, spacing: 8) {
+                NavigationLink(destination: PinnedPagesListView()) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "bookmark.fill")
+                            .font(.caption)
+                            .foregroundStyle(style.accent)
+                        Text("Bookmarks")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(style.primaryText)
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(style.primaryText)
+                        Spacer()
                     }
-                    .padding(.horizontal, 8)
-                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 12, trailing: 16))
                 }
+                .buttonStyle(.plain)
+                TipView(BookmarkTip(), arrowEdge: .top)
+                    .padding(.trailing, 8)
+            }
+            .padding(.horizontal, 8)
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 12, trailing: 16))
+        }
     }
     
     // MARK: - Collections Section
@@ -192,7 +192,7 @@ struct HomeView: View {
                         EmptyView()
                     }
                     .opacity(0)
-                    EntryRowView(entry: entry)
+                    EntryRowView(entry: entry, allPersonTags: allTags, allCollections: allCollections)
                 }
                 .buttonStyle(.plain)
                 .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))

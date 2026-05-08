@@ -25,8 +25,10 @@ import CoreLocation
 
 struct TodayView: View {
     @Environment(\.modelContext) var modelContext
-    @Query var entries: [Entry]
-    @EnvironmentObject var themeManager: ThemeManager
+        @Query var entries: [Entry]
+        @Query var allPersonTags: [Tag]
+        @Query var allCollections: [Collection]
+        @EnvironmentObject var themeManager: ThemeManager
     
     @AppStorage("todaySelectedSegment") private var selectedSegment: Int = 0
     @State private var keyboardVisible = false
@@ -153,7 +155,7 @@ struct TodayView: View {
                     .padding(.horizontal)
                 ForEach(todayEntries) { entry in
                     NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                        EntryRowView(entry: entry)
+                        EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal)

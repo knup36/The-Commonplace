@@ -14,8 +14,10 @@ import SwiftData
 
 struct PersonDetailView: View {
     @Bindable var tag: Tag
-    @Query var allEntries: [Entry]
-    @Environment(\.modelContext) var modelContext
+        @Query var allEntries: [Entry]
+        @Query var allPersonTags: [Tag]
+        @Query var allCollections: [Collection]
+        @Environment(\.modelContext) var modelContext
         @Environment(\.dismiss) var dismiss
         @EnvironmentObject var themeManager: ThemeManager
     
@@ -64,7 +66,7 @@ struct PersonDetailView: View {
                 } else {
                     ForEach(taggedEntries) { entry in
                         NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                            EntryRowView(entry: entry)
+                            EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
                         }
                         .buttonStyle(.plain)
                         .padding(.horizontal, 16)

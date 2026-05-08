@@ -9,8 +9,10 @@ import SwiftUI
 
 struct WeeklyReviewEntryListView: View {
     let entries: [Entry]
-    let title: String
-    @EnvironmentObject var themeManager: ThemeManager
+        let title: String
+        var allPersonTags: [Tag] = []
+        var allCollections: [Collection] = []
+        @EnvironmentObject var themeManager: ThemeManager
 
     var style: any AppThemeStyle { themeManager.style }
 
@@ -19,7 +21,7 @@ struct WeeklyReviewEntryListView: View {
             LazyVStack(spacing: 0) {
                 ForEach(entries) { entry in
                     NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                        EntryRowView(entry: entry)
+                        EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, 16)
