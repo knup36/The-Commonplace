@@ -44,13 +44,21 @@ struct ShareExtensionIngestor {
             print("ShareExtensionIngestor: found entry type=\(shared.type) url=\(shared.url ?? "nil")")
         }
         
-        for shared in pending {
-            print("ShareExtensionIngestor: ingesting type=\(shared.type) url=\(shared.url ?? "nil")")
-            guard let entryType = EntryType(rawValue: shared.type) else {
-                print("ShareExtensionIngestor: unknown entry type \(shared.type), skipping")
-                AppGroupContainer.deletePending(id: shared.id)
-                continue
-            }
+        // Fetch all existing tags once before the loop — avoids a full tag fetch per entry
+                let existingTagNames: Set<String>
+                if let existingTags = try? context.fetch(FetchDescriptor<Tag>()) {
+                    existingTagNames = Set(existingTags.map { $0.name })
+                } else {
+                    existingTagNames = []
+                }
+                
+                for shared in pending {
+                    print("ShareExtensionIngestor: ingesting type=\(shared.type) url=\(shared.url ?? "nil")")
+                    guard let entryType = EntryType(rawValue: shared.type) else {
+                        print("ShareExtensionIngestor: unknown entry type \(shared.type), skipping")
+                        AppGroupContainer.deletePending(id: shared.id)
+                        continue
+                    }
             
             let entry = Entry(type: entryType, text: shared.text, tags: shared.tags)
             entry.createdAt = shared.createdAt
@@ -222,19 +230,16 @@ struct ShareExtensionIngestor {
                 }
                 
             case .text, .audio, .journal, .sticky, .media, .attachment:
-                            break
-                        }
+                break
+            }
             
             context.insert(entry)
             
-            // Create Tag objects for any new tags
-            if let existingTags = try? context.fetch(FetchDescriptor<Tag>()) {
-                let existingTagNames = Set(existingTags.map { $0.name })
-                for tagName in shared.tags where !existingTagNames.contains(tagName) {
-                    let tag = Tag(name: tagName)
-                    context.insert(tag)
-                }
-            }
+                    // Create Tag objects for any new tags
+                                for tagName in shared.tags where !existingTagNames.contains(tagName) {
+                                    let tag = Tag(name: tagName)
+                                    context.insert(tag)
+                                }
             
             // Save BEFORE indexing — ensures SwiftData has committed the entry
             // so the index reflects the actual persisted state
@@ -250,9 +255,10 @@ struct ShareExtensionIngestor {
         }
         
         print("ShareExtensionIngestor: ingestion complete")
-    }
-    @MainActor
-    static func resolveMapsURL(urlString: String, entry: Entry, context: ModelContext) async {
+            }
+            
+            @MainActor
+            static func resolveMapsURL(urlString: String, entry: Entry, context: ModelContext) async {
         guard let url = URL(string: urlString) else { return }
         
         // Follow redirects to get the final URL

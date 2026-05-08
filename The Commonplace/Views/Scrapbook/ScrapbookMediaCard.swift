@@ -240,7 +240,9 @@ struct PerforatedBorder: View {
 struct TicketShape: Shape {
     let cornerRadius: CGFloat = 8
     let notchRadius: CGFloat = 8
-    let notchX: CGFloat = UIScreen.main.bounds.width - 16 * 2 - 36 - 12
+    // FIXME: UIScreen.main deprecated iOS 16+ and breaks on iPad/split view
+        // notchX should be derived from GeometryReader or passed as a parameter
+        let notchX: CGFloat = UIScreen.main.bounds.width - 16 * 2 - 36 - 12
 
     func path(in rect: CGRect) -> Path {
         var path = Path()

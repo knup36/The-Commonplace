@@ -87,7 +87,7 @@ class ReadwiseSyncCoordinator {
         
         for paired in documents {
             // Skip documents with no highlights — nothing meaningful to import
-                        guard !paired.highlights.isEmpty else { continue }
+            guard !paired.highlights.isEmpty else { continue }
             
             if let existing = try findExistingEntry(sourceID: paired.document.id) {
                 // Entry already exists — check for new highlights only
@@ -138,14 +138,14 @@ class ReadwiseSyncCoordinator {
         entry.linkContentType = "article"
         
         // Cover image — download and save locally so LinkPreviewView can load it
-                if let imageURLString = doc.imageURL, let imageURL = URL(string: imageURLString) {
-                    do {
-                        let data = try Data(contentsOf: imageURL)
-                        entry.previewImagePath = try MediaFileManager.save(data, type: .preview, id: entry.id.uuidString)
-                    } catch {
-                        AppLogger.warning("Could not download cover image for \(doc.title ?? doc.id)", domain: .media)
-                    }
-                }
+        if let imageURLString = doc.imageURL, let imageURL = URL(string: imageURLString) {
+            do {
+                let data = try Data(contentsOf: imageURL)
+                entry.previewImagePath = try MediaFileManager.save(data, type: .preview, id: entry.id.uuidString)
+            } catch {
+                AppLogger.warning("Could not download cover image for \(doc.title ?? doc.id)", domain: .media)
+            }
+        }
         
         // Build the highlight bullet list
         let (bulletText, highlightIDs) = formatHighlights(paired.highlights)
@@ -182,12 +182,13 @@ class ReadwiseSyncCoordinator {
     
     // MARK: - Formatting
     
-    /// Formats an array of highlight documents into a bullet list string
-    /// and returns both the formatted text and the list of highlight IDs.
-    ///
-    /// Example output:
-    ///   • "The best way to predict the future is to create it."
-    ///   • "Consistency beats intensity every single time."
+    /// Formats an array of highlight documents into a paragraph-separated string
+        /// and returns both the formatted text and the list of highlight IDs.
+        ///
+        /// Example output:
+        ///   The best way to predict the future is to create it.
+        ///
+        ///   Consistency beats intensity every single time.
     private func formatHighlights(_ highlights: [ReaderDocument]) -> (text: String, ids: [String]) {
         // Sort highlights by created_at so they appear in reading order
         let sorted = highlights.sorted {
@@ -197,23 +198,23 @@ class ReadwiseSyncCoordinator {
         }
         
         let paragraphs = sorted.compactMap { highlight -> String? in
-                    // Reader highlights store the highlighted text in the content field
-                    guard let text = highlight.content, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                        return nil
-                    }
-                    // Strip markdown links — keep display text, discard URLs
-                    // "[link text](url)" → "link text"
-                    let stripped = text.replacingOccurrences(
-                        of: "\\[([^\\]]+)\\]\\([^)]+\\)",
-                        with: "$1",
-                        options: .regularExpression
-                    )
-                    return stripped.trimmingCharacters(in: .whitespacesAndNewlines)
-                }
-                
-                let ids = sorted.map { $0.id }
-                
-                return (paragraphs.joined(separator: "\n\n"), ids)
+            // Reader highlights store the highlighted text in the content field
+            guard let text = highlight.content, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                return nil
+            }
+            // Strip markdown links — keep display text, discard URLs
+            // "[link text](url)" → "link text"
+            let stripped = text.replacingOccurrences(
+                of: "\\[([^\\]]+)\\]\\([^)]+\\)",
+                with: "$1",
+                options: .regularExpression
+            )
+            return stripped.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        
+        let ids = sorted.map { $0.id }
+        
+        return (paragraphs.joined(separator: "\n\n"), ids)
     }
     
     // MARK: - SwiftData Lookup

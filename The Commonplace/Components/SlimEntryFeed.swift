@@ -47,12 +47,12 @@ struct SlimEntryFeed: View {
         return HStack(spacing: 10) {
             
             // Thumbnail
-                        if hasThumbnail(entry: entry) {
-                            slimThumbnail(entry: entry)
-                                .padding(.leading, 10)
-                        } else if entry.type == .text || entry.type == .journal || entry.type == .sticky {
-                            Color.clear.frame(width: 6)
-                        }
+            if hasThumbnail(entry: entry) {
+                slimThumbnail(entry: entry)
+                    .padding(.leading, 10)
+            } else if entry.type == .text || entry.type == .journal || entry.type == .sticky {
+                Color.clear.frame(width: 6)
+            }
             
             // Text content
             VStack(alignment: .leading, spacing: 3) {
@@ -145,11 +145,11 @@ struct SlimEntryFeed: View {
         
         switch entry.type {
         case .location:
-            if let lat = entry.captureLatitude, let lon = entry.captureLongitude {
-                SlimMapThumbnail(latitude: lat, longitude: lon, size: size)
-            } else {
-                slimIconThumb(icon: entry.type.icon, accent: accent, size: size)
-            }
+                    if let lat = entry.locationLatitude, let lon = entry.locationLongitude {
+                        SlimMapThumbnail(latitude: lat, longitude: lon, size: size)
+                    } else {
+                        slimIconThumb(icon: entry.type.icon, accent: accent, size: size)
+                    }
         case .media:
             if let path = entry.mediaCoverPath,
                let data = MediaFileManager.load(path: path),
@@ -195,13 +195,13 @@ struct SlimEntryFeed: View {
                 slimIconThumb(icon: entry.type.icon, accent: accent, size: size)
             }
         case .photo:
-                    if !entry.allImagePaths.isEmpty {
-                        PhotoCollageView(paths: entry.allImagePaths, cornerRadius: 8)
-                            .frame(width: size, height: size)
-                            .clipped()
-                    } else {
-                        slimIconThumb(icon: entry.type.icon, accent: accent, size: size)
-                    }
+            if !entry.allImagePaths.isEmpty {
+                PhotoCollageView(paths: entry.allImagePaths, cornerRadius: 8)
+                    .frame(width: size, height: size)
+                    .clipped()
+            } else {
+                slimIconThumb(icon: entry.type.icon, accent: accent, size: size)
+            }
         case .audio:
             SlimWaveformThumbnail(entry: entry, accent: accent, size: size)
         default:

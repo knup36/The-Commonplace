@@ -40,28 +40,28 @@ class HealthKitBackfillService {
         }
         
         guard !toBackfill.isEmpty else { return }
-                
-                print("HealthKitBackfillService: backfilling \(toBackfill.count) journal entries")
-                
-                // Process in batches of 5 to avoid overwhelming HealthKit
-                // Save once per batch rather than per entry
-                let batchSize = 5
-                for batch in stride(from: 0, to: toBackfill.count, by: batchSize) {
-                    let end = min(batch + batchSize, toBackfill.count)
-                    let batchEntries = Array(toBackfill[batch..<end])
-                    
-                    await withTaskGroup(of: Void.self) { group in
-                        for entry in batchEntries {
-                            group.addTask { await self.backfill(entry: entry) }
-                        }
-                    }
-                    try? context.save()
-                    
-                    // Small yield between batches to keep app responsive
-                    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+        
+        print("HealthKitBackfillService: backfilling \(toBackfill.count) journal entries")
+        
+        // Process in batches of 5 to avoid overwhelming HealthKit
+        // Save once per batch rather than per entry
+        let batchSize = 5
+        for batch in stride(from: 0, to: toBackfill.count, by: batchSize) {
+            let end = min(batch + batchSize, toBackfill.count)
+            let batchEntries = Array(toBackfill[batch..<end])
+            
+            await withTaskGroup(of: Void.self) { group in
+                for entry in batchEntries {
+                    group.addTask { await self.backfill(entry: entry) }
                 }
-                
-                print("HealthKitBackfillService: backfill complete")
+            }
+            try? context.save()
+            
+            // Small yield between batches to keep app responsive
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+        }
+        
+        print("HealthKitBackfillService: backfill complete")
     }
     
     // MARK: - Private
@@ -78,10 +78,7 @@ class HealthKitBackfillService {
         // Write to entry on main actor to keep SwiftData happy
         await MainActor.run {
             if let summary {
-                print("Stand hours fetched: \(summary.standHours)")
-                print("Active calories fetched: \(summary.activeCalories)")
-                print("Exercise minutes fetched: \(summary.exerciseMinutes)")
-                entry.healthActiveCalories = summary.activeCalories
+                            entry.healthActiveCalories = summary.activeCalories
                 entry.healthExerciseMinutes = summary.exerciseMinutes
                 entry.healthStandHours = summary.standHours
             }

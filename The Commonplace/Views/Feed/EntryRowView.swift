@@ -93,9 +93,8 @@ struct AsyncMediaImage: View {
 struct EntryRowView: View {
     let entry: Entry
     @EnvironmentObject var themeManager: ThemeManager
-    @Query var allTagObjects: [Tag]
     @Query var allPersonTags: [Tag]
-    @Query var allCollections: [Collection]
+        @Query var allCollections: [Collection]
     
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { entry.type.accentColor(for: themeManager.current) }
@@ -528,10 +527,10 @@ func mediaStatusColor(for status: String, theme: AppTheme) -> Color {
         case "inProgress": return Color(hex: "#877662")
         case "finished":   return Color(hex: "#526349")
         case "rewatch":    return Color(hex: "#4A6070")
-                case "replay":     return Color(hex: "#4A6070")
-                case "readingList": return Color(hex: "#7A5855")
-                case "reading":     return Color(hex: "#877662")
-                default:           return Color.white.opacity(0.5)
+        case "replay":     return Color(hex: "#4A6070")
+        case "readingList": return Color(hex: "#7A5855")
+        case "reading":     return Color(hex: "#877662")
+        default:           return Color.white.opacity(0.5)
         }
     default:
         switch status {
@@ -539,10 +538,10 @@ func mediaStatusColor(for status: String, theme: AppTheme) -> Color {
         case "inProgress": return InkwellTheme.stickyAccent
         case "finished":   return InkwellTheme.locationAccent
         case "rewatch":    return InkwellTheme.audioAccent
-                case "replay":     return InkwellTheme.audioAccent
-                case "readingList": return InkwellTheme.mediaAccent
-                case "reading":     return InkwellTheme.stickyAccent
-                default:           return InkwellTheme.inkSecondary
+        case "replay":     return InkwellTheme.audioAccent
+        case "readingList": return InkwellTheme.mediaAccent
+        case "reading":     return InkwellTheme.stickyAccent
+        default:           return InkwellTheme.inkSecondary
         }
     }
 }

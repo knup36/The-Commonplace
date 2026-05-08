@@ -39,18 +39,6 @@ struct ScrapbookJournalCard: View {
             .joined(separator: "  ")
     }
 
-    /// Ragged top edge heights seeded from UUID
-    func raggedTopOffsets(steps: Int) -> [CGFloat] {
-        var result: [CGFloat] = []
-        var hash = abs(entry.id.uuidString.hashValue)
-        for _ in 0..<steps {
-            hash = hash &* 1664525 &+ 1013904223
-            let normalized = CGFloat(abs(hash) % 100) / 100.0
-            result.append(normalized * 10)
-        }
-        return result
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             // Ragged torn top edge

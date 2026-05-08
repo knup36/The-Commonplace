@@ -16,7 +16,6 @@ import SwiftData
 struct FullEntryCardView: View {
     let entry: Entry
     @EnvironmentObject var themeManager: ThemeManager
-    @Query var allTagObjects: [Tag]
     @Query var allPersonTags: [Tag]
     @Query var allCollections: [Collection]
     
@@ -107,14 +106,14 @@ struct FullEntryCardView: View {
     var cardContent: some View {
         switch entry.type {
         case .photo:
-                    VStack(alignment: .leading, spacing: 8) {
-                        if !entry.allImagePaths.isEmpty {
-                            PhotoCollageView(paths: entry.allImagePaths, cornerRadius: 8)
-                        }
-                        if !entry.text.isEmpty {
-                            noteText(italic: false)
-                        }
-                    }
+            VStack(alignment: .leading, spacing: 8) {
+                if !entry.allImagePaths.isEmpty {
+                    PhotoCollageView(paths: entry.allImagePaths, cornerRadius: 8)
+                }
+                if !entry.text.isEmpty {
+                    noteText(italic: false)
+                }
+            }
         case .link:
             VStack(alignment: .leading, spacing: 6) {
                 LinkPreviewView(entry: entry)
@@ -309,34 +308,9 @@ struct FullEntryCardView: View {
                 let visibleTags = entry.tagNames.filter { !$0.hasPrefix("@") }
                 if !visibleTags.isEmpty {
                     FlowLayout(spacing: 4, maxRows: .max) {
-                        ForEach(visibleTags.prefix(3), id: \.self) { tag in
-                            let folioTag = allTagObjects.first { $0.name == tag && $0.isFolio }
+                        ForEach(visibleTags, id: \.self) { tag in
                             let folioCollection = allCollections.first { $0.isFolio && $0.filterTags.contains(tag) && $0.filterTags.count == 1 }
-                            if let folio = folioTag {
-                                // Old Tag-based Folio
-                                HStack(spacing: 3) {
-                                    if let emoji = folio.subjectEmoji {
-                                        Text(emoji).font(.system(size: 10))
-                                    }
-                                    Text(folio.folioDisplayName)
-                                        .font(style.typeCaption)
-                                }
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color(hex: folio.colorHex ?? "#888780").opacity(0.2))
-                                .foregroundStyle(style.cardPrimaryText)
-                                .clipShape(Capsule())
-                                .overlay(
-                                    Capsule().strokeBorder(
-                                        LinearGradient(
-                                            colors: [Color(white: 0.85), Color(white: 0.6), Color(white: 0.85), Color(white: 0.5), Color(white: 0.85)],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        ),
-                                        lineWidth: 1.5
-                                    )
-                                )
-                            } else if let folio = folioCollection {
+                            if let folio = folioCollection {
                                 // New Collection-based Folio
                                 HStack(spacing: 3) {
                                     if let emoji = folio.folioEmoji {

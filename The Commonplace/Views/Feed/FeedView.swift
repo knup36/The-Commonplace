@@ -220,19 +220,19 @@ struct FeedView: View {
                     }
                 }
                 .background(isScrapbookMode ? AnyView(ScrapbookBackground().ignoresSafeArea()) : AnyView(style.background.ignoresSafeArea()))
-                                .overlay(alignment: .top) {
-                                    LinearGradient(
-                                        colors: [
-                                            (isScrapbookMode ? Color(red: 0.91, green: 0.86, blue: 0.76) : style.background).opacity(1),
-                                            (isScrapbookMode ? Color(red: 0.91, green: 0.86, blue: 0.76) : style.background).opacity(0)
-                                        ],
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                    .frame(height: 60)
-                                    .ignoresSafeArea()
-                                    .allowsHitTesting(false)
-                                }
+                .overlay(alignment: .top) {
+                    LinearGradient(
+                        colors: [
+                            (isScrapbookMode ? Color(red: 0.91, green: 0.86, blue: 0.76) : style.background).opacity(1),
+                            (isScrapbookMode ? Color(red: 0.91, green: 0.86, blue: 0.76) : style.background).opacity(0)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 60)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+                }
                 .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar(.hidden, for: .navigationBar)
@@ -280,14 +280,13 @@ struct FeedView: View {
                                     locationManager.requestLocation()
                                     updateFilter()
                                     SearchBarTip.feedIsActive = true
-                                    WidgetDataStore.writeSnapshot(from: Array(entries.prefix(6)))
                                 }
-                                .task {
-                                    comingSoonCard = await ComingSoonService.runIfNeeded(
-                                        entries: Array(entries),
-                                        modelContext: modelContext
-                                    )
-                                }
+                .task {
+                    comingSoonCard = await ComingSoonService.runIfNeeded(
+                        entries: Array(entries),
+                        modelContext: modelContext
+                    )
+                }
                 .onDisappear {
                     SearchBarTip.feedIsActive = false
                 }
@@ -296,10 +295,12 @@ struct FeedView: View {
                         showingAddEntry = true
                     }
                 }
-                .onChange(of: entries) { _, newEntries in
-                    updateFilter()
-                    WidgetDataStore.writeSnapshot(from: Array(newEntries.prefix(6)))
-                }
+                .onChange(of: entries.map { $0.id }) { _, _ in
+                                    updateFilter()
+                                }
+                                .onChange(of: entries.map { $0.modifiedAt }) { _, newEntries in
+                                    WidgetDataStore.writeSnapshot(from: Array(entries.prefix(6)))
+                                }
                 .onChange(of: filterType) { _, _ in visibleCount = 50; updateFilter() }
                 .onChange(of: deletedEntry) { _, _ in updateFilter() }
                 .safeAreaInset(edge: .bottom) {

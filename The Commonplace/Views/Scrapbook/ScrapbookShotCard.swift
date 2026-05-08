@@ -57,88 +57,88 @@ struct ScrapbookShotCard: View {
     }
     
     // MARK: - Multi Polaroid Stack
-
-        var multiPolaroidStack: some View {
-            let count = min(allPaths.count, 4)
-            return Group {
-                switch count {
-                case 2: twoPolaroids
-                case 3: threePolaroids
-                default: fourPolaroids
-                }
+    
+    var multiPolaroidStack: some View {
+        let count = min(allPaths.count, 4)
+        return Group {
+            switch count {
+            case 2: twoPolaroids
+            case 3: threePolaroids
+            default: fourPolaroids
             }
-            .padding(.vertical, 32)
-            .padding(.horizontal, 24)
-            .frame(maxWidth: .infinity)
         }
-
-        // MARK: - Two Polaroids (side by side)
-
-        var twoPolaroids: some View {
+        .padding(.vertical, 32)
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity)
+    }
+    
+    // MARK: - Two Polaroids (side by side)
+    
+    var twoPolaroids: some View {
+        HStack(alignment: .center, spacing: -12) {
+            smallPolaroid(index: 0)
+            smallPolaroid(index: 1)
+        }
+    }
+    
+    // MARK: - Three Polaroids (2 top, 1 bottom centered)
+    
+    var threePolaroids: some View {
+        VStack(spacing: -12) {
             HStack(alignment: .center, spacing: -12) {
                 smallPolaroid(index: 0)
                 smallPolaroid(index: 1)
             }
+            smallPolaroid(index: 2)
         }
-
-        // MARK: - Three Polaroids (2 top, 1 bottom centered)
-
-        var threePolaroids: some View {
-            VStack(spacing: -12) {
-                HStack(alignment: .center, spacing: -12) {
-                    smallPolaroid(index: 0)
-                    smallPolaroid(index: 1)
-                }
+    }
+    
+    // MARK: - Four Polaroids (2x2 grid)
+    
+    var fourPolaroids: some View {
+        VStack(spacing: -12) {
+            HStack(alignment: .center, spacing: -12) {
+                smallPolaroid(index: 0)
+                smallPolaroid(index: 1)
+            }
+            HStack(alignment: .center, spacing: -12) {
                 smallPolaroid(index: 2)
+                smallPolaroid(index: 3)
             }
         }
-
-        // MARK: - Four Polaroids (2x2 grid)
-
-        var fourPolaroids: some View {
-            VStack(spacing: -12) {
-                HStack(alignment: .center, spacing: -12) {
-                    smallPolaroid(index: 0)
-                    smallPolaroid(index: 1)
-                }
-                HStack(alignment: .center, spacing: -12) {
-                    smallPolaroid(index: 2)
-                    smallPolaroid(index: 3)
-                }
+    }
+    
+    // MARK: - Small Polaroid
+    
+    func smallPolaroid(index: Int) -> some View {
+        let photoSize = smallPolaroidWidth - (borderWidth * 2)
+        let rotation = deterministicRotation(seed: entry.id.uuidString, index: index)
+        
+        return ZStack(alignment: .top) {
+            VStack(spacing: 0) {
+                photoCell(path: allPaths[index], size: photoSize)
+                miniChinView(size: photoSize)
             }
+            .padding(borderWidth)
+            .background(ScrapbookTheme.polaroidWhite)
+            .clipShape(RoundedRectangle(cornerRadius: ScrapbookTheme.cardCornerRadius))
+            .shadow(color: ScrapbookTheme.cardShadowColor, radius: ScrapbookTheme.cardShadowRadius, x: 0, y: ScrapbookTheme.cardShadowY)
+            
+            tapeStrip
         }
-
-        // MARK: - Small Polaroid
-
-        func smallPolaroid(index: Int) -> some View {
-            let photoSize = smallPolaroidWidth - (borderWidth * 2)
-            let rotation = deterministicRotation(seed: entry.id.uuidString, index: index)
-
-            return ZStack(alignment: .top) {
-                VStack(spacing: 0) {
-                    photoCell(path: allPaths[index], size: photoSize)
-                    miniChinView(size: photoSize)
-                }
-                .padding(borderWidth)
-                .background(ScrapbookTheme.polaroidWhite)
-                .clipShape(RoundedRectangle(cornerRadius: ScrapbookTheme.cardCornerRadius))
-                .shadow(color: ScrapbookTheme.cardShadowColor, radius: ScrapbookTheme.cardShadowRadius, x: 0, y: ScrapbookTheme.cardShadowY)
-
-                tapeStrip
-            }
-            .rotationEffect(.degrees(rotation))
-            .zIndex(Double(index))
-        }
-
-        // MARK: - Mini Chin (date only for multi-image)
-
-        func miniChinView(size: CGFloat) -> some View {
-            Text(entry.createdAt.formatted(.dateTime.month(.abbreviated).day().year()))
-                .font(ScrapbookTheme.captionFont(size: 9))
-                .kerning(0.8)
-                .foregroundStyle(ScrapbookTheme.inkTertiary)
-                .frame(width: size, height: 32)
-        }
+        .rotationEffect(.degrees(rotation))
+        .zIndex(Double(index))
+    }
+    
+    // MARK: - Mini Chin (date only for multi-image)
+    
+    func miniChinView(size: CGFloat) -> some View {
+        Text(entry.createdAt.formatted(.dateTime.month(.abbreviated).day().year()))
+            .font(ScrapbookTheme.captionFont(size: 9))
+            .kerning(0.8)
+            .foregroundStyle(ScrapbookTheme.inkTertiary)
+            .frame(width: size, height: 32)
+    }
     
     // MARK: - Photo Cell
     
@@ -197,9 +197,9 @@ struct ScrapbookShotCard: View {
     // MARK: - Helpers
     
     func deterministicRotation(seed: String, index: Int) -> Double {
-            let hash = abs((seed + "\(index)").hashValue)
-            let normalized = Double(hash % 600) / 100.0
-            let base = normalized - 3.0
-            return index % 2 == 0 ? base : -base
-        }
+        let hash = abs((seed + "\(index)").hashValue)
+        let normalized = Double(hash % 600) / 100.0
+        let base = normalized - 3.0
+        return index % 2 == 0 ? base : -base
+    }
 }

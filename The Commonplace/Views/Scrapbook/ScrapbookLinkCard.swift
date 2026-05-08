@@ -22,7 +22,7 @@ import SwiftUI
 struct ScrapbookLinkCard: View {
     let entry: Entry
 
-    var linkLayoutSeed: Int { abs(entry.id.uuidString.hashValue) % 3 }
+    private var linkLayoutSeed: Int { abs(entry.id.uuidString.hashValue) % 3 }
 
     var linkAlignment: Alignment {
         switch linkLayoutSeed {
