@@ -80,7 +80,7 @@ class ReadwiseSyncCoordinator {
     
     /// Main entry point. Processes all paired documents from ReadwiseService
     /// and creates or updates Commonplace entries accordingly.
-    func sync(documents: [ReaderDocumentWithHighlights]) throws -> ReadwiseSyncSummary {
+    func sync(documents: [ReaderDocumentWithHighlights]) async throws -> ReadwiseSyncSummary {
         var newEntries = 0
         var updatedEntries = 0
         var newHighlightsAppended = 0
@@ -99,12 +99,12 @@ class ReadwiseSyncCoordinator {
                     searchIndex.index(entry: existing)
                 }
             } else {
-                // Brand new document — create a fresh entry
-                let entry = createEntry(from: paired)
-                modelContext.insert(entry)
-                newEntries += 1
-                searchIndex.index(entry: entry)
-            }
+                            // Brand new document — create a fresh entry
+                            let entry = await createEntry(from: paired)
+                            modelContext.insert(entry)
+                            newEntries += 1
+                            searchIndex.index(entry: entry)
+                        }
         }
         
         try modelContext.save()
@@ -120,40 +120,40 @@ class ReadwiseSyncCoordinator {
     // MARK: - Entry Creation
     
     /// Creates a brand new .link Entry from a Reader document and its highlights.
-    private func createEntry(from paired: ReaderDocumentWithHighlights) -> Entry {
-        let doc = paired.document
-        
-        let entry = Entry(type: .link, text: "", tags: autoTags)
-        
-        // Identity
-        entry.readwiseSourceID = doc.id
-        
-        // Dates — always use now; createdAt must reflect when the entry was created in Commonplace
-        entry.createdAt = Date()
-        entry.modifiedAt = Date()
-        
-        // Link fields — source_url is the real article URL; url is the Reader wrapper URL
-        entry.url = doc.sourceURL ?? doc.url
-        entry.linkTitle = doc.title
-        entry.linkContentType = "article"
-        
-        // Cover image — download and save locally so LinkPreviewView can load it
-        if let imageURLString = doc.imageURL, let imageURL = URL(string: imageURLString) {
-            do {
-                let data = try Data(contentsOf: imageURL)
-                entry.previewImagePath = try MediaFileManager.save(data, type: .preview, id: entry.id.uuidString)
-            } catch {
-                AppLogger.warning("Could not download cover image for \(doc.title ?? doc.id)", domain: .media)
+    private func createEntry(from paired: ReaderDocumentWithHighlights) async -> Entry {
+            let doc = paired.document
+            
+            let entry = Entry(type: .link, text: "", tags: autoTags)
+            
+            // Identity
+            entry.readwiseSourceID = doc.id
+            
+            // Dates — always use now; createdAt must reflect when the entry was created in Commonplace
+            entry.createdAt = Date()
+            entry.modifiedAt = Date()
+            
+            // Link fields — source_url is the real article URL; url is the Reader wrapper URL
+            entry.url = doc.sourceURL ?? doc.url
+            entry.linkTitle = doc.title
+            entry.linkContentType = "article"
+            
+            // Cover image — async download so we never block the main thread
+            if let imageURLString = doc.imageURL, let imageURL = URL(string: imageURLString) {
+                do {
+                    let (data, _) = try await URLSession.shared.data(from: imageURL)
+                    entry.previewImagePath = try MediaFileManager.save(data, type: .preview, id: entry.id.uuidString)
+                } catch {
+                    AppLogger.warning("Could not download cover image for \(doc.title ?? doc.id)", domain: .media)
+                }
             }
+            
+            // Build the highlight bullet list
+            let (bulletText, highlightIDs) = formatHighlights(paired.highlights)
+            entry.text = bulletText
+            entry.readwiseImportedHighlightIDs = highlightIDs
+            
+            return entry
         }
-        
-        // Build the highlight bullet list
-        let (bulletText, highlightIDs) = formatHighlights(paired.highlights)
-        entry.text = bulletText
-        entry.readwiseImportedHighlightIDs = highlightIDs
-        
-        return entry
-    }
     
     // MARK: - Highlight Appending
     

@@ -613,7 +613,7 @@ struct SettingsView: View {
                     modelContext: modelContext,
                     searchIndex: SearchIndex.shared
                 )
-                let summary = try coordinator.sync(documents: documents)
+                let summary = try await coordinator.sync(documents: documents)
                 
                 let syncedAt = Date()
                 UserDefaults.standard.set(syncedAt, forKey: "readwiseLastSyncedAt")
