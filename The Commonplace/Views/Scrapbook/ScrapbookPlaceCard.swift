@@ -30,16 +30,12 @@ struct ScrapbookPlaceCard: View {
         ZStack(alignment: .bottomLeading) {
             // Map — full card
             if let coordinate {
-                Map(position: .constant(.region(MKCoordinateRegion(
-                    center: coordinate,
-                    span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-                )))) {
-                    Marker(entry.locationName ?? "", coordinate: coordinate)
-                        .tint(.red)
-                }
-                .frame(width: cardWidth, height: cardWidth * 0.72)
-                .disabled(true)
-            } else {
+                            MapSnapshotView(
+                                latitude: coordinate.latitude,
+                                longitude: coordinate.longitude,
+                                size: CGSize(width: cardWidth, height: cardWidth * 0.72)
+                            )
+                        } else {
                 Rectangle()
                     .fill(ScrapbookTheme.inkDecorative.opacity(0.15))
                     .frame(width: cardWidth, height: cardWidth * 0.72)

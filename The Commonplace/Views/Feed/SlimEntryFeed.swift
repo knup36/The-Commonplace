@@ -145,11 +145,12 @@ struct SlimEntryFeed: View {
         
         switch entry.type {
         case .location:
-                    if let lat = entry.locationLatitude, let lon = entry.locationLongitude {
-                        SlimMapThumbnail(latitude: lat, longitude: lon, size: size)
-                    } else {
-                        slimIconThumb(icon: entry.type.icon, accent: accent, size: size)
-                    }
+            if let lat = entry.locationLatitude, let lon = entry.locationLongitude {
+                MapSnapshotView(latitude: lat, longitude: lon, size: CGSize(width: size, height: size))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else {
+                slimIconThumb(icon: entry.type.icon, accent: accent, size: size)
+            }
         case .media:
             if let path = entry.mediaCoverPath,
                let data = MediaFileManager.load(path: path),
@@ -278,35 +279,7 @@ struct SlimEntryFeed: View {
     }
 }
 
-// MARK: - Slim Map Thumbnail
-
-struct SlimMapThumbnail: View {
-    let latitude: Double
-    let longitude: Double
-    let size: CGFloat
-    @State private var region: MKCoordinateRegion
-    
-    init(latitude: Double, longitude: Double, size: CGFloat) {
-        self.latitude = latitude
-        self.longitude = longitude
-        self.size = size
-        _region = State(initialValue: MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
-            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-        ))
-    }
-    
-    var body: some View {
-        Map(position: .constant(.region(region))) {
-            Marker("", coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude))
-                .tint(.red)
-        }
-        .frame(width: size, height: size)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .disabled(true)
-        .allowsHitTesting(false)
-    }
-}
+// SlimMapThumbnail replaced by MapSnapshotView (v2.16)
 
 // MARK: - Slim Waveform Thumbnail
 
