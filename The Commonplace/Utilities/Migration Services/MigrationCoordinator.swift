@@ -26,6 +26,7 @@
 //   3 → SubjectMigrationService    (v1.10.1)
 //   4 → JournalImageMigrationService (v1.9.1)
 //   5 → WeeklyReviewMigrationService (v1.12.1)
+//   6 → TypeRawValueBackfill          (v2.16)
 
 import Foundation
 import SwiftData
@@ -65,6 +66,9 @@ final class MigrationCoordinator {
             },
             Migration(version: 5, name: "WeeklyReviewMigration") { context, _ in
                 WeeklyReviewMigrationService.shared.migrateIfNeeded(context: context)
+            },
+            Migration(version: 6, name: "TypeRawValueBackfill") { context, entries in
+                TypeRawValueBackfillService.migrateIfNeeded(entries: entries, context: context)
             }
             // Add future migrations here — append only, never reorder
         ]

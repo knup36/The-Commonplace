@@ -18,8 +18,10 @@ import SwiftData
 
 struct NowPlayingBlock: View {
     @Environment(\.modelContext) var modelContext
-    @Query var entries: [Entry]
-    @EnvironmentObject var themeManager: ThemeManager
+        @Query(filter: #Predicate<Entry> {
+            $0.typeRawValue == "media"
+        }, sort: \Entry.createdAt, order: .reverse) var entries: [Entry]
+        @EnvironmentObject var themeManager: ThemeManager
     
     var style: any AppThemeStyle { themeManager.style }
     

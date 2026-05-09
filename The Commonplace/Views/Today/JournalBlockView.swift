@@ -12,6 +12,8 @@ import SwiftUI
 import SwiftData
 import PhotosUI
 
+private let startOfToday = Calendar.current.startOfDay(for: Date())
+
 // MARK: - JournalBlockView
 // The daily journal card shown on the Today tab.
 // Contains weather/mood pickers, habits, daily note, and daily photo.
@@ -20,7 +22,9 @@ import PhotosUI
 
 struct JournalBlockView: View {
     @Environment(\.modelContext) var modelContext
-    @Query var entries: [Entry]
+    @Query(filter: #Predicate<Entry> { entry in
+            entry.createdAt >= startOfToday
+        }, sort: \Entry.createdAt, order: .reverse) var entries: [Entry]
     @Query(sort: \Habit.order) var habits: [Habit]
     @StateObject private var locationManager = LocationManager()
     @EnvironmentObject var themeManager: ThemeManager
@@ -30,7 +34,7 @@ struct JournalBlockView: View {
     @State private var showingJournalPhotoPicker = false
     @State private var journalImage: UIImage? = nil
     @FocusState private var noteFieldFocused: Bool
-        @State private var saveDebounceTask: Task<Void, Never>? = nil
+    @State private var saveDebounceTask: Task<Void, Never>? = nil
     
     var style: any AppThemeStyle { themeManager.style }
     var journalAccent: Color { EntryType.journal.detailAccentColor(for: themeManager.current) }
@@ -231,13 +235,13 @@ struct JournalBlockView: View {
             .foregroundStyle(style.cardPrimaryText)
             .focused($noteFieldFocused)
             .onChange(of: dailyNoteText) { _, newValue in
-                            saveDebounceTask?.cancel()
-                            saveDebounceTask = Task {
-                                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
-                                guard !Task.isCancelled else { return }
-                                await MainActor.run { saveDailyNote(newValue) }
-                            }
-                        }
+                saveDebounceTask?.cancel()
+                saveDebounceTask = Task {
+                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
+                    guard !Task.isCancelled else { return }
+                    await MainActor.run { saveDailyNote(newValue) }
+                }
+            }
         }
     }
     

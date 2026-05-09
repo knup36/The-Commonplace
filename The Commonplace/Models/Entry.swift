@@ -5,8 +5,8 @@
 // All entry types share this one model, differentiated by the `type` field.
 //
 // ============================================================
-// SCHEMA VERSION: 14
-// Last updated: v2.14.1
+// SCHEMA VERSION: 15
+// Last updated: v2.16
 //
 // Schema change policy:
 //   - Adding optional fields: safe, no migration needed
@@ -53,6 +53,7 @@
 //   v2.9    — imagePaths (photo/shot — multi-image support, up to 4)
 //   v2.12   — shazamID (music — deduplication key for Shazam playlist sync)
 //   v2.14.1 — mediaReleaseDate, mediaReleaseDateFetched (media — upcoming release tracking)
+//   v2.16   — typeRawValue (stored mirror of type.rawValue — enables #Predicate type filtering)
 //
 // Deprecated fields (do not remove yet):
 //   journalImageData — deprecated v1.9.1, replaced by journalImagePath
@@ -90,6 +91,7 @@ class Entry {
     var createdAt: Date = Date()
     var modifiedAt: Date = Date()
     var type: EntryType = EntryType.text
+    var typeRawValue: String = ""  // v2.16 — stored mirror of type.rawValue for #Predicate filtering
     var text: String = ""
     var wordCount: Int? = nil
     var readingTime: Int? = nil  // DEPRECATED v2.16 — never displayed in UI; remove after one full version cycle
@@ -247,6 +249,7 @@ class Entry {
         self.createdAt = Date()
         self.modifiedAt = Date()
         self.type = type
+        self.typeRawValue = type.rawValue
         self.text = text
         self.tagNames = tags
         self.isFavorited = false

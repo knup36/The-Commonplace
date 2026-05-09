@@ -23,30 +23,37 @@ import CoreLocation
 // Segment selection persisted via @AppStorage.
 // Screen: Today tab (bottom navigation)
 
+private let startOfToday = Calendar.current.startOfDay(for: Date())
+
 struct TodayView: View {
     @Environment(\.modelContext) var modelContext
-        @Query var entries: [Entry]
-        @Query var allPersonTags: [Tag]
-        @Query var allCollections: [Collection]
-        @EnvironmentObject var themeManager: ThemeManager
+    @Query(filter: #Predicate<Entry> { entry in
+        entry.createdAt >= startOfToday
+    }, sort: \Entry.createdAt, order: .reverse) var entries: [Entry]
+    @Query var allPersonTags: [Tag]
+    @Query var allCollections: [Collection]
+    @EnvironmentObject var themeManager: ThemeManager
     
+    @Query(filter: #Predicate<Entry> {
+        $0.typeRawValue == "media"
+    }, sort: \Entry.createdAt, order: .reverse) var mediaEntries: [Entry]
     @AppStorage("todaySelectedSegment") private var selectedSegment: Int = 0
     @State private var keyboardVisible = false
     
     var style: any AppThemeStyle { themeManager.style }
     
     var todayEntries: [Entry] {
-            entries
-                .filter { Calendar.current.isDateInToday($0.createdAt) }
-                .filter { $0.type != .journal }
-                .sorted { $0.createdAt > $1.createdAt }
+        entries
+            .filter { Calendar.current.isDateInToday($0.createdAt) }
+            .filter { $0.type != .journal }
+            .sorted { $0.createdAt > $1.createdAt }
+    }
+    
+    var todayJournalEntry: Entry? {
+        entries.first {
+            Calendar.current.isDateInToday($0.createdAt) && $0.type == .journal
         }
-
-        var todayJournalEntry: Entry? {
-            entries.first {
-                Calendar.current.isDateInToday($0.createdAt) && $0.type == .journal
-            }
-        }
+    }
     
     // MARK: - Body
     
@@ -91,7 +98,7 @@ struct TodayView: View {
                 keyboardVisible = false
             }
             .background(style.background)
-            .navigationBarTitleDisplayMode(.inline)
+                        .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: Entry.self) { entry in
                 NavigationRouter.destination(for: entry)
             }
@@ -170,11 +177,10 @@ struct TodayView: View {
         NowPlayingBlock()
         // NowPlayingBlock returns EmptyView when nothing is in progress.
         // The check below surfaces a legible empty state in that case.
-        if !entries.contains(where: {
-                    $0.type == .media &&
-                    ["movie", "tv"].contains($0.mediaType ?? "") &&
-                    ["inProgress", "rewatch", "replay"].contains($0.mediaStatus ?? "")
-                }) {
+        if !mediaEntries.contains(where: {
+            ["movie", "tv"].contains($0.mediaType ?? "") &&
+            ["inProgress", "rewatch", "replay"].contains($0.mediaStatus ?? "")
+        }) {
             VStack(spacing: 8) {
                 Image(systemName: "play.circle")
                     .font(.system(size: 32))
