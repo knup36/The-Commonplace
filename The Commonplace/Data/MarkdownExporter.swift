@@ -621,9 +621,9 @@ struct MarkdownExporter {
         | ✅ | List |
         | 🎵 | Music |
         | 🎬 | Movie / TV Show |
-                | 🎙️ | Podcast |
-                | 📄 | PDF Attachment |
-                | 🎬 | Video Attachment |
+        | 🎙️ | Podcast |
+        | 📄 | PDF Attachment |
+        | 🎬 | Video Attachment |
         
         ---
         *Exported by Commonplace — your personal archive*
