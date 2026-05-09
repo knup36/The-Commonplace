@@ -345,46 +345,48 @@ struct FeedView: View {
     @Namespace private var filterNamespace
     
     var entryFilterStrip: some View {
-        ZStack(alignment: .leading) {
-            
-            // Sliding selection indicator
-            if let selected = filterType {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(selected.detailAccentColor(for: themeManager.current).opacity(0.15))
-                    .matchedGeometryEffect(id: "filterSelector", in: filterNamespace)
-                    .frame(width: (UIScreen.main.bounds.width - 32) / CGFloat(EntryType.allCases.count))
-                    .offset(x: CGFloat(EntryType.allCases.firstIndex(of: selected) ?? 0) * (UIScreen.main.bounds.width - 32) / CGFloat(EntryType.allCases.count))
-                    .padding(2)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: filterType)
-            }
-            
-            // Icons row
-            HStack(spacing: 0) {
-                ForEach(EntryType.allCases, id: \.self) { type in
-                    Button {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            filterType = filterType == type ? nil : type
-                        }
-                    } label: {
-                        Image(systemName: type.icon)
-                            .font(.system(size: 14, weight: filterType == type ? .semibold : .regular))
-                            .foregroundStyle(
-                                filterType == type
-                                ? type.detailAccentColor(for: themeManager.current)
-                                : style.secondaryText.opacity(0.6)
-                            )
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
+            GeometryReader { geo in
+                let totalWidth = geo.size.width
+                let slotWidth = totalWidth / CGFloat(EntryType.allCases.count)
+                ZStack(alignment: .leading) {
+                    
+                    // Sliding selection indicator
+                    if let selected = filterType {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(selected.detailAccentColor(for: themeManager.current).opacity(0.15))
+                            .frame(width: slotWidth, height: 36)
+                            .offset(x: CGFloat(EntryType.allCases.firstIndex(of: selected) ?? 0) * slotWidth)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: filterType)
                     }
-                    .buttonStyle(.plain)
+                    
+                    // Icons row
+                    HStack(spacing: 0) {
+                        ForEach(EntryType.allCases, id: \.self) { type in
+                            Button {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    filterType = filterType == type ? nil : type
+                                }
+                            } label: {
+                                Image(systemName: type.icon)
+                                    .font(.system(size: 14, weight: filterType == type ? .semibold : .regular))
+                                    .foregroundStyle(
+                                        filterType == type
+                                        ? type.detailAccentColor(for: themeManager.current)
+                                        : style.secondaryText.opacity(0.6)
+                                    )
+                                    .frame(width: slotWidth)
+                                    .padding(.vertical, 10)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
                 }
             }
+            .frame(height: 40)
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 12)
         }
-        .frame(height: 40)
-        .padding(.horizontal, 16)
-        .padding(.top, 8)
-        .padding(.bottom, 12)
-    }
     
     // MARK: - Filter Strip Tip
     
