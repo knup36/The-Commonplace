@@ -22,6 +22,7 @@ struct EntryDetailView: View {
     @State private var audioTitle = ""
     @State private var audioBody = ""
     @State private var showingDeleteConfirmation = false
+    @State private var showingConnectSheet = false
     @FocusState private var textFieldFocused: Bool
     @FocusState private var noteTitleFocused: Bool
     @FocusState private var noteBodyFocused: Bool
@@ -86,6 +87,13 @@ struct EntryDetailView: View {
                     accentColor: entryAccent,
                     style: style
                 )
+                ConnectedPagesSection(
+                    entry: entry,
+                    style: style,
+                    accentColor: entryAccent,
+                    showingConnectSheet: $showingConnectSheet
+                )
+                .environmentObject(editMode)
                 Divider()
                     .overlay(style.cardDivider)
                 EntryMetadataFooter(entry: entry, style: style, accentColor: entryAccent)
@@ -174,6 +182,7 @@ struct EntryDetailView: View {
         }
         .confirmationDialog("Delete this entry?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
+                LinkedEntryService.removeAllLinks(for: entry, context: modelContext)
                 modelContext.delete(entry)
                 dismiss()
             }

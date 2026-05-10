@@ -43,6 +43,7 @@ struct MediaDetailView: View {
     @State private var localRating: Int = 0
     @State private var localStatus: String = "wantTo"
     @State private var showingDeleteConfirmation = false
+        @State private var showingConnectSheet = false
     
     // MARK: - Log State
     @State private var newLogText: String = ""
@@ -116,14 +117,15 @@ struct MediaDetailView: View {
         }
         .confirmationDialog("Delete this entry?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
-                modelContext.delete(entry)
-                dismiss()
-            }
-            Button("Cancel", role: .cancel) {}
-        }
-    }
-    
-    // MARK: - Empty / Search State
+                            LinkedEntryService.removeAllLinks(for: entry, context: modelContext)
+                            modelContext.delete(entry)
+                            dismiss()
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    }
+                }
+                
+                // MARK: - Empty / Search State
     
     var emptySearchView: some View {
         VStack(spacing: 24) {
@@ -584,17 +586,26 @@ struct MediaDetailView: View {
                 logSection
                 
                 // Tags + People
-                let mediaAccent = entry.type.detailAccentColor(for: themeManager.current)
-                EntryTagRow(
-                    tagNames: $entry.tagNames,
-                    isPinned: entry.isPinned,
-                    accentColor: mediaAccent,
-                    style: style
-                )
-                .padding(.horizontal, 20)
-                
-                Divider().padding(.horizontal, 20)
-                EntryMetadataFooter(entry: entry, style: style, accentColor: mediaAccent)
+                                let mediaAccent = entry.type.detailAccentColor(for: themeManager.current)
+                                EntryTagRow(
+                                    tagNames: $entry.tagNames,
+                                    isPinned: entry.isPinned,
+                                    accentColor: mediaAccent,
+                                    style: style
+                                )
+                                .padding(.horizontal, 20)
+                                
+                                ConnectedPagesSection(
+                                    entry: entry,
+                                    style: style,
+                                    accentColor: mediaAccent,
+                                    showingConnectSheet: $showingConnectSheet
+                                )
+                                .environmentObject(editMode)
+                                .padding(.horizontal, 20)
+
+                                Divider().padding(.horizontal, 20)
+                                EntryMetadataFooter(entry: entry, style: style, accentColor: mediaAccent)
                     .padding(.horizontal, 20)
                     .padding(.bottom, 40)
             }

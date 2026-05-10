@@ -21,6 +21,22 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "2.16",
+            title: "The Snow Leopard Release",
+            notes: [
+            "A focused health pass across the app's most important layers before 3.0. No new features — just a faster, more reliable foundation.",
+            "Share extension fully audited and cleaned up — captures feel more reliable",
+            "Feed performance: tags and collections now fetched once instead of once per card",
+            "Media covers and person avatars now load asynchronously — smoother feed scrolling",
+            "Today tab, Journal, and Media Log now query only the entries they need instead of the entire archive",
+            "Map thumbnails in the feed are now static images instead of live interactive maps",
+            "Filter strip on the Feed now aligns perfectly on iPad and iPhone",
+            "Ticket cards in Scrapbook mode now render correctly on iPad",
+            "Readwise sync no longer blocks the main thread while downloading cover images",
+            "Schema v15: typeRawValue field added to Entry for efficient type-based filtering"
+            ]
+        ),
+        Release(
             version: "2.15",
             title: "Dot Matrix",
             notes: [

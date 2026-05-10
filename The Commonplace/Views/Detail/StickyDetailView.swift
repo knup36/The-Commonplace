@@ -23,6 +23,7 @@ struct StickyDetailView: View {
     
     @StateObject private var editMode = EditModeManager()
     @State private var showingDeleteConfirmation = false
+    @State private var showingConnectSheet = false
     @State private var inputText: String = ""
     @State private var editingItemID: String? = nil  // nil = adding new
     @FocusState private var inputFocused: Bool
@@ -113,19 +114,28 @@ struct StickyDetailView: View {
             }
             
             // Tags + footer
-                        Section {
-                            EntryTagRow(
-                                tagNames: $entry.tagNames,
-                                isPinned: entry.isPinned,
-                                accentColor: accentColor,
-                                style: style
-                            )
-                            .listRowBackground(bgColor)
-                            .listRowSeparator(.hidden)
-                            EntryMetadataFooter(entry: entry, style: style, accentColor: accentColor)
-                                .listRowBackground(bgColor)
-                                .listRowSeparator(.hidden)
-                        }
+            Section {
+                EntryTagRow(
+                    tagNames: $entry.tagNames,
+                    isPinned: entry.isPinned,
+                    accentColor: accentColor,
+                    style: style
+                )
+                .listRowBackground(bgColor)
+                .listRowSeparator(.hidden)
+                ConnectedPagesSection(
+                    entry: entry,
+                    style: style,
+                    accentColor: accentColor,
+                    showingConnectSheet: $showingConnectSheet
+                )
+                .environmentObject(editMode)
+                .listRowBackground(bgColor)
+                .listRowSeparator(.hidden)
+                EntryMetadataFooter(entry: entry, style: style, accentColor: accentColor)
+                    .listRowBackground(bgColor)
+                    .listRowSeparator(.hidden)
+            }
         }
         .environmentObject(editMode)
         .listStyle(.plain)
@@ -187,6 +197,7 @@ struct StickyDetailView: View {
         }
         .confirmationDialog("Delete this entry?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
+                LinkedEntryService.removeAllLinks(for: entry, context: modelContext)
                 modelContext.delete(entry)
                 dismiss()
             }

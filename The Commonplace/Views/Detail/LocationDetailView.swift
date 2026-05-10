@@ -16,9 +16,10 @@ struct LocationDetailView: View {
     
     @StateObject private var editMode = EditModeManager()
     @State private var showingDeleteConfirmation = false
+    @State private var showingConnectSheet = false
     @State private var editText = ""
     @FocusState private var textFieldFocused: Bool
-        @State private var debounceTimer: Timer? = nil
+    @State private var debounceTimer: Timer? = nil
     
     var style: any AppThemeStyle { themeManager.style }
     var accentColor: Color { entry.type.detailAccentColor(for: themeManager.current) }
@@ -140,12 +141,12 @@ struct LocationDetailView: View {
                         .focused($textFieldFocused)
                         .foregroundStyle(style.cardPrimaryText)
                         .onAppear { editText = entry.text }
-                                            .onChange(of: editText) { _, newValue in
-                                                debounceTimer?.invalidate()
-                                                debounceTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: false) { _ in
-                                                    entry.text = newValue
-                                                }
-                                            }
+                        .onChange(of: editText) { _, newValue in
+                            debounceTimer?.invalidate()
+                            debounceTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: false) { _ in
+                                entry.text = newValue
+                            }
+                        }
                     } else if !entry.text.isEmpty {
                         Text(entry.text)
                             .font(style.typeBody)
@@ -160,6 +161,13 @@ struct LocationDetailView: View {
                         accentColor: accentColor,
                         style: style
                     )
+                    ConnectedPagesSection(
+                        entry: entry,
+                        style: style,
+                        accentColor: accentColor,
+                        showingConnectSheet: $showingConnectSheet
+                    )
+                    .environmentObject(editMode)
                     
                     Divider()
                         .overlay(style.cardDivider)
@@ -179,12 +187,12 @@ struct LocationDetailView: View {
             if editMode.isEditing {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                                            entry.text = editText
-                                            textFieldFocused = false
-                                            entry.touch()
-                                            editMode.exit()
-                                        }
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        entry.text = editText
+                        textFieldFocused = false
+                        entry.touch()
+                        editMode.exit()
+                    }
                     .bold()
                     .foregroundStyle(accentColor)
                 }
@@ -230,6 +238,7 @@ struct LocationDetailView: View {
         }
         .confirmationDialog("Delete this entry?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
+                LinkedEntryService.removeAllLinks(for: entry, context: modelContext)
                 modelContext.delete(entry)
                 dismiss()
             }

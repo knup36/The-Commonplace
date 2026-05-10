@@ -26,13 +26,13 @@ struct MovieDetailSection: View {
     
     var body: some View {
         VStack(spacing: 20) {
-                    posterHero
-                    metadataBlock
-                    starRating
-                    if editMode.isEditing {
-                        statusSection
-                    }
-                }
+            posterHero
+            metadataBlock
+            starRating
+            if editMode.isEditing {
+                statusSection
+            }
+        }
     }
     
     // MARK: - Poster Hero
@@ -42,9 +42,9 @@ struct MovieDetailSection: View {
             // Soft glow behind poster
             if coverImage != nil {
                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(accentColor.opacity(0.12))
-                                    .frame(width: 160, height: 240)
-                                    .blur(radius: 20)
+                    .fill(accentColor.opacity(0.12))
+                    .frame(width: 160, height: 240)
+                    .blur(radius: 20)
             }
             
             Group {
@@ -126,9 +126,9 @@ struct MovieDetailSection: View {
     
     var statusLine: some View {
         let statuses: [(label: String, value: String, icon: String)] = [
-                    ("Watchlist", "wantTo",    "bookmark"),
-                    ("Watched",   "finished",  "checkmark.circle.fill")
-                ]
+            ("Watchlist", "wantTo",    "bookmark"),
+            ("Watched",   "finished",  "checkmark.circle.fill")
+        ]
         let current = statuses.first { $0.value == localStatus }
         ?? statuses[0]
         let color = mediaStatusColor(for: localStatus, theme: themeManager.current)
@@ -163,17 +163,17 @@ struct MovieDetailSection: View {
     }
     
     // MARK: - Status Section
-
-        var statusSection: some View {
-            SlidingPillPicker(
-                options: [
-                    .init(label: "Watchlist", value: "wantTo",   icon: "bookmark",        selectedColor: mediaStatusColor(for: "wantTo",   theme: themeManager.current)),
-                    .init(label: "Watched",   value: "finished", icon: "checkmark.circle", selectedColor: mediaStatusColor(for: "finished", theme: themeManager.current))
-                ],
-                selection: $localStatus,
-                accentColor: accentColor
-            )
-            .padding(.horizontal, 20)
-            .onChange(of: localStatus) { _, _ in onStatusChange() }
-        }
+    
+    var statusSection: some View {
+        SlidingPillPicker(
+            options: [
+                .init(label: "Watchlist", value: "wantTo",   icon: "bookmark",        selectedColor: mediaStatusColor(for: "wantTo",   theme: themeManager.current)),
+                .init(label: "Watched",   value: "finished", icon: "checkmark.circle", selectedColor: mediaStatusColor(for: "finished", theme: themeManager.current))
+            ],
+            selection: $localStatus,
+            accentColor: accentColor
+        )
+        .padding(.horizontal, 20)
+        .onChange(of: localStatus) { _, _ in onStatusChange() }
+    }
 }
