@@ -483,14 +483,14 @@ struct PhotoDetailSection: View {
         }
         
         func calculateHeight() -> CGFloat {
-            let availableWidth = UIScreen.main.bounds.width - 32
-            guard !loadedImages.isEmpty else {
-                return paths.count == 1 ? availableWidth : availableWidth * 0.75
-            }
-            let spacing: CGFloat = 6
-            let totalSpacing = spacing * CGFloat(loadedImages.count - 1)
-            let totalAspect = loadedImages.reduce(0.0) { $0 + ($1.image.size.width / $1.image.size.height) }
-            return totalAspect > 0 ? (availableWidth - totalSpacing) / totalAspect : 200
-        }
+                    let availableWidth = UIScreen.main.bounds.width - 32
+                    guard !loadedImages.isEmpty else {
+                        return paths.count == 1 ? availableWidth : availableWidth * 0.75
+                    }
+                    let spacing: CGFloat = 6
+                    let totalSpacing = spacing * CGFloat(loadedImages.count - 1)
+                    let totalAspect = loadedImages.reduce(0.0) { $0 + ($1.image.size.width / $1.image.size.height) }
+                    return totalAspect > 0 ? (availableWidth - totalSpacing) / totalAspect : 200
+                }
     }
 }

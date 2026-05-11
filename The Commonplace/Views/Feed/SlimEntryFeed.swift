@@ -26,15 +26,25 @@ import CoreLocation
 struct SlimEntryFeed: View {
     let entries: [Entry]
     var style: any AppThemeStyle
+    var onSelect: ((Entry) -> Void)? = nil
     @EnvironmentObject var themeManager: ThemeManager
     
     var body: some View {
         VStack(spacing: 8) {
             ForEach(entries) { entry in
-                NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                    slimRow(entry: entry)
+                if let onSelect {
+                    Button {
+                        onSelect(entry)
+                    } label: {
+                        slimRow(entry: entry)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    NavigationLink(destination: NavigationRouter.destination(for: entry)) {
+                        slimRow(entry: entry)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
         }
     }
@@ -90,14 +100,13 @@ struct SlimEntryFeed: View {
                         let done = entry.stickyChecked.count
                         if total > 0 {
                             HStack(spacing: 8) {
-                                ProgressView(value: Double(done), total: Double(total))
-                                    .tint(accent)
-                                    .frame(width: 220)
-                                Text("\(done)/\(total)")
-                                    .font(style.typeCaption)
-                                    .foregroundStyle(style.cardSecondaryText)
-                                    .fixedSize()
-                            }
+                                                            ProgressView(value: Double(done), total: Double(total))
+                                                                .tint(accent)
+                                                            Text("\(done)/\(total)")
+                                                                .font(style.typeCaption)
+                                                                .foregroundStyle(style.cardSecondaryText)
+                                                                .fixedSize()
+                                                        }
                         }
                     } else {
                         let subtitle = slimSubtitle(for: entry)
