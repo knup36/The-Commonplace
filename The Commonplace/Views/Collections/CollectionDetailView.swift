@@ -19,6 +19,7 @@ import PhotosUI
 
 struct CollectionDetailView: View {
     let collection: Collection
+    var onSelectEntry: ((Entry) -> Void)? = nil
     @Query(sort: \Entry.createdAt, order: .reverse) var entries: [Entry]
     @Query var allPersonTags: [Tag]
     @Query var allCollections: [Collection]
@@ -354,16 +355,27 @@ struct CollectionDetailView: View {
     }
     
     @ViewBuilder
-    var entryRows: some View {
-        ForEach(filteredEntries) { entry in
-            NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
+        var entryRows: some View {
+            ForEach(filteredEntries) { entry in
+                if let onSelectEntry {
+                    Button {
+                        onSelectEntry(entry)
+                    } label: {
+                        EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 4)
+                } else {
+                    NavigationLink(destination: NavigationRouter.destination(for: entry)) {
+                        EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 4)
+                }
             }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 4)
         }
-    }
     
     // MARK: - Folio Layout
     

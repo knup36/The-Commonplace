@@ -24,6 +24,7 @@ struct iPadRootView: View {
     @Binding var showingTemplatePicker: Bool
     
     @State private var selectedFeedEntry: Entry? = nil
+        @State private var selectedLibraryEntry: Entry? = nil
     
     @EnvironmentObject var themeManager: ThemeManager
     
@@ -58,6 +59,8 @@ struct iPadRootView: View {
                 showingAddEntry: $showingAddEntry,
                 showingTemplatePicker: $showingTemplatePicker
             )
+        case 2:
+                    iPadLibraryView(selectedEntry: $selectedLibraryEntry)
         default:
             selectedTabView
         }
@@ -70,6 +73,8 @@ struct iPadRootView: View {
         switch selectedTab {
         case 1:
             iPadFeedDetailPanel(selectedEntry: $selectedFeedEntry)
+        case 2:
+                    iPadLibraryDetailPanel(selectedEntry: $selectedLibraryEntry)
         default:
             // Other tabs will get detail panels in subsequent iPad sessions
             style.background.ignoresSafeArea()
@@ -82,7 +87,6 @@ struct iPadRootView: View {
     private var selectedTabView: some View {
         switch selectedTab {
         case 0: HomeDashboardView()
-        case 2: LibraryView()
         case 3: ChroniclesView()
         case 4: TodayView()
         default: EmptyView()

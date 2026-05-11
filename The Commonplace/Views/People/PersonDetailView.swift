@@ -14,12 +14,13 @@ import SwiftData
 
 struct PersonDetailView: View {
     @Bindable var tag: Tag
-        @Query var allEntries: [Entry]
-        @Query var allPersonTags: [Tag]
-        @Query var allCollections: [Collection]
-        @Environment(\.modelContext) var modelContext
-        @Environment(\.dismiss) var dismiss
-        @EnvironmentObject var themeManager: ThemeManager
+    var onSelectEntry: ((Entry) -> Void)? = nil
+    @Query var allEntries: [Entry]
+    @Query var allPersonTags: [Tag]
+    @Query var allCollections: [Collection]
+    @Environment(\.modelContext) var modelContext
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var themeManager: ThemeManager
     
     @State private var showingEditView = false
     
@@ -65,12 +66,23 @@ struct PersonDetailView: View {
                     .padding(.bottom, 40)
                 } else {
                     ForEach(taggedEntries) { entry in
-                        NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                            EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
+                        if let onSelectEntry {
+                            Button {
+                                onSelectEntry(entry)
+                            } label: {
+                                EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 4)
+                        } else {
+                            NavigationLink(destination: NavigationRouter.destination(for: entry)) {
+                                EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 4)
                         }
-                        .buttonStyle(.plain)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 4)
                     }
                     .padding(.bottom, 3)
                 }
@@ -80,42 +92,42 @@ struct PersonDetailView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Menu {
-                            Button {
-                                showingEditView = true
-                            } label: {
-                                Label("Edit", systemImage: "rectangle.and.pencil.and.ellipsis")
-                            }
-                            Divider()
-                            Button {
-                                withAnimation { tag.isPinned.toggle() }
-                                try? modelContext.save()
-                            } label: {
-                                Label(tag.isPinned ? "Remove Bookmark" : "Bookmark",
-                                      systemImage: tag.isPinned ? "bookmark.fill" : "bookmark")
-                            }
-                            Divider()
-                            Button(role: .destructive) {
-                                modelContext.delete(tag)
-                                try? modelContext.save()
-                                dismiss()
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        } label: {
-                            Image(systemName: "ellipsis.circle")
-                                .foregroundStyle(accent)
-                        }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Button {
+                        showingEditView = true
+                    } label: {
+                        Label("Edit", systemImage: "rectangle.and.pencil.and.ellipsis")
                     }
-                    if tag.isPinned {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Image(systemName: "bookmark.fill")
-                                .font(.system(size: 20))
-                                .foregroundStyle(accent)
-                        }
+                    Divider()
+                    Button {
+                        withAnimation { tag.isPinned.toggle() }
+                        try? modelContext.save()
+                    } label: {
+                        Label(tag.isPinned ? "Remove Bookmark" : "Bookmark",
+                              systemImage: tag.isPinned ? "bookmark.fill" : "bookmark")
                     }
+                    Divider()
+                    Button(role: .destructive) {
+                        modelContext.delete(tag)
+                        try? modelContext.save()
+                        dismiss()
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .foregroundStyle(accent)
                 }
+            }
+            if tag.isPinned {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Image(systemName: "bookmark.fill")
+                        .font(.system(size: 20))
+                        .foregroundStyle(accent)
+                }
+            }
+        }
         .sheet(isPresented: $showingEditView) {
             PersonEditView(tag: tag)
         }

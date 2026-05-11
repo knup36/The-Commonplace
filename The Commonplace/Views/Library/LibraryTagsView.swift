@@ -36,6 +36,7 @@ struct LibraryTagsView: View {
     @State private var showingDeleteConfirm = false
     @State private var expandedGroups: Set<String> = []
     @Binding var isEditingGroups: Bool
+    var onTagSelect: ((String) -> Void)? = nil
     
     // MARK: - Derived data
     
@@ -235,29 +236,19 @@ struct LibraryTagsView: View {
     // MARK: - Tag row
     
     func tagRow(item: (tag: String, count: Int)) -> some View {
-        ZStack {
-            NavigationLink(destination: TagFeedView(tag: item.tag)) {
-                EmptyView()
-            }
-            .opacity(0)
-            HStack {
-                HStack(spacing: 6) {
-                    Image(systemName: "number")
-                        .font(.caption)
-                        .foregroundStyle(style.accent)
-                    Text(item.tag)
-                        .font(style.typeBody)
-                        .foregroundStyle(style.primaryText)
+        Group {
+            if let onTagSelect {
+                Button {
+                    onTagSelect(item.tag)
+                } label: {
+                    tagRowLabel(item: item)
                 }
-                Spacer()
-                Text("\(item.count)")
-                    .font(style.typeBodySecondary)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(style.accent)
-                    .padding(.trailing, -12)
+                .buttonStyle(.plain)
+            } else {
+                NavigationLink(destination: TagFeedView(tag: item.tag)) {
+                    tagRowLabel(item: item)
+                }
             }
-            .padding(.vertical, 4)
-            .padding(.horizontal, 10)
         }
         .listRowBackground(Color.clear)
         .listRowInsets(EdgeInsets(top: 3, leading: 16, bottom: 3, trailing: 24))
@@ -286,6 +277,27 @@ struct LibraryTagsView: View {
             }
             .tint(.blue)
         }
+    }
+    
+    func tagRowLabel(item: (tag: String, count: Int)) -> some View {
+        HStack {
+            HStack(spacing: 6) {
+                Image(systemName: "number")
+                    .font(.caption)
+                    .foregroundStyle(style.accent)
+                Text(item.tag)
+                    .font(style.typeBody)
+                    .foregroundStyle(style.primaryText)
+            }
+            Spacer()
+            Text("\(item.count)")
+                .font(style.typeBodySecondary)
+                .fontWeight(.semibold)
+                .foregroundStyle(style.accent)
+                .padding(.trailing, -12)
+        }
+        .padding(.vertical, 4)
+        .padding(.horizontal, 10)
     }
     
     // MARK: - Move to group sheet
