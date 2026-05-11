@@ -40,6 +40,9 @@ struct TodayView: View {
     @AppStorage("todaySelectedSegment") private var selectedSegment: Int = 0
     @State private var keyboardVisible = false
     
+    /// Injected by iPadRootView on iPad. Nil on iPhone — NavigationLink used instead.
+    var onSelectEntry: ((Entry) -> Void)? = nil
+    
     var style: any AppThemeStyle { themeManager.style }
     
     var todayEntries: [Entry] {
@@ -98,7 +101,7 @@ struct TodayView: View {
                 keyboardVisible = false
             }
             .background(style.background)
-                        .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: Entry.self) { entry in
                 NavigationRouter.destination(for: entry)
             }
@@ -161,11 +164,19 @@ struct TodayView: View {
                     .foregroundStyle(style.secondaryText)
                     .padding(.horizontal)
                 ForEach(todayEntries) { entry in
-                    NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                        EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
+                    if let onSelect = onSelectEntry {
+                        Button { onSelect(entry) } label: {
+                            EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal)
+                    } else {
+                        NavigationLink(destination: NavigationRouter.destination(for: entry)) {
+                            EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal)
                 }
             }
         }
@@ -174,7 +185,7 @@ struct TodayView: View {
     // Media Log segment: in-progress TV and Movies via NowPlayingBlock
     @ViewBuilder
     var mediaLogSegment: some View {
-        NowPlayingBlock()
+        NowPlayingBlock(onSelectEntry: onSelectEntry)
         // NowPlayingBlock returns EmptyView when nothing is in progress.
         // The check below surfaces a legible empty state in that case.
         if !mediaEntries.contains(where: {

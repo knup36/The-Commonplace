@@ -24,6 +24,9 @@ struct NowPlayingBlock: View {
         @EnvironmentObject var themeManager: ThemeManager
     
     var style: any AppThemeStyle { themeManager.style }
+
+    /// Injected by TodayView on iPad. Nil on iPhone — NavigationLink used instead.
+    var onSelectEntry: ((Entry) -> Void)? = nil
     
     // MARK: - State
     
@@ -66,14 +69,14 @@ struct NowPlayingBlock: View {
     }
     
     // MARK: - Poster Cell
-    
-    @ViewBuilder
-    func posterCell(entry: Entry) -> some View {
-        VStack(spacing: 6) {
-            
-            // Poster
-            NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                ZStack {
+        
+        @ViewBuilder
+        func posterCell(entry: Entry) -> some View {
+            VStack(spacing: 6) {
+                
+                // Poster
+                // iPad: callback drives detail panel. iPhone: NavigationLink push as before.
+                let posterZStack = ZStack {
                     posterImage(entry: entry)
                         .aspectRatio(2/3, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -91,8 +94,16 @@ struct NowPlayingBlock: View {
                             .foregroundStyle(.white)
                     }
                 }
-            }
-            .buttonStyle(.plain)
+                
+                if let onSelect = onSelectEntry {
+                    Button { onSelect(entry) } label: { posterZStack }
+                        .buttonStyle(.plain)
+                } else {
+                    NavigationLink(destination: NavigationRouter.destination(for: entry)) {
+                        posterZStack
+                    }
+                    .buttonStyle(.plain)
+                }
             
             // Action buttons
             HStack(spacing: 16) {
