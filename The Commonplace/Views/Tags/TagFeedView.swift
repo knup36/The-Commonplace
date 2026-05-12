@@ -8,13 +8,16 @@ import SwiftData
 
 struct TagFeedView: View {
     let tag: String
-        @Query var entries: [Entry]
-        @Query var allTags: [Tag]
-        @Query var allCollections: [Collection]
-        @EnvironmentObject var themeManager: ThemeManager
+    @Query var entries: [Entry]
+    @Query var allTags: [Tag]
+    @Query var allCollections: [Collection]
+    @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.modelContext) var modelContext
     @State private var searchText = ""
     @State private var showingDeleteConfirmation = false
+    
+    /// Injected by iPadHomeView and iPadLibraryView on iPad. Nil on iPhone — NavigationLink used instead.
+    var onSelectEntry: ((Entry) -> Void)? = nil
     
     var tagObject: Tag? {
         allTags.first { $0.name == tag }
@@ -34,12 +37,21 @@ struct TagFeedView: View {
         ScrollView {
             LazyVStack(spacing: 0) {
                 ForEach(filteredEntries) { entry in
-                    NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                        EntryRowView(entry: entry, allPersonTags: allTags, allCollections: allCollections)
+                    if let onSelect = onSelectEntry {
+                        Button { onSelect(entry) } label: {
+                            EntryRowView(entry: entry, allPersonTags: allTags, allCollections: allCollections)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 4)
+                    } else {
+                        NavigationLink(destination: NavigationRouter.destination(for: entry)) {
+                            EntryRowView(entry: entry, allPersonTags: allTags, allCollections: allCollections)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 4)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 4)
                 }
             }
         }
@@ -80,21 +92,21 @@ struct TagFeedView: View {
         }
         .confirmationDialog("Delete \"\(tag)\"?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
             Button("Delete Tag", role: .destructive) {
-                            // Remove Tag object
-                            if let tagObj = tagObject {
-                                modelContext.delete(tagObj)
-                            }
-                            // Remove tag string from all entries
-                            for entry in entries where entry.tagNames.contains(tag) {
-                                entry.tagNames.removeAll { $0 == tag }
-                            }
-                            try? modelContext.save()
-                        }
+                // Remove Tag object
+                if let tagObj = tagObject {
+                    modelContext.delete(tagObj)
+                }
+                // Remove tag string from all entries
+                for entry in entries where entry.tagNames.contains(tag) {
+                    entry.tagNames.removeAll { $0 == tag }
+                }
+                try? modelContext.save()
+            }
             Button("Cancel", role: .cancel) {}
         } message: {
-                    let count = filteredEntries.count
-                    Text("'\(tag)' will be removed from \(count) \(count == 1 ? "entry" : "entries").")
-                }
+            let count = filteredEntries.count
+            Text("'\(tag)' will be removed from \(count) \(count == 1 ? "entry" : "entries").")
+        }
         .searchable(text: $searchText, prompt: "Search entries...")
     }
 }

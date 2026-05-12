@@ -397,9 +397,9 @@ struct CollectionDetailView: View {
                 }
                 
                 if !slimEntries.isEmpty {
-                    SlimEntryFeed(entries: slimEntries, style: style)
-                        .padding(.horizontal, 16)
-                }
+                                    SlimEntryFeed(entries: slimEntries, style: style, onSelect: onSelectEntry)
+                                        .padding(.horizontal, 16)
+                                }
                 
                 Spacer().frame(height: 80)
             }
@@ -487,11 +487,18 @@ struct CollectionDetailView: View {
             spacing: 10
         ) {
             ForEach(stickyEntries) { entry in
-                NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                    CompactEntryCard(entry: entry, style: style)
-                }
-                .buttonStyle(.plain)
-            }
+                            if let onSelect = onSelectEntry {
+                                Button { onSelect(entry) } label: {
+                                    CompactEntryCard(entry: entry, style: style)
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                NavigationLink(destination: NavigationRouter.destination(for: entry)) {
+                                    CompactEntryCard(entry: entry, style: style)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
         }
     }
     
@@ -501,11 +508,18 @@ struct CollectionDetailView: View {
             spacing: 3
         ) {
             ForEach(photoEntries) { entry in
-                NavigationLink(destination: NavigationRouter.destination(for: entry)) {
-                    photoThumb(entry: entry)
-                }
-                .buttonStyle(.plain)
-            }
+                            if let onSelect = onSelectEntry {
+                                Button { onSelect(entry) } label: {
+                                    photoThumb(entry: entry)
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                NavigationLink(destination: NavigationRouter.destination(for: entry)) {
+                                    photoThumb(entry: entry)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
         }
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }

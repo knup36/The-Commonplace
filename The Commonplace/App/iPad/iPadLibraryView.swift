@@ -228,7 +228,7 @@ struct iPadLibraryView: View {
                 })
             }
             .navigationDestination(for: String.self) { tagName in
-                iPadTagFeedPanel(tagName: tagName, onSelect: { entry in
+                TagFeedView(tag: tagName, onSelectEntry: { entry in
                     withAnimation(.easeInOut(duration: 0.2)) {
                         selectedEntry = entry
                     }

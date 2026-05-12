@@ -23,13 +23,14 @@ struct iPadRootView: View {
     @Binding var selectedTab: Int
     @Binding var showingAddEntry: Bool
     @Binding var showingTemplatePicker: Bool
-
+    
     @State private var selectedFeedEntry: Entry? = nil
     @State private var selectedLibraryEntry: Entry? = nil
     @State private var selectedTodayEntry: Entry? = nil
-
+    @State private var selectedHomeEntry: Entry? = nil
+    
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     var body: some View {
         NavigationSplitView {
             iPadSidebarView(
@@ -49,9 +50,9 @@ struct iPadRootView: View {
         }
         .navigationSplitViewStyle(.balanced)
     }
-
+    
     // MARK: - Content Column
-
+    
     @ViewBuilder
     private var contentColumn: some View {
         switch selectedTab {
@@ -67,38 +68,41 @@ struct iPadRootView: View {
             TodayView(onSelectEntry: { entry in
                 selectedTodayEntry = entry
             })
+        case 0:
+            iPadHomeView(selectedEntry: $selectedHomeEntry)
         default:
             selectedTabView
         }
     }
-
+    
     // MARK: - Detail Column
-
+    
     @ViewBuilder
     private var detailColumn: some View {
         switch selectedTab {
         case 1:
-            iPadFeedDetailPanel(selectedEntry: $selectedFeedEntry)
-        case 2:
-            iPadLibraryDetailPanel(selectedEntry: $selectedLibraryEntry)
+                    iPadEntryDetailPanel(selectedEntry: $selectedFeedEntry)
+                case 2:
+                    iPadEntryDetailPanel(selectedEntry: $selectedLibraryEntry)
         case 4:
-            iPadTodayDetailPanel(selectedEntry: $selectedTodayEntry)
+            iPadEntryDetailPanel(selectedEntry: $selectedTodayEntry)
+        case 0:
+            iPadEntryDetailPanel(selectedEntry: $selectedHomeEntry)
         default:
             // Home and Chronicles will get detail panels in subsequent iPad sessions
             style.background.ignoresSafeArea()
         }
     }
-
+    
     // MARK: - Non-iPad-treated tab views
-
+    
     @ViewBuilder
-    private var selectedTabView: some View {
-        switch selectedTab {
-        case 0: HomeDashboardView()
-        case 3: ChroniclesView()
-        default: EmptyView()
+        private var selectedTabView: some View {
+            switch selectedTab {
+            case 3: ChroniclesView()
+            default: EmptyView()
+            }
         }
-    }
-
+    
     private var style: any AppThemeStyle { themeManager.style }
 }

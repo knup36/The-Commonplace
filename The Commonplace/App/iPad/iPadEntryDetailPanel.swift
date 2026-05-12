@@ -1,7 +1,7 @@
-// iPadTodayDetailPanel.swift
+// iPadEntryDetailPanel.swift
 // Commonplace
 //
-// Right column of the iPad Today tab layout.
+// Shared right column detail panel for all iPad tabs.
 //
 // Two states:
 //   - Empty (no entry selected): floating archive stats rendered directly
@@ -11,17 +11,26 @@
 //     card that sits within the panel with padding on all sides, giving it
 //     a physical "lifted paper" feel.
 //
+// Used by all tabs that have a detail column:
+//   Feed    → iPadEntryDetailPanel(selectedEntry: $selectedFeedEntry)
+//   Library → iPadEntryDetailPanel(selectedEntry: $selectedLibraryEntry)
+//   Today   → iPadEntryDetailPanel(selectedEntry: $selectedTodayEntry)
+//   Home    → iPadEntryDetailPanel(selectedEntry: $selectedHomeEntry)
+//   Chronicles (future) → iPadEntryDetailPanel(selectedEntry: $selectedChroniclesEntry)
+//
 // Stats data is computed here via @Query, mirroring ChroniclesView logic.
 // Detail views are rendered via NavigationRouter.destination(for:) —
 // zero duplication of detail view code.
 //
-// Mirrors iPadFeedDetailPanel and iPadLibraryDetailPanel exactly.
-// Today entries are tapped in TodayView's entriesSegment via onSelectEntry callback.
+// Right column rule: this panel is always reserved for entry detail cards.
+// No feeds, grids, or lists may live in the right column. This is what
+// enables the consistent floating card treatment, bgColor bleed, and
+// slide/scale animations across all tabs. No exceptions.
 
 import SwiftUI
 import SwiftData
 
-struct iPadTodayDetailPanel: View {
+struct iPadEntryDetailPanel: View {
     @Binding var selectedEntry: Entry?
 
     @Query(sort: \Entry.createdAt, order: .reverse) private var allEntries: [Entry]
