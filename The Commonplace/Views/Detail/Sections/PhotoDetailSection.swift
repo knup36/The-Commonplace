@@ -434,25 +434,25 @@ struct PhotoDetailSection: View {
         @State private var loadedImages: [(id: Int, image: UIImage)] = []
         
         var body: some View {
-            GeometryReader { geo in
-                let spacing: CGFloat = 6
-                let totalSpacing = spacing * CGFloat(max(loadedImages.count - 1, 0))
-                let totalAspect = loadedImages.reduce(0.0) { $0 + ($1.image.size.width / $1.image.size.height) }
-                let rowHeight = totalAspect > 0 ? (geo.size.width - totalSpacing) / totalAspect : 200
-                
-                HStack(spacing: spacing) {
-                    ForEach(loadedImages, id: \.id) { item in
-                        Image(uiImage: item.image)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: rowHeight * (item.image.size.width / item.image.size.height), height: rowHeight)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                            .contentShape(Rectangle())
-                            .onTapGesture { onTap(item.id) }
-                    }
+            let availableWidth = UIDevice.current.userInterfaceIdiom == .pad
+                            ? min(UIScreen.main.bounds.width * 0.38, 420) - 32
+                            : UIScreen.main.bounds.width - 32
+            let spacing: CGFloat = 6
+            let totalSpacing = spacing * CGFloat(max(loadedImages.count - 1, 0))
+            let totalAspect = loadedImages.reduce(0.0) { $0 + ($1.image.size.width / $1.image.size.height) }
+            let rowHeight = totalAspect > 0 ? (availableWidth - totalSpacing) / totalAspect : (paths.count == 1 ? 300 : 220)
+            
+            HStack(spacing: spacing) {
+                ForEach(loadedImages, id: \.id) { item in
+                    Image(uiImage: item.image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: rowHeight * (item.image.size.width / item.image.size.height), height: rowHeight)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .contentShape(Rectangle())
+                        .onTapGesture { onTap(item.id) }
                 }
             }
-            .frame(height: calculateHeight())
             .animation(nil, value: loadedImages.count)
             .onAppear {
                 loadImagesAsync()
@@ -481,16 +481,5 @@ struct PhotoDetailSection: View {
                 }
             }
         }
-        
-        func calculateHeight() -> CGFloat {
-                    let availableWidth = UIScreen.main.bounds.width - 32
-                    guard !loadedImages.isEmpty else {
-                        return paths.count == 1 ? availableWidth : availableWidth * 0.75
-                    }
-                    let spacing: CGFloat = 6
-                    let totalSpacing = spacing * CGFloat(loadedImages.count - 1)
-                    let totalAspect = loadedImages.reduce(0.0) { $0 + ($1.image.size.width / $1.image.size.height) }
-                    return totalAspect > 0 ? (availableWidth - totalSpacing) / totalAspect : 200
-                }
     }
 }

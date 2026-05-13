@@ -106,11 +106,12 @@ struct iPadSidebarView: View {
     @ViewBuilder
     private func iPadTabRow(icon: String, label: String, tag: Int) -> some View {
         Button {
-            switch tag {
-            case 0: router.iPadHomePath = NavigationPath()
-            case 2: router.iPadLibraryPath = NavigationPath()
-            default: break
-            }
+            router.iPadLibraryPath = NavigationPath()
+                        router.iPadHomePath = NavigationPath()
+                        switch tag {
+                        case 1: router.selectedFeedEntry = nil; router.iPadFeedResetToken += 1
+                        default: break
+                        }
             selectedTab = tag
         } label: {
             HStack(spacing: 10) {

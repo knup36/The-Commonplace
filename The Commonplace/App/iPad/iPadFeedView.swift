@@ -54,6 +54,7 @@ struct iPadFeedView: View {
     @State private var isShuffleMode: Bool = false
     
     @EnvironmentObject var themeManager: ThemeManager
+        @EnvironmentObject var router: NavigationRouter
     
     var style: any AppThemeStyle { themeManager.style }
     
@@ -82,6 +83,11 @@ struct iPadFeedView: View {
                     updateFilter()
                 }
                 .onChange(of: entries.count) { _, _ in updateFilter() }
+                                .onChange(of: router.iPadFeedResetToken) { _, _ in
+                                    filterType = nil
+                                    visibleCount = 50
+                                    updateFilter()
+                                }
                 .onChange(of: entries.first?.modifiedAt) { _, _ in
                     WidgetDataStore.writeSnapshot(from: Array(entries.prefix(6)))
                 }

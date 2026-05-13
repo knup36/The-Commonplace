@@ -47,6 +47,7 @@ final class NavigationRouter: ObservableObject {
     // Per-tab selected entry state — owned here so the detail panel
     // can be driven from anywhere (feed cards, Chronicles, widgets).
     @Published var selectedFeedEntry: Entry? = nil
+        @Published var iPadFeedResetToken: Int = 0
     @Published var selectedLibraryEntry: Entry? = nil
     @Published var selectedTodayEntry: Entry? = nil
     @Published var selectedHomeEntry: Entry? = nil

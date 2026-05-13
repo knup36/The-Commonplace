@@ -56,12 +56,12 @@ struct iPadRootView: View {
     private var contentColumn: some View {
         switch router.iPadSelectedTab {
         case 1:
-            iPadFeedView(
-                selectedEntry: $router.selectedFeedEntry,
-                showingAddEntry: $showingAddEntry,
-                showingTemplatePicker: $showingTemplatePicker
-            )
-            .id(1)
+                    iPadFeedView(
+                        selectedEntry: $router.selectedFeedEntry,
+                        showingAddEntry: $showingAddEntry,
+                        showingTemplatePicker: $showingTemplatePicker
+                    )
+                    .id("feed-\(router.iPadFeedResetToken)")
         case 2:
             iPadLibraryView(selectedEntry: $router.selectedLibraryEntry)
                 .id(2)
