@@ -27,10 +27,11 @@ struct iPadRootView: View {
     @Binding var showingTemplatePicker: Bool
 
     @EnvironmentObject var router: NavigationRouter
-    @EnvironmentObject var themeManager: ThemeManager
+        @EnvironmentObject var themeManager: ThemeManager
+        @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             iPadSidebarView(
                 selectedTab: $router.iPadSelectedTab,
                 showingAddEntry: $showingAddEntry,
@@ -48,6 +49,11 @@ struct iPadRootView: View {
                 }
         }
         .navigationSplitViewStyle(.balanced)
+                .onChange(of: router.iPadFeedIsNodeMode) { _, isNodeMode in
+                    withAnimation(.easeInOut(duration: 0.35)) {
+                        columnVisibility = isNodeMode ? .doubleColumn : .all
+                    }
+                }
     }
 
     // MARK: - Content Column

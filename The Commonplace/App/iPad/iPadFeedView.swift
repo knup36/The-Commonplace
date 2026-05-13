@@ -52,9 +52,10 @@ struct iPadFeedView: View {
     @AppStorage("feedFullMode") private var isFullMode: Bool = false
     @AppStorage("feedShuffleSeed") private var shuffleSeed: Int = 0
     @State private var isShuffleMode: Bool = false
+    @State private var isNodeMode: Bool = false
     
     @EnvironmentObject var themeManager: ThemeManager
-        @EnvironmentObject var router: NavigationRouter
+    @EnvironmentObject var router: NavigationRouter
     
     var style: any AppThemeStyle { themeManager.style }
     
@@ -62,7 +63,27 @@ struct iPadFeedView: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            scrollContent
+            if isNodeMode {
+                KnowledgeGraphView(
+                                    entries: Array(entries),
+                                    tags: Array(allPersonTags),
+                                    theme: themeManager.current
+                                ) { tappedID in
+                    if let entry = entries.first(where: { $0.id.uuidString == tappedID }) {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectedEntry = entry
+                        }
+                    }
+                }
+                .ignoresSafeArea()
+                .overlay(alignment: .topTrailing) {
+                    viewModeToggle
+                        .padding(.trailing, 16)
+                        .padding(.top, 8)
+                }
+            } else {
+                scrollContent
+            }
         }
     }
     
@@ -83,11 +104,11 @@ struct iPadFeedView: View {
                     updateFilter()
                 }
                 .onChange(of: entries.count) { _, _ in updateFilter() }
-                                .onChange(of: router.iPadFeedResetToken) { _, _ in
-                                    filterType = nil
-                                    visibleCount = 50
-                                    updateFilter()
-                                }
+                .onChange(of: router.iPadFeedResetToken) { _, _ in
+                    filterType = nil
+                    visibleCount = 50
+                    updateFilter()
+                }
                 .onChange(of: entries.first?.modifiedAt) { _, _ in
                     WidgetDataStore.writeSnapshot(from: Array(entries.prefix(6)))
                 }
@@ -319,6 +340,27 @@ struct iPadFeedView: View {
                 Image(systemName: "rectangle.3.group.fill")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundStyle(isScrapbookMode ? Color(red: 0.5, green: 0.35, blue: 0.15) : style.secondaryText.opacity(0.4))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+            }
+            .buttonStyle(.plain)
+            
+            // Node
+            Button {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isNodeMode.toggle()
+                    router.iPadFeedIsNodeMode = isNodeMode
+                    if isNodeMode {
+                        isFullMode = false
+                        isScrapbookMode = false
+                        isSlimMode = false
+                        isShuffleMode = false
+                    }
+                }
+            } label: {
+                Image(systemName: "circle.grid.cross")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(isNodeMode ? style.accent : style.secondaryText.opacity(0.4))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 8)
             }

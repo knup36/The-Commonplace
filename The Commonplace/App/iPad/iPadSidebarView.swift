@@ -139,8 +139,9 @@ struct iPadSidebarView: View {
     @ViewBuilder
     private func iPadRecentRow(entry: Entry) -> some View {
         Button {
-            selectedTab = 1
-        } label: {
+                    router.selectedFeedEntry = entry
+                    selectedTab = 1
+                } label: {
             VStack(alignment: .leading, spacing: 2) {
                 Text(iPadSidebarView.recentTitle(for: entry))
                     .font(style.typeBodySecondary)

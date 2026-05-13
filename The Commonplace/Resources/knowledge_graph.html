@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body { background: #1A1208; overflow: hidden; width: 100vw; height: 100vh; }
+                canvas { position: absolute; top: 0; left: 0; }
+                svg { position: absolute; top: 0; left: 0; }
+                #tooltip {
+                    position: absolute;
+                    background: rgba(26,18,8,0.92);
+                    border: 0.5px solid rgba(168,144,96,0.3);
+                    border-radius: 8px;
+                    padding: 6px 10px;
+                    font-family: -apple-system, sans-serif;
+                    font-size: 12px;
+                    color: #F0E8DC;
+                    pointer-events: none;
+                    opacity: 0;
+                    transition: opacity 0.15s;
+                    max-width: 160px;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+            </style>
+    </head>
+    <body>
+        <div id="tooltip"></div>
+        <svg id="graph"></svg>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+        <script>
+            const W = window.innerWidth;
+            const H = window.innerHeight;
+            
+            const svg = d3.select('#graph')
+            .attr('width', W)
+            .attr('height', H);
+            
+            const tooltip = document.getElementById('tooltip');
+            
+            // Zoom container
+            const container = svg.append('g').attr('class', 'container');
+            
+            // Zoom behaviour
+            const zoom = d3.zoom()
+            .scaleExtent([0.1, 4])
+            .on('zoom', e => {
+                container.attr('transform', e.transform);
+                currentScale = e.transform.k;
+                updateLabelVisibility();
+            });
+            
+            svg.call(zoom);
+            
+            let currentScale = 1;
+            let simulation;
+            let graphData = null;
+            
+            function loadGraph(jsonString) {
+                const data = JSON.parse(jsonString);
+                graphData = data;
+                renderGraph(data);
+            }
+            
+            function renderGraph(data) {
+                container.selectAll('*').remove();
+                
+                window.webkit.messageHandlers.entryTapped.postMessage('DEBUG persons: ' + JSON.stringify(data.persons?.slice(0,2)));
+                const entryWithPerson = data.entries.find(e => e.tagNames && e.tagNames.some(t => t.startsWith('@')));
+                window.webkit.messageHandlers.entryTapped.postMessage('DEBUG personEntry tags: ' + JSON.stringify(entryWithPerson?.tagNames));
+                
+                const entryNodes = data.entries.map(e => ({
+                    id: e.id, kind: 'entry', label: e.label, color: e.color,
+                    type: e.type, tagNames: e.tagNames, linkedEntryIDs: e.linkedEntryIDs, r: 9
+                }));
+                
+                const tagNodes = data.tags.map(t => ({
+                    id: t.id, kind: 'tag', label: t.label, entryCount: t.entryCount,
+                    color: '#EF9F27', r: Math.max(14, Math.min(26, 10 + t.entryCount * 1.4))
+                }));
+                
+                const personNodes = (data.persons || []).map(p => ({
+                    id: p.id, kind: 'person', label: p.label, entryCount: p.entryCount, r: 14
+                }));
+                
+                const nodes = [...entryNodes, ...tagNodes, ...personNodes];
+                const nodeMap = new Map(nodes.map(n => [n.id, n]));
+                
+                const links = [];
+                
+                for (const entry of data.entries) {
+                    for (const tag of entry.tagNames) {
+                        const tagId = 'tag-' + tag;
+                        if (nodeMap.has(tagId)) {
+                            links.push({ source: entry.id, target: tagId, kind: 'tag' });
+                        }
+                        const personId = 'person-' + tag.replace(/^@/, '');
+                        if (tag.startsWith('@') && nodeMap.has(personId)) {
+                            links.push({ source: entry.id, target: personId, kind: 'person' });
+                        }
+                    }
+                }
+                
+                for (const entry of data.entries) {
+                    for (const linkedId of entry.linkedEntryIDs) {
+                        if (entry.id < linkedId && nodeMap.has(linkedId)) {
+                            links.push({ source: entry.id, target: linkedId, kind: 'explicit' });
+                        }
+                    }
+                }
+                
+                simulation = d3.forceSimulation(nodes)
+                .force('link', d3.forceLink(links).id(d => d.id)
+                       .distance(d => d.kind === 'person' ? 70 : d.kind === 'tag' ? 80 : 60)
+                       .strength(d => d.kind === 'tag' ? 0.4 : 0.8))
+                       .force('charge', d3.forceManyBody()
+                              .strength(d => d.kind === 'tag' || d.kind === 'person' ? -120 : -30))
+                              .force('center', d3.forceCenter(W / 2, H / 2).strength(0.08))
+                              .force('collision', d3.forceCollide().radius(d => d.r + 8))
+                              .force('bound', () => {
+                                  const padding = 60;
+                                  for (const node of nodes) {
+                                      node.vx = (node.vx || 0) * 0.9;
+                                      node.vy = (node.vy || 0) * 0.9;
+                                      if (node.x < padding) node.vx += (padding - node.x) * 0.05;
+                                      if (node.x > W - padding) node.vx += (W - padding - node.x) * 0.05;
+                                      if (node.y < padding) node.vy += (padding - node.y) * 0.05;
+                                      if (node.y > H - padding) node.vy += (H - padding - node.y) * 0.05;
+                                  }
+                              })
+                              .alphaDecay(0.04)
+                              .on('end', () => { simulation.stop(); });
+                              
+                              const tagLinks = container.append('g').attr('class', 'tag-links')
+                              .selectAll('line').data(links.filter(l => l.kind === 'tag')).join('line')
+                              .attr('stroke', 'rgba(186,117,23,0.3)').attr('stroke-width', 1);
+                              
+                              const personLinks = container.append('g').attr('class', 'person-links')
+                              .selectAll('line').data(links.filter(l => l.kind === 'person')).join('line')
+                              .attr('stroke', 'rgba(200,144,58,0.35)').attr('stroke-width', 1);
+                              
+                              const explicitLinks = container.append('g').attr('class', 'explicit-links')
+                              .selectAll('line').data(links.filter(l => l.kind === 'explicit')).join('line')
+                              .attr('stroke', 'rgba(240,232,220,0.35)').attr('stroke-width', 1.5)
+                              .attr('stroke-dasharray', '4 3');
+                              
+                              const nodeGroup = container.append('g').attr('class', 'nodes')
+                              .selectAll('g').data(nodes).join('g').attr('class', 'node')
+                              .call(d3.drag()
+                                    .on('start', dragStart)
+                                    .on('drag', dragged)
+                                    .on('end', dragEnd))
+                                    .on('click', (event, d) => {
+                                        event.stopPropagation();
+                                        if (d.kind === 'entry') {
+                                            window.webkit.messageHandlers.entryTapped.postMessage(d.id);
+                                            highlightNode(d.id);
+                                        }
+                                    })
+                                    .on('mouseover', (event, d) => {
+                                        tooltip.style.opacity = '1';
+                                        tooltip.textContent = d.label;
+                                    })
+                                    .on('mousemove', event => {
+                                        tooltip.style.left = (event.pageX + 12) + 'px';
+                                        tooltip.style.top = (event.pageY - 28) + 'px';
+                                    })
+                                    .on('mouseout', () => { tooltip.style.opacity = '0'; });
+                                    
+                                    nodeGroup.filter(d => d.kind === 'entry')
+                                    .append('circle')
+                                    .attr('r', d => d.r)
+                                    .attr('fill', d => d.color)
+                                    .attr('fill-opacity', 0.85)
+                                    .attr('stroke', d => d.color)
+                                    .attr('stroke-width', 1);
+                                    
+                                    nodeGroup.filter(d => d.kind === 'person')
+                                    .append('circle')
+                                    .attr('r', d => d.r)
+                                    .attr('fill', 'rgba(200,144,58,0.15)')
+                                    .attr('stroke', '#C8903A')
+                                    .attr('stroke-width', 2);
+                                    
+                                    nodeGroup.filter(d => d.kind === 'person')
+                                    .append('text')
+                                    .attr('text-anchor', 'middle')
+                                    .attr('dy', '0.35em')
+                                    .attr('font-size', 9)
+                                    .attr('font-weight', '500')
+                                    .attr('fill', '#C8903A')
+                                    .attr('pointer-events', 'none')
+                                    .text(d => d.label.length > 8 ? d.label.slice(0, 7) + '…' : d.label);
+                                    
+                                    nodeGroup.filter(d => d.kind === 'tag')
+                                    .append('circle')
+                                    .attr('r', d => d.r)
+                                    .attr('fill', 'transparent')
+                                    .attr('stroke', 'none');
+                                    
+                                    nodeGroup.filter(d => d.kind === 'tag')
+                                    .append('text')
+                                    .attr('class', 'tag-label')
+                                    .attr('text-anchor', 'middle')
+                                    .attr('dy', '0.35em')
+                                    .attr('font-size', 13)
+                                    .attr('font-weight', '500')
+                                    .attr('fill', '#EF9F27')
+                                    .attr('fill-opacity', 0.9)
+                                    .attr('pointer-events', 'none')
+                                    .text(d => d.label.length > 18 ? d.label.slice(0, 17) + '…' : d.label);
+                                    
+                                    nodeGroup.filter(d => d.kind === 'entry')
+                                    .append('text')
+                                    .attr('class', 'entry-label')
+                                    .attr('text-anchor', 'middle')
+                                    .attr('dy', d => d.r + 11)
+                                    .attr('font-size', 9)
+                                    .attr('fill', 'rgba(240,232,220,0.6)')
+                                    .attr('pointer-events', 'none')
+                                    .text(d => d.label.length > 16 ? d.label.slice(0, 15) + '…' : d.label)
+                                    .attr('opacity', 0);
+                                    
+                                    nodeGroup.filter(d => d.kind === 'entry')
+                                    .append('circle')
+                                    .attr('class', 'selected-ring')
+                                    .attr('r', d => d.r + 4)
+                                    .attr('fill', 'none')
+                                    .attr('stroke', d => d.color)
+                                    .attr('stroke-width', 1.5)
+                                    .attr('opacity', 0);
+                                    
+                                    simulation.on('tick', () => {
+                                        tagLinks
+                                        .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+                                        .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+                                        personLinks
+                                        .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+                                        .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+                                        explicitLinks
+                                        .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+                                        .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+                                        nodeGroup.attr('transform', d => `translate(${d.x},${d.y})`);
+                                    });
+            }
+            
+            function highlightNode(id) {
+                container.selectAll('.selected-ring').attr('opacity', 0);
+                container.selectAll('.node')
+                .filter(d => d.id === id)
+                .select('.selected-ring')
+                .attr('opacity', 1);
+            }
+            
+            function updateLabelVisibility() {
+                const showLabels = currentScale > 1.4;
+                container.selectAll('.entry-label')
+                .attr('opacity', showLabels ? 1 : 0);
+            }
+            
+            function dragStart(event, d) {
+                if (!event.active) simulation.alphaTarget(0.1).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+            
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+            
+            function dragEnd(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+            
+            // Tap on empty canvas deselects
+            svg.on('click', () => {
+                container.selectAll('.selected-ring').attr('opacity', 0);
+            });
+        </script>
+    </body>
+</html>

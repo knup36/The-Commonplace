@@ -27,34 +27,35 @@ import SwiftUI
 import Combine
 
 final class NavigationRouter: ObservableObject {
-
+    
     // Shared singleton — preserves existing static call sites.
     // New code should use @EnvironmentObject instead.
     static let shared = NavigationRouter()
-
+    
     // MARK: - iPad Navigation State
     //
     // Single source of truth for the iPad's navigation position.
     // iPadRootView and iPadLibraryView read these directly.
     // All three are set together in navigate(to:) so SwiftUI
     // processes them as one update cycle — no cascading re-renders.
-
+    
     @Published var iPadSelectedTab: Int = 1
     @Published var iPadLibrarySegment: Int = 0
     @Published var iPadLibraryPath: NavigationPath = NavigationPath()
     @Published var iPadHomePath: NavigationPath = NavigationPath()
-
+    
     // Per-tab selected entry state — owned here so the detail panel
     // can be driven from anywhere (feed cards, Chronicles, widgets).
     @Published var selectedFeedEntry: Entry? = nil
-        @Published var iPadFeedResetToken: Int = 0
+    @Published var iPadFeedResetToken: Int = 0
+    @Published var iPadFeedIsNodeMode: Bool = false
     @Published var selectedLibraryEntry: Entry? = nil
     @Published var selectedTodayEntry: Entry? = nil
     @Published var selectedHomeEntry: Entry? = nil
     @Published var selectedChroniclesEntry: Entry? = nil
     
     // MARK: - iPad Navigation
-
+    
     /// Navigates the iPad content column to a destination.
     /// Sets tab, segment, and path atomically in one published update.
     /// No-op on iPhone — iPadRootView never exists there.
@@ -76,7 +77,7 @@ final class NavigationRouter: ObservableObject {
             iPadLibraryPath.append(tagName)
         }
     }
-
+    
     /// Selects an entry into the detail panel for the current tab.
     func selectEntry(_ entry: Entry) {
         switch iPadSelectedTab {
@@ -87,9 +88,9 @@ final class NavigationRouter: ObservableObject {
         default: selectedHomeEntry = entry
         }
     }
-
+    
     // MARK: - Entry Routing
-
+    
     /// Returns the appropriate detail view for a given entry.
     @ViewBuilder
     func destination(for entry: Entry) -> some View {
@@ -105,7 +106,7 @@ final class NavigationRouter: ObservableObject {
             }
         }
     }
-
+    
     /// Returns the appropriate detail view for a given Tag.
     @ViewBuilder
     func destination(for tag: Tag) -> some View {
@@ -115,14 +116,14 @@ final class NavigationRouter: ObservableObject {
             TagFeedView(tag: tag.name)
         }
     }
-
+    
     // MARK: - Static convenience wrappers
-
+    
     @ViewBuilder
     static func destination(for entry: Entry) -> some View {
         shared.destination(for: entry)
     }
-
+    
     @ViewBuilder
     static func destination(for tag: Tag) -> some View {
         shared.destination(for: tag)
