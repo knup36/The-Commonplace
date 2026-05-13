@@ -19,6 +19,7 @@ struct PersonInputView: View {
     var style: (any AppThemeStyle)?
     
     @EnvironmentObject var editMode: EditModeManager
+        @EnvironmentObject var router: NavigationRouter
     
     @State private var inputText = ""
     @State private var isExpanded = false
@@ -190,15 +191,22 @@ struct PersonInputView: View {
             }
         
         return Group {
-            if !editMode.isEditing, let person {
-                NavigationLink(destination: PersonDetailView(tag: person)) {
-                    chipView
+                    if !editMode.isEditing, let person {
+                        if UIDevice.current.userInterfaceIdiom == .pad {
+                            Button { router.navigate(to: .person(person)) } label: {
+                                chipView
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            NavigationLink(destination: PersonDetailView(tag: person)) {
+                                chipView
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    } else {
+                        chipView
+                    }
                 }
-                .buttonStyle(.plain)
-            } else {
-                chipView
-            }
-        }
     }
     
     // MARK: - Person Avatar

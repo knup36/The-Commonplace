@@ -24,6 +24,7 @@ struct WatchTimelineCard: View {
     var style: any AppThemeStyle
     
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var router: NavigationRouter
     
     @State private var selectedDate: Date? = nil
     @State private var spotlightEntry: Entry? = nil
@@ -259,10 +260,17 @@ struct WatchTimelineCard: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(alignment: .top, spacing: 10) {
                             ForEach(displayedEntries) { entry in
-                                NavigationLink(value: entry) {
-                                    coverChip(entry: entry)
+                                if UIDevice.current.userInterfaceIdiom == .pad {
+                                    Button { router.selectEntry(entry) } label: {
+                                        coverChip(entry: entry)
+                                    }
+                                    .buttonStyle(.plain)
+                                } else {
+                                    NavigationLink(value: entry) {
+                                        coverChip(entry: entry)
+                                    }
+                                    .buttonStyle(.plain)
                                 }
-                                .buttonStyle(.plain)
                             }
                         }
                         .padding(.horizontal, 2)

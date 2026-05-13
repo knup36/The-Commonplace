@@ -27,7 +27,8 @@ struct EntryCalendarCard: View {
     
     // MARK: - State
     
-    @State private var currentYear: Int = Calendar.current.component(.year, from: Date())
+    @EnvironmentObject var router: NavigationRouter
+        @State private var currentYear: Int = Calendar.current.component(.year, from: Date())
     @State private var currentMonth: Int = Calendar.current.component(.month, from: Date())
     @State private var selectedDay: DateComponents? = nil
     
@@ -276,10 +277,17 @@ struct EntryCalendarCard: View {
                 .padding(.bottom, 8)
             
             ForEach(selectedEntries) { entry in
-                NavigationLink(value: entry) {
-                    entryRow(entry: entry)
-                }
-                .buttonStyle(.plain)
+                if UIDevice.current.userInterfaceIdiom == .pad {
+                                Button { router.selectEntry(entry) } label: {
+                                    entryRow(entry: entry)
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                NavigationLink(value: entry) {
+                                    entryRow(entry: entry)
+                                }
+                                .buttonStyle(.plain)
+                            }
                 
                 if entry.id != selectedEntries.last?.id {
                     Divider()

@@ -15,6 +15,7 @@ struct TagInputView: View {
     var accentColor: Color = .accentColor
     var style: (any AppThemeStyle)?
     @EnvironmentObject var editMode: EditModeManager
+        @EnvironmentObject var router: NavigationRouter
     
     @State private var inputText = ""
     @State private var isExpanded = false
@@ -214,15 +215,29 @@ struct TagInputView: View {
         return Group {
                     if !editMode.isEditing {
                         if let folioCollection {
-                            NavigationLink(destination: CollectionDetailView(collection: folioCollection)) {
-                                pillContent
+                            if UIDevice.current.userInterfaceIdiom == .pad {
+                                                            Button { router.navigate(to: .folio(folioCollection)) } label: {
+                                    pillContent
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                NavigationLink(destination: CollectionDetailView(collection: folioCollection)) {
+                                    pillContent
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         } else if let tagObject {
-                            NavigationLink(destination: NavigationRouter.destination(for: tagObject)) {
-                                pillContent
+                            if UIDevice.current.userInterfaceIdiom == .pad {
+                                                            Button { router.navigate(to: .tag(tagObject.name)) } label: {
+                                    pillContent
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                NavigationLink(destination: NavigationRouter.destination(for: tagObject)) {
+                                    pillContent
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         } else {
                             pillContent
                         }

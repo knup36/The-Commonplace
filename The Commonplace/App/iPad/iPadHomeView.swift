@@ -30,7 +30,7 @@ struct iPadHomeView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.modelContext) var modelContext
 
-    @State private var navigationPath = NavigationPath()
+    @EnvironmentObject var router: NavigationRouter
 
     var style: any AppThemeStyle { themeManager.style }
 
@@ -82,7 +82,7 @@ struct iPadHomeView: View {
     // MARK: - Body
 
     var body: some View {
-        NavigationStack(path: $navigationPath) {
+        NavigationStack(path: $router.iPadHomePath) {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 28) {
 
@@ -207,7 +207,9 @@ struct iPadHomeView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(pinnedFolios) { folio in
-                        NavigationLink(value: folio) {
+                        Button {
+                            router.iPadHomePath.append(folio)
+                        } label: {
                             folioPill(folio: folio)
                         }
                         .buttonStyle(.plain)
@@ -313,28 +315,15 @@ struct iPadHomeView: View {
     }
 
     func personAvatarView(person: Tag, size: CGFloat) -> some View {
-        Group {
-            if let path = person.profilePhotoPath,
-               let data = MediaFileManager.load(path: path),
-               let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: size, height: size)
-                    .clipShape(Circle())
-            } else {
-                Circle()
-                    .fill(style.accent.opacity(0.15))
-                    .frame(width: size, height: size)
-                    .overlay(
-                        Text(String(person.name.prefix(1)).uppercased())
-                            .font(.system(size: size * 0.38, weight: .light))
-                            .foregroundStyle(style.accent)
-                    )
-            }
-        }
+        AsyncPersonAvatar(
+            name: person.name,
+            profilePhotoPath: person.profilePhotoPath,
+            size: size,
+            borderGradient: AnyShapeStyle(Color.clear),
+            avatarBackground: style.accent.opacity(0.15),
+            avatarForeground: style.accent
+        )
     }
-
     // MARK: - Tags Section
 
     var tagsSection: some View {

@@ -6,13 +6,16 @@
 //   - Content column: the selected tab's primary view
 //   - Detail column: entry detail panel per tab
 //
-// Selected entry state is owned here per tab and passed as bindings:
-//   - selectedFeedEntry    → iPadFeedView + iPadFeedDetailPanel       (tab 1)
-//   - selectedLibraryEntry → iPadLibraryView + iPadLibraryDetailPanel (tab 2)
-//   - selectedTodayEntry   → TodayView + iPadTodayDetailPanel         (tab 4)
+// Navigation state is owned by NavigationRouter (injected via @EnvironmentObject).
+// iPadRootView reads from the router directly — no local @State for navigation,
+// no callback handlers, no asyncAfter hacks. All navigation changes are atomic.
 //
-// Non-feed tabs without iPad treatment yet (Home tab 0, Chronicles tab 3)
-// render their existing views in the content column with an empty detail column.
+// Each content column view has a stable .id() matching its tab number so that
+// SwiftUI fully rebuilds it when switching tabs, resetting any nested
+// NavigationStack to its root automatically.
+//
+// iPhone: completely unaffected — ContentView still shows the iPhone layout.
+// The router's @Published iPad properties are never read on iPhone.
 //
 // The MiniSoundPlayerBar overlay is applied here since the iPhone
 // TabView overlay doesn't apply on iPad.
@@ -20,21 +23,16 @@
 import SwiftUI
 
 struct iPadRootView: View {
-    @Binding var selectedTab: Int
     @Binding var showingAddEntry: Bool
     @Binding var showingTemplatePicker: Bool
-    
-    @State private var selectedFeedEntry: Entry? = nil
-    @State private var selectedLibraryEntry: Entry? = nil
-    @State private var selectedTodayEntry: Entry? = nil
-    @State private var selectedHomeEntry: Entry? = nil
-    
+
+    @EnvironmentObject var router: NavigationRouter
     @EnvironmentObject var themeManager: ThemeManager
-    
+
     var body: some View {
         NavigationSplitView {
             iPadSidebarView(
-                selectedTab: $selectedTab,
+                selectedTab: $router.iPadSelectedTab,
                 showingAddEntry: $showingAddEntry,
                 showingTemplatePicker: $showingTemplatePicker
             )
@@ -42,6 +40,7 @@ struct iPadRootView: View {
         } content: {
             contentColumn
                 .navigationBarHidden(true)
+                .navigationSplitViewColumnWidth(min: 390, ideal: 390)
         } detail: {
             detailColumn
                 .overlay(alignment: .bottom) {
@@ -50,59 +49,57 @@ struct iPadRootView: View {
         }
         .navigationSplitViewStyle(.balanced)
     }
-    
+
     // MARK: - Content Column
-    
+
     @ViewBuilder
     private var contentColumn: some View {
-        switch selectedTab {
+        switch router.iPadSelectedTab {
         case 1:
             iPadFeedView(
-                selectedEntry: $selectedFeedEntry,
+                selectedEntry: $router.selectedFeedEntry,
                 showingAddEntry: $showingAddEntry,
                 showingTemplatePicker: $showingTemplatePicker
             )
+            .id(1)
         case 2:
-            iPadLibraryView(selectedEntry: $selectedLibraryEntry)
+            iPadLibraryView(selectedEntry: $router.selectedLibraryEntry)
+                .id(2)
         case 4:
             TodayView(onSelectEntry: { entry in
-                selectedTodayEntry = entry
+                router.selectedTodayEntry = entry
             })
+            .id(4)
         case 0:
-            iPadHomeView(selectedEntry: $selectedHomeEntry)
+            iPadHomeView(selectedEntry: $router.selectedHomeEntry)
+                .id(0)
+        case 3:
+            ChroniclesView()
+                .id(3)
         default:
-            selectedTabView
+            EmptyView()
         }
     }
-    
+
     // MARK: - Detail Column
-    
+
     @ViewBuilder
     private var detailColumn: some View {
-        switch selectedTab {
+        switch router.iPadSelectedTab {
         case 1:
-                    iPadEntryDetailPanel(selectedEntry: $selectedFeedEntry)
-                case 2:
-                    iPadEntryDetailPanel(selectedEntry: $selectedLibraryEntry)
+            iPadEntryDetailPanel(selectedEntry: $router.selectedFeedEntry)
+        case 2:
+            iPadEntryDetailPanel(selectedEntry: $router.selectedLibraryEntry)
         case 4:
-            iPadEntryDetailPanel(selectedEntry: $selectedTodayEntry)
+            iPadEntryDetailPanel(selectedEntry: $router.selectedTodayEntry)
         case 0:
-            iPadEntryDetailPanel(selectedEntry: $selectedHomeEntry)
+            iPadEntryDetailPanel(selectedEntry: $router.selectedHomeEntry)
+        case 3:
+            iPadEntryDetailPanel(selectedEntry: $router.selectedChroniclesEntry)
         default:
-            // Home and Chronicles will get detail panels in subsequent iPad sessions
             style.background.ignoresSafeArea()
         }
     }
-    
-    // MARK: - Non-iPad-treated tab views
-    
-    @ViewBuilder
-        private var selectedTabView: some View {
-            switch selectedTab {
-            case 3: ChroniclesView()
-            default: EmptyView()
-            }
-        }
-    
+
     private var style: any AppThemeStyle { themeManager.style }
 }

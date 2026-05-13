@@ -26,7 +26,9 @@ struct iPadSidebarView: View {
     @Binding var showingTemplatePicker: Bool
     
     @EnvironmentObject var themeManager: ThemeManager
-    @Query(sort: \Entry.modifiedAt, order: .reverse) var recentEntries: [Entry]
+        @Query(sort: \Entry.modifiedAt, order: .reverse) var recentEntries: [Entry]
+        @State private var showingSettings = false
+    @EnvironmentObject var router: NavigationRouter
     
     var style: any AppThemeStyle { themeManager.style }
     
@@ -38,12 +40,25 @@ struct iPadSidebarView: View {
         VStack(alignment: .leading, spacing: 0) {
             
             // MARK: - App title
-            Text("Commonplace")
-                .font(style.typeSectionHeader)
-                .foregroundStyle(style.tertiaryText)
-                .padding(.horizontal, 20)
-                .padding(.top, 28)
-                .padding(.bottom, 12)
+            HStack {
+                Text("Commonplace")
+                    .font(style.typeSectionHeader)
+                    .foregroundStyle(style.tertiaryText)
+                Button {
+                                    showingSettings = true
+                                } label: {
+                                    Image(systemName: "gear")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundStyle(style.tertiaryText)
+                                }
+                                .buttonStyle(.plain)
+                                .sheet(isPresented: $showingSettings) {
+                                    SettingsView()
+                                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 28)
+            .padding(.bottom, 12)
             
             // MARK: - Tabs
             VStack(spacing: 2) {
@@ -91,6 +106,11 @@ struct iPadSidebarView: View {
     @ViewBuilder
     private func iPadTabRow(icon: String, label: String, tag: Int) -> some View {
         Button {
+            switch tag {
+            case 0: router.iPadHomePath = NavigationPath()
+            case 2: router.iPadLibraryPath = NavigationPath()
+            default: break
+            }
             selectedTab = tag
         } label: {
             HStack(spacing: 10) {

@@ -29,25 +29,26 @@ struct ConnectedPagesSection: View {
     var style: any AppThemeStyle
     var accentColor: Color
     @Binding var showingConnectSheet: Bool
-
+    
     @Environment(\.modelContext) private var context
     @EnvironmentObject var editMode: EditModeManager
     @EnvironmentObject var themeManager: ThemeManager
-
+    @EnvironmentObject var router: NavigationRouter
+    
     // Fetch only the entries referenced by linkedEntryIDs — not the full archive
     @Query private var allEntries: [Entry]
-
+    
     private var linkedEntries: [Entry] {
         let linkedIDSet = Set(entry.linkedEntryIDs)
         return allEntries.filter { linkedIDSet.contains($0.id.uuidString) }
     }
-
+    
     init(entry: Entry, style: any AppThemeStyle, accentColor: Color, showingConnectSheet: Binding<Bool>) {
         self.entry = entry
         self.style = style
         self.accentColor = accentColor
         self._showingConnectSheet = showingConnectSheet
-
+        
         let linkedIDs = entry.linkedEntryIDs.compactMap { UUID(uuidString: $0) }
         self._allEntries = Query(
             filter: #Predicate<Entry> { linkedIDs.contains($0.id) },
@@ -55,9 +56,9 @@ struct ConnectedPagesSection: View {
             order: .reverse
         )
     }
-
+    
     // MARK: - Body
-
+    
     var body: some View {
         Group {
             if editMode.isEditing {
@@ -72,9 +73,9 @@ struct ConnectedPagesSection: View {
                 .presentationDragIndicator(.hidden)
         }
     }
-
+    
     // MARK: - View Mode
-
+    
     @ViewBuilder
     var viewModeSection: some View {
         if !linkedEntries.isEmpty {
@@ -82,10 +83,17 @@ struct ConnectedPagesSection: View {
                 sectionLabel
                 VStack(spacing: 0) {
                     ForEach(linkedEntries) { linked in
-                                            NavigationLink(destination: NavigationRouter.destination(for: linked)) {
-                                                entryRow(linked)
-                                            }
-                                            .buttonStyle(.plain)
+                        if UIDevice.current.userInterfaceIdiom == .pad {
+                            Button { router.selectEntry(linked) } label: {
+                                entryRow(linked)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            NavigationLink(destination: NavigationRouter.destination(for: linked)) {
+                                entryRow(linked)
+                            }
+                            .buttonStyle(.plain)
+                        }
                         if linked.id != linkedEntries.last?.id {
                             Divider()
                                 .overlay(style.cardDivider)
@@ -97,9 +105,9 @@ struct ConnectedPagesSection: View {
         }
         // Hidden entirely when empty — no empty state in view mode
     }
-
+    
     // MARK: - Edit Mode
-
+    
     var editModeSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             if linkedEntries.isEmpty {
@@ -127,11 +135,18 @@ struct ConnectedPagesSection: View {
                             }
                             .buttonStyle(.plain)
                             .padding(.trailing, 8)
-
-                            NavigationLink(destination: NavigationRouter.destination(for: linked)) {
-                                                            entryRow(linked)
-                                                        }
-                                                        .buttonStyle(.plain)
+                            
+                            if UIDevice.current.userInterfaceIdiom == .pad {
+                                Button { router.selectEntry(linked) } label: {
+                                    entryRow(linked)
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                NavigationLink(destination: NavigationRouter.destination(for: linked)) {
+                                    entryRow(linked)
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
                         if linked.id != linkedEntries.last?.id {
                             Divider()
@@ -144,9 +159,9 @@ struct ConnectedPagesSection: View {
             }
         }
     }
-
+    
     // MARK: - Shared Entry Row (view + edit mode)
-
+    
     func entryRow(_ linked: Entry) -> some View {
         let accent = linked.type.detailAccentColor(for: themeManager.current)
         return HStack(spacing: 10) {
@@ -171,9 +186,9 @@ struct ConnectedPagesSection: View {
         .padding(.vertical, 8)
         .contentShape(Rectangle())
     }
-
+    
     // MARK: - Section Label
-
+    
     var sectionLabel: some View {
         HStack(spacing: 6) {
             Image(systemName: "link")
@@ -184,29 +199,29 @@ struct ConnectedPagesSection: View {
                 .foregroundStyle(style.cardMetadataText)
         }
     }
-
+    
     // MARK: - Add Row (empty edit mode)
-
+    
     var addLinkedEntryRow: some View {
-            Button {
-                showingConnectSheet = true
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "link")
-                        .font(.caption)
-                        .foregroundStyle(style.cardMetadataText)
-                    Text("Add linked entry...")
-                        .font(.body)
-                        .foregroundStyle(style.cardMetadataText)
-                    Spacer()
-                }
-                .padding(.vertical, 4)
+        Button {
+            showingConnectSheet = true
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "link")
+                    .font(.caption)
+                    .foregroundStyle(style.cardMetadataText)
+                Text("Add linked entry...")
+                    .font(.body)
+                    .foregroundStyle(style.cardMetadataText)
+                Spacer()
             }
-            .buttonStyle(.plain)
+            .padding(.vertical, 4)
         }
-
+        .buttonStyle(.plain)
+    }
+    
     // MARK: - Add More Button (non-empty edit mode)
-
+    
     var addMoreButton: some View {
         Button {
             showingConnectSheet = true
@@ -222,9 +237,9 @@ struct ConnectedPagesSection: View {
         }
         .buttonStyle(.plain)
     }
-
+    
     // MARK: - Title Derivation
-
+    
     func rowTitle(for entry: Entry) -> String {
         switch entry.type {
         case .text:

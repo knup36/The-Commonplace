@@ -5,16 +5,16 @@
 //
 // Owns a NavigationStack that navigates internally:
 //   Root: Collections/Folios/People/Tags list (segmented picker)
-//   Push: CollectionDetailView, PersonDetailView, or iPadTagFeedPanel
+//   Push: CollectionDetailView, PersonDetailView, or TagFeedView
 //         when the user taps a collection, person, or tag.
 //
-// selectedEntry is owned by iPadRootView and passed as a Binding.
-// When the user taps an entry in any feed view, selectedEntry is set
-// and iPadLibraryDetailPanel renders it as a floating card.
-// This keeps the detail column purely for entry cards — never feeds.
+// Navigation state (segment + path) is owned by NavigationRouter and
+// read via @EnvironmentObject — no @Binding parameters needed.
+// This ensures navigation from the detail panel is atomic with no
+// asyncAfter hacks or cascading re-renders.
 //
-// The LibrarySelection enum is retained for internal navigationDestination
-// routing only — it is no longer shared with the detail panel.
+// selectedEntry is still passed as a @Binding from iPadRootView since
+// it's tab-specific state the detail panel also needs.
 //
 // iPhone: completely unaffected — ContentView still shows LibraryView.
 
@@ -22,7 +22,6 @@ import SwiftUI
 import SwiftData
 
 // MARK: - Library Navigation Destination
-// Used internally by iPadLibraryView's NavigationStack.
 
 enum LibraryDestination: Hashable {
     case collection(Collection)
@@ -34,15 +33,15 @@ enum LibraryDestination: Hashable {
 
 struct iPadLibraryView: View {
     @Binding var selectedEntry: Entry?
-    
+
     @Query var allCollections: [Collection]
     @Query var allEntries: [Entry]
     @Query var allTagObjects: [Tag]
     @Query var allPersonTags: [Tag]
     @Environment(\.modelContext) var modelContext
     @EnvironmentObject var themeManager: ThemeManager
-    
-    @State private var selectedTab = 0
+    @EnvironmentObject var router: NavigationRouter
+
     @State private var currentSort: LibraryView.CollectionSort = .custom
     @State private var currentPersonSort: LibraryView.TagSort = .name
     @State private var currentTagSort: LibraryView.TagSort = .name
@@ -51,12 +50,11 @@ struct iPadLibraryView: View {
     @State private var collectionToEdit: Collection? = nil
     @StateObject private var groupService = TagGroupService.shared
     @State private var isEditingGroups = false
-    @State private var navigationPath = NavigationPath()
-    
+
     var style: any AppThemeStyle { themeManager.style }
-    
-    // MARK: - Derived data (mirrors LibraryView logic)
-    
+
+    // MARK: - Derived data
+
     var displayedCollections: [Collection] {
         switch currentSort {
         case .custom:
@@ -74,11 +72,11 @@ struct iPadLibraryView: View {
                 .sorted { latestEntry(for: $0) > latestEntry(for: $1) }
         }
     }
-    
+
     var allFolios: [Collection] {
         allCollections.filter { $0.isFolio }.sorted { $0.name < $1.name }
     }
-    
+
     var allPersons: [Tag] {
         let persons = allPersonTags.filter { $0.isPerson }
         switch currentPersonSort {
@@ -86,7 +84,7 @@ struct iPadLibraryView: View {
         case .entryCount: return persons.sorted { personEntryCount($0) > personEntryCount($1) }
         }
     }
-    
+
     var allTags: [(tag: String, count: Int)] {
         let folioNames = Set(allTagObjects.filter { $0.isFolio }.map { $0.name })
         let soloFolioTags = Set(allCollections.filter { collection in
@@ -108,26 +106,26 @@ struct iPadLibraryView: View {
         case .entryCount: return mapped.sorted { $0.count > $1.count }
         }
     }
-    
+
     func entryCount(for collection: Collection) -> Int {
         allEntries.filter { collectionMatches(entry: $0, collection: collection) }.count
     }
-    
+
     func latestEntry(for collection: Collection) -> Date {
         allEntries
             .filter { collectionMatches(entry: $0, collection: collection) }
             .map { $0.createdAt }
             .max() ?? collection.createdAt
     }
-    
+
     func personEntryCount(_ person: Tag) -> Int {
         allEntries.filter { $0.tagNames.contains("@\(person.name)") }.count
     }
-    
+
     // MARK: - Body
-    
+
     var body: some View {
-        NavigationStack(path: $navigationPath) {
+        NavigationStack(path: $router.iPadLibraryPath) {
             ZStack {
                 style.background.ignoresSafeArea()
                 List {
@@ -136,15 +134,15 @@ struct iPadLibraryView: View {
                         HStack(alignment: .center) {
                             Spacer()
                             HStack(spacing: 12) {
-                                if selectedTab != 3 {
+                                if router.iPadLibrarySegment != 3 {
                                     Menu {
-                                        if selectedTab == 0 {
+                                        if router.iPadLibrarySegment == 0 {
                                             Picker("Sort", selection: $currentSort) {
                                                 ForEach(LibraryView.CollectionSort.allCases, id: \.self) { sort in
                                                     Text(sort.rawValue).tag(sort)
                                                 }
                                             }
-                                        } else if selectedTab == 2 {
+                                        } else if router.iPadLibrarySegment == 2 {
                                             Picker("Sort", selection: $currentPersonSort) {
                                                 Label("Name", systemImage: "textformat.abc").tag(LibraryView.TagSort.name)
                                                 Label("Entry Count", systemImage: "number").tag(LibraryView.TagSort.entryCount)
@@ -155,7 +153,7 @@ struct iPadLibraryView: View {
                                             .foregroundStyle(style.accent)
                                     }
                                 }
-                                if selectedTab == 0 {
+                                if router.iPadLibrarySegment == 0 {
                                     Button {
                                         showingAddCollection = true
                                     } label: {
@@ -163,7 +161,7 @@ struct iPadLibraryView: View {
                                             .foregroundStyle(style.accent)
                                     }
                                 }
-                                if selectedTab == 3 && !groupService.groupOrder.isEmpty {
+                                if router.iPadLibrarySegment == 3 && !groupService.groupOrder.isEmpty {
                                     Button(isEditingGroups ? "Done" : "Edit") {
                                         isEditingGroups.toggle()
                                     }
@@ -176,9 +174,9 @@ struct iPadLibraryView: View {
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
-                    
+
                     // Segmented picker
-                    Picker("", selection: $selectedTab) {
+                    Picker("", selection: $router.iPadLibrarySegment) {
                         Text("Collections").tag(0)
                         Text("Folios").tag(1)
                         Text("People").tag(2)
@@ -188,8 +186,8 @@ struct iPadLibraryView: View {
                     .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
-                    
-                    switch selectedTab {
+
+                    switch router.iPadLibrarySegment {
                     case 0: collectionsContent
                     case 1: foliosContent
                     case 2: peopleContent
@@ -236,9 +234,9 @@ struct iPadLibraryView: View {
             }
         }
     }
-    
+
     // MARK: - Collections Content
-    
+
     @ViewBuilder
     var collectionsContent: some View {
         ForEach(displayedCollections) { collection in
@@ -287,9 +285,9 @@ struct iPadLibraryView: View {
             try? modelContext.save()
         }
     }
-    
+
     // MARK: - Folios Content
-    
+
     @ViewBuilder
     var foliosContent: some View {
         if allFolios.isEmpty {
@@ -311,7 +309,9 @@ struct iPadLibraryView: View {
                 spacing: 16
             ) {
                 ForEach(allFolios) { folio in
-                    NavigationLink(value: folio) {
+                    Button {
+                        router.iPadLibraryPath.append(folio)
+                    } label: {
                         folioGridCell(folio: folio)
                     }
                     .buttonStyle(.plain)
@@ -324,7 +324,7 @@ struct iPadLibraryView: View {
             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
         }
     }
-    
+
     func folioGridCell(folio: Collection) -> some View {
         ZStack {
             Capsule()
@@ -351,9 +351,9 @@ struct iPadLibraryView: View {
             .padding(.horizontal, 12)
         }
     }
-    
+
     // MARK: - People Content
-    
+
     @ViewBuilder
     var peopleContent: some View {
         if allPersons.isEmpty {
@@ -376,7 +376,7 @@ struct iPadLibraryView: View {
             ) {
                 ForEach(allPersons) { person in
                     Button {
-                        navigationPath.append(person)
+                        router.iPadLibraryPath.append(person)
                     } label: {
                         personGridCell(person: person)
                     }
@@ -390,7 +390,7 @@ struct iPadLibraryView: View {
             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
         }
     }
-    
+
     func personGridCell(person: Tag) -> some View {
         let count = personEntryCount(person)
         return VStack(spacing: 6) {
@@ -419,32 +419,22 @@ struct iPadLibraryView: View {
                 .lineLimit(1)
         }
     }
-    
+
+    // MARK: - Person Avatar (async load — no main thread disk read)
+
     func personAvatarView(person: Tag, size: CGFloat) -> some View {
-        Group {
-            if let path = person.profilePhotoPath,
-               let data = MediaFileManager.load(path: path),
-               let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: size, height: size)
-                    .clipShape(Circle())
-            } else {
-                Circle()
-                    .fill(style.accent.opacity(0.2))
-                    .frame(width: size, height: size)
-                    .overlay(
-                        Text(String(person.name.prefix(1)).uppercased())
-                            .font(.system(size: size * 0.4, weight: .semibold))
-                            .foregroundStyle(style.accent)
-                    )
-            }
-        }
+        AsyncPersonAvatar(
+            name: person.name,
+            profilePhotoPath: person.profilePhotoPath,
+            size: size,
+            borderGradient: AnyShapeStyle(Color.clear),
+            avatarBackground: style.accent.opacity(0.2),
+            avatarForeground: style.accent
+        )
     }
-    
+
     // MARK: - Tags Content
-    
+
     @ViewBuilder
     var tagsContent: some View {
         LibraryTagsView(
@@ -453,13 +443,13 @@ struct iPadLibraryView: View {
             style: style,
             isEditingGroups: $isEditingGroups,
             onTagSelect: { tagName in
-                navigationPath.append(tagName)
+                router.iPadLibraryPath.append(tagName)
             }
         )
     }
-    
+
     // MARK: - Helpers
-    
+
     func initCollectionOrder() {
         let sorted = allCollections.sorted { $0.order < $1.order }
         let needsInit = sorted.allSatisfy { $0.order == 0 }

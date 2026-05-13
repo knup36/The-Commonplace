@@ -14,17 +14,18 @@ struct DogEarsCard: View {
     let stickyEntries: [Entry]
     let laterEntries: [Entry]
     var style: any AppThemeStyle
-
+    
     @EnvironmentObject var themeManager: ThemeManager
-
+    @EnvironmentObject var router: NavigationRouter
+    
     var hasContent: Bool { !stickyEntries.isEmpty || !laterEntries.isEmpty }
-
+    
     var body: some View {
         if !hasContent { return AnyView(EmptyView()) }
         return AnyView(
             ChroniclesCardContainer(title: "Dog-Ears", icon: "bookmark.fill", cardID: "dogEars", background: .parchment) {
                 VStack(alignment: .leading, spacing: 0) {
-
+                    
                     if !stickyEntries.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Lists")
@@ -34,10 +35,17 @@ struct DogEarsCard: View {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 10) {
                                     ForEach(stickyEntries) { entry in
-                                        NavigationLink(value: entry) {
-                                            CompactEntryCard(entry: entry, style: style)
+                                        if UIDevice.current.userInterfaceIdiom == .pad {
+                                            Button { router.selectEntry(entry) } label: {
+                                                CompactEntryCard(entry: entry, style: style)
+                                            }
+                                            .buttonStyle(.plain)
+                                        } else {
+                                            NavigationLink(value: entry) {
+                                                CompactEntryCard(entry: entry, style: style)
+                                            }
+                                            .buttonStyle(.plain)
                                         }
-                                        .buttonStyle(.plain)
                                     }
                                     if stickyEntries.count > 5 {
                                         seeMoreCard(count: stickyEntries.count - 5)
@@ -48,13 +56,13 @@ struct DogEarsCard: View {
                             .padding(.trailing, -16)
                         }
                     }
-
+                    
                     if !stickyEntries.isEmpty && !laterEntries.isEmpty {
                         Divider()
                             .overlay(Color.white.opacity(0.1))
                             .padding(.vertical, 12)
                     }
-
+                    
                     if !laterEntries.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Later")
@@ -64,16 +72,23 @@ struct DogEarsCard: View {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 LazyHGrid(
                                     rows: laterEntries.count <= 5
-                                        ? [GridItem(.fixed(80), spacing: 10)]
-                                        : [GridItem(.fixed(80), spacing: 10),
-                                           GridItem(.fixed(80), spacing: 10)],
+                                    ? [GridItem(.fixed(80), spacing: 10)]
+                                    : [GridItem(.fixed(80), spacing: 10),
+                                       GridItem(.fixed(80), spacing: 10)],
                                     spacing: 10
                                 ) {
                                     ForEach(laterEntries) { entry in
-                                        NavigationLink(value: entry) {
-                                            CompactEntryCard(entry: entry, style: style)
+                                        if UIDevice.current.userInterfaceIdiom == .pad {
+                                            Button { router.selectEntry(entry) } label: {
+                                                CompactEntryCard(entry: entry, style: style)
+                                            }
+                                            .buttonStyle(.plain)
+                                        } else {
+                                            NavigationLink(value: entry) {
+                                                CompactEntryCard(entry: entry, style: style)
+                                            }
+                                            .buttonStyle(.plain)
                                         }
-                                        .buttonStyle(.plain)
                                     }
                                     if laterEntries.count > 10 {
                                         seeMoreCard(count: laterEntries.count - 10)
@@ -88,7 +103,7 @@ struct DogEarsCard: View {
             }
         )
     }
-
+    
     func seeMoreCard(count: Int) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 14)

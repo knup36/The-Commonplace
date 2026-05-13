@@ -81,8 +81,8 @@ struct iPadFeedView: View {
                     locationManager.requestLocation()
                     updateFilter()
                 }
-                .onChange(of: entries.map { $0.id }) { _, _ in updateFilter() }
-                .onChange(of: entries.map { $0.modifiedAt }) { _, _ in
+                .onChange(of: entries.count) { _, _ in updateFilter() }
+                .onChange(of: entries.first?.modifiedAt) { _, _ in
                     WidgetDataStore.writeSnapshot(from: Array(entries.prefix(6)))
                 }
                 .onChange(of: filterType) { _, _ in
@@ -201,12 +201,12 @@ struct iPadFeedView: View {
             }
             if isSlimMode {
                 SlimEntryFeed(entries: filteredEntries, style: style) { entry in
-                                        withAnimation(.easeInOut(duration: 0.2)) {
-                                            selectedEntry = entry
-                                        }
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.top, 4)
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedEntry = entry
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
             } else {
                 entryRows
             }
@@ -218,7 +218,7 @@ struct iPadFeedView: View {
     @ViewBuilder
     var feedHeader: some View {
         HStack {
-                    if isScrapbookMode {
+            if isScrapbookMode {
                 Button {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         isShuffleMode.toggle()
@@ -623,17 +623,27 @@ struct iPadFeedView: View {
     }
     
     func updateFilter() {
-        var base = Array(entries)
-        if let type = filterType {
-            base = base.filter { $0.type == type }
-        }
-        if isShuffleMode && shuffleSeed > 0 {
-            base = base.sorted {
-                let h1 = abs(($0.id.uuidString + "\(shuffleSeed)").hashValue)
-                let h2 = abs(($1.id.uuidString + "\(shuffleSeed)").hashValue)
-                return h1 < h2
+        let snapshot = Array(entries)
+        let type = filterType
+        let shuffle = isShuffleMode
+        let seed = shuffleSeed
+        let count = visibleCount
+        Task.detached(priority: .userInitiated) {
+            var base = snapshot
+            if let type {
+                base = base.filter { $0.type == type }
+            }
+            if shuffle && seed > 0 {
+                base = base.sorted {
+                    let h1 = abs(($0.id.uuidString + "\(seed)").hashValue)
+                    let h2 = abs(($1.id.uuidString + "\(seed)").hashValue)
+                    return h1 < h2
+                }
+            }
+            let result = Array(base.prefix(count))
+            await MainActor.run {
+                filteredEntries = result
             }
         }
-        filteredEntries = Array(base.prefix(visibleCount))
     }
 }

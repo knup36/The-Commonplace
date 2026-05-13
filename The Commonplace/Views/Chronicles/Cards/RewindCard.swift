@@ -17,6 +17,7 @@ struct RewindCard: View {
     
     // MARK: - State
     
+    @EnvironmentObject var router: NavigationRouter
     @State private var startDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
     @State private var endDate: Date = Date()
     @State private var filteredEntries: [Entry] = []
@@ -67,12 +68,12 @@ struct RewindCard: View {
                         .foregroundStyle(ChroniclesTheme.secondaryText)
                         .frame(width: 44, alignment: .leading)
                     DatePicker("From", selection: $startDate, in: ...endDate, displayedComponents: .date)
-                                            .datePickerStyle(.compact)
-                                            .labelsHidden()
-                                            .tint(ChroniclesTheme.accentAmber)
-                                            .environment(\.locale, Locale(identifier: "en_US_POSIX"))
-                                            .fixedSize()
-                                            .id("from-\(Locale(identifier: "en_US_POSIX").identifier)")
+                        .datePickerStyle(.compact)
+                        .labelsHidden()
+                        .tint(ChroniclesTheme.accentAmber)
+                        .environment(\.locale, Locale(identifier: "en_US_POSIX"))
+                        .fixedSize()
+                        .id("from-\(Locale(identifier: "en_US_POSIX").identifier)")
                     Spacer()
                 }
                 HStack(spacing: 16) {
@@ -81,12 +82,12 @@ struct RewindCard: View {
                         .foregroundStyle(ChroniclesTheme.secondaryText)
                         .frame(width: 44, alignment: .leading)
                     DatePicker("To", selection: $endDate, in: startDate..., displayedComponents: .date)
-                                            .datePickerStyle(.compact)
-                                            .labelsHidden()
-                                            .tint(ChroniclesTheme.accentAmber)
-                                            .environment(\.locale, Locale(identifier: "en_US_POSIX"))
-                                            .fixedSize()
-                                            .id("to-\(Locale(identifier: "en_US_POSIX").identifier)")
+                        .datePickerStyle(.compact)
+                        .labelsHidden()
+                        .tint(ChroniclesTheme.accentAmber)
+                        .environment(\.locale, Locale(identifier: "en_US_POSIX"))
+                        .fixedSize()
+                        .id("to-\(Locale(identifier: "en_US_POSIX").identifier)")
                     Spacer()
                 }
             }
@@ -143,10 +144,17 @@ struct RewindCard: View {
                         spacing: 3
                     ) {
                         ForEach(photoEntries) { entry in
-                            NavigationLink(value: entry) {
-                                photoThumb(entry: entry)
+                            if UIDevice.current.userInterfaceIdiom == .pad {
+                                Button { router.selectEntry(entry) } label: {
+                                    photoThumb(entry: entry)
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                NavigationLink(value: entry) {
+                                    photoThumb(entry: entry)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -156,10 +164,17 @@ struct RewindCard: View {
                 if !nonPhotoEntries.isEmpty {
                     VStack(spacing: 0) {
                         ForEach(visibleNonPhotoEntries) { entry in
-                            NavigationLink(value: entry) {
-                                entryRow(entry: entry)
+                            if UIDevice.current.userInterfaceIdiom == .pad {
+                                Button { router.selectEntry(entry) } label: {
+                                    entryRow(entry: entry)
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                NavigationLink(value: entry) {
+                                    entryRow(entry: entry)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                             if entry.id != visibleNonPhotoEntries.last?.id {
                                 Divider()
                                     .overlay(ChroniclesTheme.sectionDivider)

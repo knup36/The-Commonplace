@@ -45,10 +45,9 @@ struct ContentView: View {
     var body: some View {
         if isIPad {
             iPadRootView(
-                selectedTab: $selectedTab,
-                showingAddEntry: $showingAddEntry,
-                showingTemplatePicker: $showingTemplatePicker
-            )
+                            showingAddEntry: $showingAddEntry,
+                            showingTemplatePicker: $showingTemplatePicker
+                        )
             .environmentObject(NavigationRouter.shared)
         } else {
             TabView(selection: $selectedTab) {
