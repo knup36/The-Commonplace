@@ -84,10 +84,22 @@ struct KnowledgeGraphView: UIViewRepresentable {
         func injectDataIfReady() {
             guard isReady, let webView, !hasInjected else { return }
             hasInjected = true
+
+            // Match the WebView background to the app theme background color
+            let bgHex: String
+                switch theme {
+                case .inkwell: bgHex = "#000000"
+                case .dusk:    bgHex = "#000000"
+                default:       bgHex = "#000000"
+                }
+            webView.evaluateJavaScript("document.body.style.background = '\(bgHex)'") { _, _ in }
+
             let json = GraphDataService.buildJSON(entries: entries, tags: tags, theme: theme)
             let escaped = json
                 .replacingOccurrences(of: "\\", with: "\\\\")
                 .replacingOccurrences(of: "'", with: "\\'")
+                .replacingOccurrences(of: "\n", with: " ")
+                .replacingOccurrences(of: "\r", with: " ")
             webView.evaluateJavaScript("loadGraph('\(escaped)')") { _, error in
                 if let error { print("Graph inject error: \(error)") }
             }

@@ -20,7 +20,14 @@ import SwiftUI
 struct GraphDataService {
     
     static func buildJSON(entries: [Entry], tags: [Tag], theme: AppTheme) -> String {
-        let entryNodes = entries.map { entry -> [String: Any] in
+        let entryNodes = entries.filter { entry -> Bool in
+            if entry.type == .journal {
+                let hasTag = !entry.tagNames.isEmpty
+                let hasLink = !entry.linkedEntryIDs.isEmpty
+                return hasTag || hasLink
+            }
+            return true
+        }.map { entry -> [String: Any] in
             [
                 "id":             entry.id.uuidString,
                 "type":           entry.type.rawValue,
@@ -55,9 +62,16 @@ struct GraphDataService {
         // Person nodes
         let personNodes = tags.filter { $0.isPerson }.map { tag -> [String: Any] in
             let entryCount = entries.filter { $0.tagNames.contains("@\(tag.name)") }.count
+            let initials = tag.name
+                .components(separatedBy: .whitespaces)
+                .filter { !$0.isEmpty }
+                .prefix(2)
+                .compactMap { $0.first.map { String($0).uppercased() } }
+                .joined()
             return [
                 "id":         "person-\(tag.name)",
                 "label":      tag.name,
+                "initials":   initials,
                 "entryCount": entryCount,
                 "kind":       "person"
             ]
@@ -83,7 +97,7 @@ struct GraphDataService {
         case .audio:      return entry.text.components(separatedBy: "\n").first ?? "Sound"
         case .link:       return entry.linkTitle ?? entry.url ?? "Link"
         case .journal:
-            let f = DateFormatter(); f.dateFormat = "MMM d"
+            let f = DateFormatter(); f.dateFormat = "MMM d, yyyy"
             return f.string(from: entry.createdAt)
         case .location:   return entry.locationName ?? "Place"
         case .sticky:     return entry.stickyTitle ?? "List"

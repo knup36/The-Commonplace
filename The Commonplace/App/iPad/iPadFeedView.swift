@@ -65,10 +65,10 @@ struct iPadFeedView: View {
         ZStack(alignment: .bottom) {
             if isNodeMode {
                 KnowledgeGraphView(
-                                    entries: Array(entries),
-                                    tags: Array(allPersonTags),
-                                    theme: themeManager.current
-                                ) { tappedID in
+                    entries: Array(entries),
+                    tags: Array(allPersonTags),
+                    theme: themeManager.current
+                ) { tappedID in
                     if let entry = entries.first(where: { $0.id.uuidString == tappedID }) {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             selectedEntry = entry
@@ -279,6 +279,8 @@ struct iPadFeedView: View {
                     isScrapbookMode = false
                     isSlimMode = false
                     isShuffleMode = false
+                    isNodeMode = false
+                    router.iPadFeedIsNodeMode = false
                     shuffleSeed = 0
                     updateFilter()
                 }
@@ -298,13 +300,15 @@ struct iPadFeedView: View {
                     isScrapbookMode = false
                     isSlimMode = false
                     isShuffleMode = false
+                    isNodeMode = false
+                    router.iPadFeedIsNodeMode = false
                     shuffleSeed = 0
                     updateFilter()
                 }
             } label: {
                 Image(systemName: "rectangle.grid.1x2")
                     .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(!isFullMode && !isScrapbookMode && !isSlimMode ? style.accent : style.secondaryText.opacity(0.4))
+                    .foregroundStyle(!isFullMode && !isScrapbookMode && !isSlimMode && !isNodeMode ? style.accent : style.secondaryText.opacity(0.4))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 8)
             }
@@ -317,6 +321,8 @@ struct iPadFeedView: View {
                     isScrapbookMode = false
                     isSlimMode = true
                     isShuffleMode = false
+                    isNodeMode = false
+                    router.iPadFeedIsNodeMode = false
                     shuffleSeed = 0
                     updateFilter()
                 }
@@ -335,6 +341,8 @@ struct iPadFeedView: View {
                     isFullMode = false
                     isScrapbookMode = true
                     isSlimMode = false
+                    isNodeMode = false
+                    router.iPadFeedIsNodeMode = false
                 }
             } label: {
                 Image(systemName: "rectangle.3.group.fill")
@@ -358,7 +366,7 @@ struct iPadFeedView: View {
                     }
                 }
             } label: {
-                Image(systemName: "circle.grid.cross")
+                Image(systemName: "scale.3d")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundStyle(isNodeMode ? style.accent : style.secondaryText.opacity(0.4))
                     .padding(.horizontal, 10)

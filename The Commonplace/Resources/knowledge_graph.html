@@ -4,7 +4,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             <style>
                 * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { background: #1A1208; overflow: hidden; width: 100vw; height: 100vh; }
+                body { background: #000000; overflow: hidden; width: 100vw; height: 100vh; }
                 canvas { position: absolute; top: 0; left: 0; }
                 svg { position: absolute; top: 0; left: 0; }
                 #tooltip {
@@ -57,6 +57,7 @@
             let currentScale = 1;
             let simulation;
             let graphData = null;
+            let links = [];
             
             function loadGraph(jsonString) {
                 const data = JSON.parse(jsonString);
@@ -82,13 +83,13 @@
                 }));
                 
                 const personNodes = (data.persons || []).map(p => ({
-                    id: p.id, kind: 'person', label: p.label, entryCount: p.entryCount, r: 14
+                    id: p.id, kind: 'person', label: p.label, initials: p.initials, entryCount: p.entryCount, r: 14
                 }));
                 
                 const nodes = [...entryNodes, ...tagNodes, ...personNodes];
                 const nodeMap = new Map(nodes.map(n => [n.id, n]));
                 
-                const links = [];
+                links = [];
                 
                 for (const entry of data.entries) {
                     for (const tag of entry.tagNames) {
@@ -113,24 +114,13 @@
                 
                 simulation = d3.forceSimulation(nodes)
                 .force('link', d3.forceLink(links).id(d => d.id)
-                       .distance(d => d.kind === 'person' ? 70 : d.kind === 'tag' ? 80 : 60)
-                       .strength(d => d.kind === 'tag' ? 0.4 : 0.8))
+                       .distance(d => d.kind === 'person' ? 100 : d.kind === 'tag' ? 120 : 80)
+                       .strength(d => d.kind === 'tag' ? 0.3 : 0.6))
                        .force('charge', d3.forceManyBody()
-                              .strength(d => d.kind === 'tag' || d.kind === 'person' ? -120 : -30))
-                              .force('center', d3.forceCenter(W / 2, H / 2).strength(0.08))
-                              .force('collision', d3.forceCollide().radius(d => d.r + 8))
-                              .force('bound', () => {
-                                  const padding = 60;
-                                  for (const node of nodes) {
-                                      node.vx = (node.vx || 0) * 0.9;
-                                      node.vy = (node.vy || 0) * 0.9;
-                                      if (node.x < padding) node.vx += (padding - node.x) * 0.05;
-                                      if (node.x > W - padding) node.vx += (W - padding - node.x) * 0.05;
-                                      if (node.y < padding) node.vy += (padding - node.y) * 0.05;
-                                      if (node.y > H - padding) node.vy += (H - padding - node.y) * 0.05;
-                                  }
-                              })
-                              .alphaDecay(0.04)
+                                     .strength(d => d.kind === 'tag' || d.kind === 'person' ? -240 : -65))
+                              .force('center', d3.forceCenter(W / 2, H / 2).strength(0.02))
+                              .force('collision', d3.forceCollide().radius(d => d.r + 14))
+                              .alphaDecay(0.03)
                               .on('end', () => { simulation.stop(); });
                               
                               const tagLinks = container.append('g').attr('class', 'tag-links')
@@ -157,17 +147,18 @@
                                         if (d.kind === 'entry') {
                                             window.webkit.messageHandlers.entryTapped.postMessage(d.id);
                                             highlightNode(d.id);
+                                        } else if (d.kind === 'tag' || d.kind === 'person') {
+                                            if (d.kind === 'person') togglePersonName(d.id);
+                                            highlightHub(d.id);
                                         }
                                     })
-                                    .on('mouseover', (event, d) => {
+                                    .on('touchstart', (event, d) => {
                                         tooltip.style.opacity = '1';
                                         tooltip.textContent = d.label;
-                                    })
-                                    .on('mousemove', event => {
-                                        tooltip.style.left = (event.pageX + 12) + 'px';
-                                        tooltip.style.top = (event.pageY - 28) + 'px';
-                                    })
-                                    .on('mouseout', () => { tooltip.style.opacity = '0'; });
+                                        tooltip.style.left = (event.touches[0].pageX + 12) + 'px';
+                                        tooltip.style.top = (event.touches[0].pageY - 28) + 'px';
+                                        setTimeout(() => { tooltip.style.opacity = '0'; }, 1500);
+                                    }, { passive: true });
                                     
                                     nodeGroup.filter(d => d.kind === 'entry')
                                     .append('circle')
@@ -188,11 +179,36 @@
                                     .append('text')
                                     .attr('text-anchor', 'middle')
                                     .attr('dy', '0.35em')
-                                    .attr('font-size', 9)
-                                    .attr('font-weight', '500')
+                                    .attr('font-size', 10)
+                                    .attr('font-weight', '600')
                                     .attr('fill', '#C8903A')
                                     .attr('pointer-events', 'none')
-                                    .text(d => d.label.length > 8 ? d.label.slice(0, 7) + '…' : d.label);
+                                    .text(d => d.initials || '?');
+
+                                    nodeGroup.filter(d => d.kind === 'person')
+                                    .append('rect')
+                                    .attr('class', 'person-name-bg')
+                                    .attr('rx', 4)
+                                    .attr('ry', 4)
+                                    .attr('fill', 'rgba(26,18,8,0.92)')
+                                    .attr('stroke', 'rgba(200,144,58,0.4)')
+                                    .attr('stroke-width', 0.5)
+                                    .attr('y', d => d.r + 6)
+                                    .attr('opacity', 0)
+                                    .attr('pointer-events', 'none');
+
+                                    nodeGroup.filter(d => d.kind === 'person')
+                                    .append('text')
+                                    .attr('class', 'person-name-label')
+                                    .attr('text-anchor', 'middle')
+                                    .attr('y', d => d.r + 6)
+                                    .attr('dy', '1em')
+                                    .attr('font-size', 11)
+                                    .attr('font-weight', '500')
+                                    .attr('fill', '#C8903A')
+                                    .attr('opacity', 0)
+                                    .attr('pointer-events', 'none')
+                                    .text(d => d.label);
                                     
                                     nodeGroup.filter(d => d.kind === 'tag')
                                     .append('circle')
@@ -220,7 +236,10 @@
                                     .attr('font-size', 9)
                                     .attr('fill', 'rgba(240,232,220,0.6)')
                                     .attr('pointer-events', 'none')
-                                    .text(d => d.label.length > 16 ? d.label.slice(0, 15) + '…' : d.label)
+                                    .text(d => {
+                                        const chars = [...d.label];
+                                        return chars.length > 24 ? chars.slice(0, 23).join('') + '...' : d.label;
+                                    })
                                     .attr('opacity', 0);
                                     
                                     nodeGroup.filter(d => d.kind === 'entry')
@@ -246,12 +265,77 @@
                                     });
             }
             
+            let activeHubId = null;
+
             function highlightNode(id) {
                 container.selectAll('.selected-ring').attr('opacity', 0);
                 container.selectAll('.node')
-                .filter(d => d.id === id)
-                .select('.selected-ring')
-                .attr('opacity', 1);
+                    .filter(d => d.id === id)
+                    .select('.selected-ring')
+                    .attr('opacity', 1);
+            }
+
+            function highlightHub(id) {
+                // Toggle off if tapping the same hub
+                if (activeHubId === id) {
+                    activeHubId = null;
+                    clearHubHighlight();
+                    return;
+                }
+                activeHubId = id;
+
+                // Find all entry IDs directly connected to this hub
+                const connectedEntryIds = new Set();
+                links.forEach(l => {
+                    const sourceId = l.source.id || l.source;
+                    const targetId = l.target.id || l.target;
+                    if (sourceId === id) connectedEntryIds.add(targetId);
+                    if (targetId === id) connectedEntryIds.add(sourceId);
+                });
+
+                // Dim all nodes, brighten hub and its entries
+                container.selectAll('.node')
+                    .attr('opacity', d => {
+                        if (d.id === id) return 1;
+                        if (connectedEntryIds.has(d.id)) return 1;
+                        return 0.12;
+                    });
+
+                // Dim all links, brighten links connected to this hub
+                container.selectAll('line')
+                    .attr('opacity', l => {
+                        const sourceId = l.source.id || l.source;
+                        const targetId = l.target.id || l.target;
+                        if (sourceId === id || targetId === id) return 1;
+                        return 0.04;
+                    });
+            }
+
+            function clearHubHighlight() {
+                container.selectAll('.node').attr('opacity', 1);
+                container.selectAll('line').attr('opacity', 1);
+            }
+            
+            function togglePersonName(id) {
+                const node = container.selectAll('.node').filter(d => d.id === id);
+                const label = node.select('.person-name-label');
+                const bg = node.select('.person-name-bg');
+                const isVisible = parseFloat(label.attr('opacity')) > 0;
+
+                if (isVisible) {
+                    label.attr('opacity', 0);
+                    bg.attr('opacity', 0);
+                } else {
+                    // Measure text width to size the background rect
+                    const textEl = label.node();
+                    const bbox = textEl ? textEl.getBBox() : { width: 60, height: 14 };
+                    const pad = 6;
+                    bg.attr('x', -(bbox.width / 2) - pad)
+                      .attr('width', bbox.width + pad * 2)
+                      .attr('height', bbox.height + pad)
+                      .attr('opacity', 1);
+                    label.attr('opacity', 1);
+                }
             }
             
             function updateLabelVisibility() {
@@ -280,6 +364,8 @@
             // Tap on empty canvas deselects
             svg.on('click', () => {
                 container.selectAll('.selected-ring').attr('opacity', 0);
+                if (activeHubId) return;
+                clearHubHighlight();
             });
         </script>
     </body>

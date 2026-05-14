@@ -25,11 +25,11 @@ import SwiftUI
 struct iPadRootView: View {
     @Binding var showingAddEntry: Bool
     @Binding var showingTemplatePicker: Bool
-
+    
     @EnvironmentObject var router: NavigationRouter
-        @EnvironmentObject var themeManager: ThemeManager
-        @State private var columnVisibility: NavigationSplitViewVisibility = .all
-
+    @EnvironmentObject var themeManager: ThemeManager
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             iPadSidebarView(
@@ -41,7 +41,7 @@ struct iPadRootView: View {
         } content: {
             contentColumn
                 .navigationBarHidden(true)
-                .navigationSplitViewColumnWidth(min: 390, ideal: 390)
+                .navigationSplitViewColumnWidth(min: router.iPadFeedIsNodeMode ? 500 : 390, ideal: router.iPadFeedIsNodeMode ? 700 : 390)
         } detail: {
             detailColumn
                 .overlay(alignment: .bottom) {
@@ -49,25 +49,26 @@ struct iPadRootView: View {
                 }
         }
         .navigationSplitViewStyle(.balanced)
+        .toolbarBackground(.hidden, for: .navigationBar)
                 .onChange(of: router.iPadFeedIsNodeMode) { _, isNodeMode in
-                    withAnimation(.easeInOut(duration: 0.35)) {
-                        columnVisibility = isNodeMode ? .doubleColumn : .all
-                    }
-                }
+            withAnimation(.easeInOut(duration: 0.35)) {
+                columnVisibility = isNodeMode ? .doubleColumn : .all
+            }
+        }
     }
-
+    
     // MARK: - Content Column
-
+    
     @ViewBuilder
     private var contentColumn: some View {
         switch router.iPadSelectedTab {
         case 1:
-                    iPadFeedView(
-                        selectedEntry: $router.selectedFeedEntry,
-                        showingAddEntry: $showingAddEntry,
-                        showingTemplatePicker: $showingTemplatePicker
-                    )
-                    .id("feed-\(router.iPadFeedResetToken)")
+            iPadFeedView(
+                selectedEntry: $router.selectedFeedEntry,
+                showingAddEntry: $showingAddEntry,
+                showingTemplatePicker: $showingTemplatePicker
+            )
+            .id("feed-\(router.iPadFeedResetToken)")
         case 2:
             iPadLibraryView(selectedEntry: $router.selectedLibraryEntry)
                 .id(2)
@@ -86,9 +87,9 @@ struct iPadRootView: View {
             EmptyView()
         }
     }
-
+    
     // MARK: - Detail Column
-
+    
     @ViewBuilder
     private var detailColumn: some View {
         switch router.iPadSelectedTab {
@@ -106,6 +107,6 @@ struct iPadRootView: View {
             style.background.ignoresSafeArea()
         }
     }
-
+    
     private var style: any AppThemeStyle { themeManager.style }
 }
