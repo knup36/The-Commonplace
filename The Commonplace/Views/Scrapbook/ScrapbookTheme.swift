@@ -70,6 +70,9 @@ enum ScrapbookTheme {
 
     /// Tape strip color — semi-transparent warm white
     static let tapeColor = Color(red: 0.92, green: 0.88, blue: 0.78).opacity(0.7)
+    
+    /// Newsprint — off-white warm background for link clipping cards
+    static let newsprintColor = Color(red: 0.95, green: 0.93, blue: 0.87)
 
     // MARK: - Typography
 

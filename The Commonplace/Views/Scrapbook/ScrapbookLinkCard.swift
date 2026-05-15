@@ -126,7 +126,7 @@ struct ScrapbookLinkCard: View {
         }
         .padding(14)
         .frame(width: 300)
-        .background(Color(red: 0.95, green: 0.93, blue: 0.87))
+        .background(ScrapbookTheme.newsprintColor)
         .clipShape(RaggedEdgeShape(seed: entry.id.uuidString))
         .shadow(color: ScrapbookTheme.cardShadowColor, radius: ScrapbookTheme.cardShadowRadius, x: 0, y: ScrapbookTheme.cardShadowY)
         .padding(.vertical, 16)

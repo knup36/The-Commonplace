@@ -177,7 +177,13 @@ struct JournalBlockView: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(Date().formatted(.dateTime.weekday(.wide)))
-                    .font(.custom("NewYorkLarge-Black", size: 34))
+                    .font({
+                        let descriptor = UIFontDescriptor
+                            .preferredFontDescriptor(withTextStyle: .largeTitle)
+                            .withDesign(.serif)!
+                            .addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: UIFont.Weight.semibold]])
+                        return Font(UIFont(descriptor: descriptor, size: 34))
+                    }())
                     .foregroundStyle(style.cardPrimaryText)
                 Text(Date().formatted(.dateTime.month(.wide).day().year()))
                     .font(style.typeBodySecondary)
