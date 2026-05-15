@@ -19,6 +19,7 @@ import SwiftUI
 
 struct ScrapbookAttachmentCard: View {
     let entry: Entry
+    private var isIPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
     
     private var inkColor: Color { ScrapbookTheme.inkPrimary }
     private var mutedColor: Color { ScrapbookTheme.inkSecondary }
@@ -171,10 +172,10 @@ struct ScrapbookAttachmentCard: View {
                 .frame(height: 130)
             }
         }
-        .rotationEffect(.degrees(cardRotation))
-        .padding(.vertical, 8)
-        .padding(.horizontal, 48)
-        .shadow(color: .black.opacity(0.15), radius: 4, x: 1, y: 3)
+        .frame(maxWidth: isIPad ? 360 : .infinity)
+                .rotationEffect(.degrees(cardRotation))
+                .padding(.vertical, 8)
+                .shadow(color: .black.opacity(0.15), radius: 4, x: 1, y: 3)
     }
     
     // MARK: - Video Thumbnail Card
@@ -260,9 +261,10 @@ struct ScrapbookAttachmentCard: View {
                 .foregroundStyle(mutedColor)
                 .offset(y: -14)
         }
-        .rotationEffect(.degrees(cardRotation))
-        .padding(.top, 16)
-        .padding(.horizontal, 8)
-        .shadow(color: .black.opacity(0.18), radius: 4, x: 1, y: 3)
+        .frame(maxWidth: isIPad ? 480 : .infinity)
+                .rotationEffect(.degrees(cardRotation))
+                .padding(.top, 16)
+                .padding(.horizontal, 8)
+                .shadow(color: .black.opacity(0.18), radius: 4, x: 1, y: 3)
     }
 }

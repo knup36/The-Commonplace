@@ -428,58 +428,65 @@ struct PhotoDetailSection: View {
     // MARK: - Photo Strip
     
     struct PhotoStripView: View {
-        let paths: [String]
-        let onTap: (Int) -> Void
-        
-        @State private var loadedImages: [(id: Int, image: UIImage)] = []
-        
+            let paths: [String]
+            let onTap: (Int) -> Void
+
+            @State private var loadedImages: [(id: Int, image: UIImage)] = []
+
         var body: some View {
-            let availableWidth = UIDevice.current.userInterfaceIdiom == .pad
-                            ? min(UIScreen.main.bounds.width * 0.38, 420) - 32
-                            : UIScreen.main.bounds.width - 32
-            let spacing: CGFloat = 6
-            let totalSpacing = spacing * CGFloat(max(loadedImages.count - 1, 0))
-            let totalAspect = loadedImages.reduce(0.0) { $0 + ($1.image.size.width / $1.image.size.height) }
-            let rowHeight = totalAspect > 0 ? (availableWidth - totalSpacing) / totalAspect : (paths.count == 1 ? 300 : 220)
-            
-            HStack(spacing: spacing) {
-                ForEach(loadedImages, id: \.id) { item in
-                    Image(uiImage: item.image)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: rowHeight * (item.image.size.width / item.image.size.height), height: rowHeight)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .contentShape(Rectangle())
-                        .onTapGesture { onTap(item.id) }
+                    Group {
+                    if let first = loadedImages.first {
+                    if loadedImages.count == 1 {
+                        // Single photo — let SwiftUI size it naturally
+                        Image(uiImage: first.image)
+                            .resizable()
+                            .scaledToFit()
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .contentShape(Rectangle())
+                            .onTapGesture { onTap(0) }
+                    } else {
+                        // Multiple photos — horizontal scroll for now, proper strip layout in future release
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 6) {
+                                ForEach(loadedImages, id: \.id) { item in
+                                    Image(uiImage: item.image)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 220, height: 220)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                        .contentShape(Rectangle())
+                                        .onTapGesture { onTap(item.id) }
+                                }
+                            }
+                        }
+                    }
+                    } else {
+                                    // Placeholder while images load
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(Color.clear)
+                                        .frame(height: 300)
+                                }
+                    }
+                                .onAppear { loadImagesAsync() }
+                                .onChange(of: paths) { _, _ in loadImagesAsync() }
+                            }
+                            
+                            func loadImagesAsync() {
+                Task.detached(priority: .userInitiated) {
+                    var result: [(id: Int, image: UIImage)] = []
+                    for (index, path) in paths.enumerated() {
+                        guard let data = MediaFileManager.load(path: path),
+                              let uiImage = UIImage(data: data) else { continue }
+                        let targetSize = paths.count == 1
+                            ? CGSize(width: 1200, height: 1200)
+                            : CGSize(width: 600, height: 600)
+                        let thumbnail = await uiImage.byPreparingThumbnail(ofSize: targetSize) ?? uiImage
+                        result.append((id: index, image: thumbnail))
+                    }
+                    await MainActor.run {
+                        loadedImages = result
+                    }
                 }
             }
-            .animation(nil, value: loadedImages.count)
-            .onAppear {
-                loadImagesAsync()
-            }
-            .onChange(of: paths) { _, _ in
-                loadImagesAsync()
-            }
-            
         }
-        
-        func loadImagesAsync() {
-            Task.detached(priority: .userInitiated) {
-                var result: [(id: Int, image: UIImage)] = []
-                for (index, path) in paths.enumerated() {
-                    guard let data = MediaFileManager.load(path: path),
-                          let uiImage = UIImage(data: data) else { continue }
-                    // Downsample to display size — no need for full res in the strip
-                    let targetSize = paths.count == 1
-                    ? CGSize(width: 1200, height: 1200)
-                    : CGSize(width: 600, height: 600)
-                    let thumbnail = await uiImage.byPreparingThumbnail(ofSize: targetSize) ?? uiImage
-                    result.append((id: index, image: thumbnail))
-                }
-                await MainActor.run {
-                    loadedImages = result
-                }
-            }
-        }
-    }
 }

@@ -49,6 +49,7 @@ final class NavigationRouter: ObservableObject {
     @Published var selectedFeedEntry: Entry? = nil
     @Published var iPadFeedResetToken: Int = 0
     @Published var iPadFeedIsNodeMode: Bool = false
+        @Published var iPadFeedIsScrapbookMode: Bool = false
     @Published var selectedLibraryEntry: Entry? = nil
     @Published var selectedTodayEntry: Entry? = nil
     @Published var selectedHomeEntry: Entry? = nil

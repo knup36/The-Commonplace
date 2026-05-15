@@ -41,7 +41,10 @@ struct iPadRootView: View {
         } content: {
             contentColumn
                 .navigationBarHidden(true)
-                .navigationSplitViewColumnWidth(min: router.iPadFeedIsNodeMode ? 500 : 390, ideal: router.iPadFeedIsNodeMode ? 700 : 390)
+                .navigationSplitViewColumnWidth(
+                                min: (router.iPadFeedIsNodeMode || router.iPadFeedIsScrapbookMode) ? 500 : 390,
+                                ideal: (router.iPadFeedIsNodeMode || router.iPadFeedIsScrapbookMode) ? 700 : 390
+                            )
         } detail: {
             detailColumn
                 .overlay(alignment: .bottom) {
@@ -49,12 +52,17 @@ struct iPadRootView: View {
                 }
         }
         .navigationSplitViewStyle(.balanced)
-        .toolbarBackground(.hidden, for: .navigationBar)
+                .toolbarBackground(.hidden, for: .navigationBar)
                 .onChange(of: router.iPadFeedIsNodeMode) { _, isNodeMode in
-            withAnimation(.easeInOut(duration: 0.35)) {
-                columnVisibility = isNodeMode ? .doubleColumn : .all
-            }
-        }
+                    withAnimation(.easeInOut(duration: 0.35)) {
+                        columnVisibility = isNodeMode ? .doubleColumn : .all
+                    }
+                }
+                .onChange(of: router.iPadFeedIsScrapbookMode) { _, isScrapbook in
+                    withAnimation(.easeInOut(duration: 0.35)) {
+                        columnVisibility = isScrapbook ? .doubleColumn : .all
+                    }
+                }
     }
     
     // MARK: - Content Column

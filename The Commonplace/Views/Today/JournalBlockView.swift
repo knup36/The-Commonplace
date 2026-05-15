@@ -23,18 +23,15 @@ private let startOfToday = Calendar.current.startOfDay(for: Date())
 struct JournalBlockView: View {
     @Environment(\.modelContext) var modelContext
     @Query(filter: #Predicate<Entry> { entry in
-            entry.createdAt >= startOfToday
-        }, sort: \Entry.createdAt, order: .reverse) var entries: [Entry]
+        entry.createdAt >= startOfToday
+    }, sort: \Entry.createdAt, order: .reverse) var entries: [Entry]
     @Query(sort: \Habit.order) var habits: [Habit]
     @StateObject private var locationManager = LocationManager()
     @EnvironmentObject var themeManager: ThemeManager
     
-    @State private var dailyNoteText = ""
     @State private var showingVibePicker = false
-    @State private var showingJournalPhotoPicker = false
-    @State private var journalImage: UIImage? = nil
-    @FocusState private var noteFieldFocused: Bool
-    @State private var saveDebounceTask: Task<Void, Never>? = nil
+        @State private var showingJournalPhotoPicker = false
+        @State private var journalImage: UIImage? = nil
     
     var style: any AppThemeStyle { themeManager.style }
     var journalAccent: Color { EntryType.journal.detailAccentColor(for: themeManager.current) }
@@ -96,9 +93,8 @@ struct JournalBlockView: View {
             }
         }
         .onAppear {
-            locationManager.requestLocation()
-            loadDailyNote()
-        }
+                    locationManager.requestLocation()
+                }
         .onDisappear {
             if let entry = todayEntry {
                 SearchIndex.shared.index(entry: entry)
@@ -222,28 +218,13 @@ struct JournalBlockView: View {
     }
     
     var dailyNoteBlock: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label("Daily Note", systemImage: "pencil")
-                .font(style.typeBodySecondary)
-                .foregroundStyle(style.cardSecondaryText)
-            CommonplaceTextEditor(
-                text: $dailyNoteText,
-                placeholder: "How was your day...",
-                usesSerifFont: false,
-                minHeight: 60
+            JournalNoteBlock(
+                todayEntry: todayEntry,
+                style: style,
+                journalAccent: journalAccent,
+                onCreateEntry: { getOrCreateTodayEntry() }
             )
-            .foregroundStyle(style.cardPrimaryText)
-            .focused($noteFieldFocused)
-            .onChange(of: dailyNoteText) { _, newValue in
-                saveDebounceTask?.cancel()
-                saveDebounceTask = Task {
-                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
-                    guard !Task.isCancelled else { return }
-                    await MainActor.run { saveDailyNote(newValue) }
-                }
-            }
         }
-    }
     
     var dailyPhotoBlock: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -360,20 +341,5 @@ struct JournalBlockView: View {
             entry.completedHabitSnapshots.append(habit.name)
         }
         SearchIndex.shared.index(entry: entry)
-    }
-    
-    func saveDailyNote(_ text: String) {
-        if let existing = todayEntry {
-            existing.text = text
-            existing.touch()
-        } else if !text.isEmpty {
-            let entry = getOrCreateTodayEntry()
-            entry.text = text
-            entry.touch()
-        }
-    }
-    
-    func loadDailyNote() {
-        dailyNoteText = todayEntry?.text ?? ""
     }
 }

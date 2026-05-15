@@ -30,10 +30,22 @@ enum AppTypeScale {
     }()
     
     /// 28pt New York Semibold — reserved for future large section headers
-    static let title1: Font = Font.custom(".NewYorkLarge-Semibold", size: 28)
-    
+    static let title1: Font = {
+        let descriptor = UIFontDescriptor
+            .preferredFontDescriptor(withTextStyle: .title1)
+            .withDesign(.serif)!
+            .addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: UIFont.Weight.semibold]])
+        return Font(UIFont(descriptor: descriptor, size: 28))
+    }()
+
     /// 22pt New York Semibold — feed nav titles, weekly review header
-    static let title2: Font = Font.custom(".NewYorkMedium-Semibold", size: 22)
+    static let title2: Font = {
+        let descriptor = UIFontDescriptor
+            .preferredFontDescriptor(withTextStyle: .title2)
+            .withDesign(.serif)!
+            .addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: UIFont.Weight.semibold]])
+        return Font(UIFont(descriptor: descriptor, size: 22))
+    }()
     
     // MARK: - Content
     

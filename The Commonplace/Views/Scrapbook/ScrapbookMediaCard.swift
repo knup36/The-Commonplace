@@ -50,7 +50,8 @@ struct ScrapbookMediaCard: View {
     
     var body: some View {
         GeometryReader { geo in
-                    let cardWidth = min(geo.size.width - 32, 560)
+                    let isIPad = UIDevice.current.userInterfaceIdiom == .pad
+                    let cardWidth = isIPad ? 420 : min(geo.size.width - 32, 560)
                     let notchX = cardWidth - stubWidth - 12
             HStack(spacing: 0) {
                 

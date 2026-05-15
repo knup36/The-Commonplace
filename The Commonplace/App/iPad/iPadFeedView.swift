@@ -281,6 +281,7 @@ struct iPadFeedView: View {
                     isShuffleMode = false
                     isNodeMode = false
                     router.iPadFeedIsNodeMode = false
+                    router.iPadFeedIsScrapbookMode = false
                     shuffleSeed = 0
                     updateFilter()
                 }
@@ -302,6 +303,7 @@ struct iPadFeedView: View {
                     isShuffleMode = false
                     isNodeMode = false
                     router.iPadFeedIsNodeMode = false
+                    router.iPadFeedIsScrapbookMode = false
                     shuffleSeed = 0
                     updateFilter()
                 }
@@ -323,6 +325,7 @@ struct iPadFeedView: View {
                     isShuffleMode = false
                     isNodeMode = false
                     router.iPadFeedIsNodeMode = false
+                    router.iPadFeedIsScrapbookMode = false
                     shuffleSeed = 0
                     updateFilter()
                 }
@@ -343,6 +346,7 @@ struct iPadFeedView: View {
                     isSlimMode = false
                     isNodeMode = false
                     router.iPadFeedIsNodeMode = false
+                    router.iPadFeedIsScrapbookMode = true
                 }
             } label: {
                 Image(systemName: "rectangle.3.group.fill")
@@ -358,6 +362,7 @@ struct iPadFeedView: View {
                 withAnimation(.easeInOut(duration: 0.3)) {
                     isNodeMode.toggle()
                     router.iPadFeedIsNodeMode = isNodeMode
+                    router.iPadFeedIsScrapbookMode = false
                     if isNodeMode {
                         isFullMode = false
                         isScrapbookMode = false
@@ -398,8 +403,8 @@ struct iPadFeedView: View {
                         EntryRowView(entry: entry, allPersonTags: allPersonTags, allCollections: allCollections)
                     }
                     
-                    // Selected state overlay
-                    if selectedEntry?.id == entry.id {
+                    // Selected state overlay — hidden in scrapbook mode
+                    if selectedEntry?.id == entry.id && !isScrapbookMode {
                         RoundedRectangle(cornerRadius: 14)
                             .strokeBorder(entry.type.accentColor(for: themeManager.current).opacity(0.5), lineWidth: 2)
                     }

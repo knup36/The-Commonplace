@@ -21,6 +21,35 @@ struct ReleaseNotesView: View {
     
     let releases: [Release] = [
         Release(
+            version: "3.0.1",
+            title: "Begging for Scraps",
+            notes: [
+                "A focused polish pass on the iPad experience, with particular attentionto Scrapbook mode — which now feels like it was born on the big screen.",
+                "Scrapbook mode on iPad now collapses the sidebar entirely, giving the feed the canvas space it deserves. The detail panel sits alongside at 40% width.",
+                "Media ticket cards are properly sized on iPad — a ticket stub, not a banner.",
+                "Attachment cards — PDF manila folders and video thumbnails — now use deliberate fixed sizing on iPad rather than stretching to fill the column.",
+                "The selection outline is hidden in Scrapbook mode. The cards speak for themselves.",
+                "Shot detail photos now resize dynamically when the split view divider is dragged. No more hardcoded width approximations.",
+                "The weekly review card no longer disappears mid-day if left incomplete. It stays until you finish the review — as it should."
+            ]
+        ),
+        Release(
+            version: "3.0",
+            title: "Koyaanisqatsi",
+            notes: [
+                "Koyaanisqatsi — a Hopi word meaning 'life out of balance.' This release lets you see the shape of your archive for the first time.",
+                "3.0 brings 3 major new features: native iPad support, a Knowledge Graph, and Bi-Directional Linked Entries.",
+                "Knowledge Graph — a new Node view in the feed toggle renders your entire archive as a living network. Entry dots, tag hubs, and person rings connected by the threads between them.",
+                "Tap any tag or person hub to highlight its cluster — everything else dims, and the connections come forward.",
+                "Tap a person's ring to reveal their full name, anchored to their node as you pan and zoom.",
+                "Tap any entry node to open it in the detail panel — browse a cluster's entries one by one without losing your place in the graph.",
+                "The graph exceeds the screen — pan and zoom to explore. Your archive has more shape than a list can show.",
+                "Linked Entries — connect any two entries from their detail views. A Connected Pages section appears at the bottom of every entry, with a search sheet to find and link related captures.",
+                "Links are bidirectional by default — connecting A to B also connects B to A.",
+                "Full iPad-native layout across all five tabs — Feed, Library, Today, Home, and Chronicles each have a dedicated two-panel layout built for the larger screen."
+            ]
+        ),
+        Release(
             version: "2.16",
             title: "The Snow Leopard Release",
             notes: [
